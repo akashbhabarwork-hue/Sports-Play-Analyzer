@@ -63,14 +63,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** the three npm commands; open `http://localhost:8000/`
 - **Done notes:** Initialized Vite React TS v5 app, configured dev proxy, added `typecheck`, setup routing, API client shell, and integrated static SPA serving in FastAPI.
 
-### [ ] T-012 · Dockerfile + one-command docker compose — `MUST` `20m`
+### [x] T-012 · Dockerfile + one-command docker compose — `MUST` `20m`
 - **Agent:** devops
 - **Depends on:** T-010, T-011
 - **Why:** Ops: "One-command Docker setup".
 - **Scope:** multi-stage Dockerfile (node build → python slim + ffmpeg, non-root, HEALTHCHECK), compose with `db`, `migrate`, `web`, `worker` (placeholder loop for now), `blobs` volume; `.dockerignore`; `.env.example` with every variable documented.
 - **Acceptance:** fresh clone + `cp .env.example .env` + `docker compose up --build` → `/health` ok.
 - **Verify:** `docker compose up --build -d && curl -fsS localhost:8000/health`
-- **Done notes:** _
+- **Done notes:** Built multi-stage Dockerfile, docker-compose.yml with 4 services, and a dummy worker entrypoint. Docker verification skipped locally per request.
 
 ### [ ] T-013 · CI workflow — `MUST` `15m` `[review-plan]`
 - **Agent:** devops
