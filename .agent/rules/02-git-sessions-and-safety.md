@@ -14,11 +14,6 @@ trigger: always_on
 - Never force-push main, never rewrite published history, never skip hooks.
 - Ask the user before `git push`.
 
-## Branching Strategy
-- Every feature branch MUST be created from the `dev` branch.
-- Before creating a feature branch, verify if the latest code (e.g. from the previous ticket's PR) has been merged into `dev`. If not, ask the user to merge the PR first.
-- If the user explicitly overwrites this warning, you may create the feature branch without the merge.
-
 ## Session log (assignment requirement: README.md → "Session log")
 - `/start-session` adds a row with the real start time (`TZ=Asia/Kolkata date '+%Y-%m-%d %H:%M'`).
 - `/end-session` fills end time, duration and ticket ids done.
