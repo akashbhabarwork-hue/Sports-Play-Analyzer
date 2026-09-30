@@ -54,14 +54,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** `pytest -q backend/tests/unit`, design checker, `curl localhost:8000/health`
 - **Done notes:** Built strict python functional core architecture, pinned deps, json logger, env configs, DB health check, and tests pass.
 
-### [ ] T-011 · Frontend skeleton — `MUST` `10m`
+### [x] T-011 · Frontend skeleton — `MUST` `10m`
 - **Agent:** frontend
 - **Depends on:** T-002
 - **Why:** UI requirements; CI needs lint/build.
 - **Scope:** Vite React TS app, `react-router-dom`, `src/api.ts` envelope client, ESLint, `typecheck` script, dev proxy for `/api` and `/auth`; FastAPI serves `static/` build with SPA fallback.
 - **Acceptance:** `npm run lint && npm run typecheck && npm run build` green; page loads via FastAPI at `/`.
 - **Verify:** the three npm commands; open `http://localhost:8000/`
-- **Done notes:** _
+- **Done notes:** Initialized Vite React TS v5 app, configured dev proxy, added `typecheck`, setup routing, API client shell, and integrated static SPA serving in FastAPI.
 
 ### [ ] T-012 · Dockerfile + one-command docker compose — `MUST` `20m`
 - **Agent:** devops
