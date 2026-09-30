@@ -1,0 +1,32 @@
+name: Rollback
+on:
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Git SHA of a previously deployed image (ghcr tag)"
+        required: true
+permissions: {}
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  rollback:
+    runs-on: ubuntu-24.04
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - uses: superfly/flyctl-actions/setup-flyctl@<SHA> # v1.x
+      - name: Redeploy previous image
+        env: { FLY_API_TOKEN: "${{ secrets.FLY_API_TOKEN }}" }
+        run: |
+          IMAGE="ghcr.io/${GITHUB_REPOSITORY,,}:${{ inputs.sha }}"
+          flyctl deploy --image "$IMAGE" --app "${{ vars.FLY_APP }}" --strategy rolling
+      - name: Smoke test /health
+        run: |
+          for i in $(seq 1 20); do
+            curl -fsS --max-time 5 "${{ vars.APP_URL }}/health" | grep -q '"status":"ok"' && exit 0
+            sleep 6
+          done
+          exit 1
