@@ -34,14 +34,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** `git log --oneline | head`, `ls docs`
 - **Done notes:** Repos, skeletons, and devlogs created. Missing tools (docker, ffmpeg) noted locally.
 
-### [ ] T-002 · Confirm open decisions — `MUST` `10m`
+### [x] T-002 · Confirm open decisions — `MUST` `10m`
 - **Agent:** architect
 - **Depends on:** T-001
 - **Why:** Brief §4 (justify model), §5 (host, sessions), ADR.
 - **Scope:** confirm or change defaults and record D-001…D-006: (1) detector YOLOX-S ONNX (Apache-2.0) vs Ultralytics (AGPL); (2) host Fly.io + Neon + Tigris/R2; (3) server-side cookie sessions; (4) API paths `/api/jobs/...` with `/jobs/...` alias (brief uses `/jobs/{id}`); (5) Google as OAuth provider; (6) polling for live status.
 - **Acceptance:** decisions.md has D-001…D-006 with option/why/consequence; rule 00 table updated if anything changed.
 - **Verify:** read `docs/decisions.md`
-- **Done notes:** _
+- **Done notes:** Confirmed all 6 defaults. decisions.md is up to date.
 
 ## S1 · Foundation & first deploy (1 h 25 m)
 
