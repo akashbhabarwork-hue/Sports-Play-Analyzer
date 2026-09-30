@@ -45,14 +45,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 
 ## S1 · Foundation & first deploy (1 h 25 m)
 
-### [ ] T-010 · Backend skeleton, config, errors, /health, JSON logs — `MUST` `20m`
+### [x] T-010 · Backend skeleton, config, errors, /health, JSON logs — `MUST` `20m`
 - **Agent:** backend-api
 - **Depends on:** T-002
 - **Why:** Ops: "/health endpoint", "Structured logs", "All configuration via env vars".
 - **Scope:** `backend/app/config.py` (UPPERCASE env variables → frozen Settings, no argparse), `errors.py`, `wiring.py` (`build_container`), `entrypoints/api.py` (`create_app(container)`), error-envelope handler, JSON logging, `/health` with DB `SELECT 1` + `GIT_SHA`, `requirements.txt` + `requirements-dev.txt` pinned, `pyproject.toml` (ruff, pytest markers).
 - **Acceptance:** `/health` returns `{"status":"ok","db":"ok","version":…}` or 503 when DB down; logs are JSON lines; design checker passes.
 - **Verify:** `pytest -q backend/tests/unit`, design checker, `curl localhost:8000/health`
-- **Done notes:** _
+- **Done notes:** Built strict python functional core architecture, pinned deps, json logger, env configs, DB health check, and tests pass.
 
 ### [ ] T-011 · Frontend skeleton — `MUST` `10m`
 - **Agent:** frontend
