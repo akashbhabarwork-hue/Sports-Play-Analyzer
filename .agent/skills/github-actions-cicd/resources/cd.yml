@@ -1,0 +1,63 @@
+name: CD
+on:
+  push:
+    branches: [main]
+permissions: {}
+concurrency:
+  group: deploy-production
+  cancel-in-progress: false
+
+jobs:
+  build-push:
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: read
+      packages: write
+    outputs:
+      image: ${{ steps.meta.outputs.image }}
+    steps:
+      - uses: actions/checkout@<SHA> # v4.x.x
+      - id: meta
+        run: |
+          repo="ghcr.io/${GITHUB_REPOSITORY,,}"          # GHCR names must be lowercase
+          echo "image=${repo}:${GITHUB_SHA}" >> "$GITHUB_OUTPUT"
+          echo "image_main=${repo}:main" >> "$GITHUB_OUTPUT"
+      - uses: docker/setup-buildx-action@<SHA> # v3.x.x
+      - uses: docker/login-action@<SHA> # v3.x.x
+        with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
+      - uses: docker/build-push-action@<SHA> # v6.x.x
+        with:
+          context: .
+          push: true
+          build-args: GIT_SHA=${{ github.sha }}
+          tags: |
+            ${{ steps.meta.outputs.image }}
+            ${{ steps.meta.outputs.image_main }}
+
+  deploy:
+    runs-on: ubuntu-24.04
+    needs: build-push
+    environment: production
+    permissions:
+      contents: read
+      packages: read
+    steps:
+      - uses: actions/checkout@<SHA> # v4.x.x
+      - uses: docker/login-action@<SHA> # v3.x.x
+        with: { registry: ghcr.io, username: "${{ github.actor }}", password: "${{ secrets.GITHUB_TOKEN }}" }
+      - name: Run database migrations
+        env: { DATABASE_URL: "${{ secrets.DATABASE_URL }}" }
+        run: docker run --rm -e DATABASE_URL "${{ needs.build-push.outputs.image }}" alembic upgrade head
+      - uses: superfly/flyctl-actions/setup-flyctl@<SHA> # v1.x
+      - name: Deploy
+        env: { FLY_API_TOKEN: "${{ secrets.FLY_API_TOKEN }}" }
+        run: flyctl deploy --image "${{ needs.build-push.outputs.image }}" --app "${{ vars.FLY_APP }}" --strategy rolling
+      - name: Smoke test /health
+        run: |
+          for i in $(seq 1 20); do
+            if curl -fsS --max-time 5 "${{ vars.APP_URL }}/health" | tee /tmp/h.json | grep -q '"status":"ok"'; then
+              grep -q "${GITHUB_SHA}" /tmp/h.json && echo "healthy on new sha" && exit 0
+            fi
+            sleep 6
+          done
+          echo "::error::Health check failed"; exit 1
