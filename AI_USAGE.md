@@ -15,11 +15,11 @@ Setup: project rules, specialist agent personas, skills and workflows in `.agent
 ## Where the AI was wrong (and how I caught it)
 *(Running log of mistakes caught during development — will be updated as tickets are implemented)*
 
-### 1. Explicit Protocol Inheritance
-- **What it did:** The agent explicitly inherited from a `typing.Protocol` (`class PostgresHealthCheck(HealthCheck):`).
-- **How I caught it:** Running the python backend design checker script (`check_design.py`) caught it as a `[no-inheritance]` violation.
-- **Fix:** Removed the explicit inheritance, relying on Python's implicit duck-typing composition for Protocols.
-- **Lesson:** `typing.Protocol` is structurally typed and does not require explicit inheritance unless specifically needed at runtime.
+### 1. (Placeholder — to be logged during implementation)
+- **What it did:**
+- **How I caught it:** (test / review / reading docs / runtime error)
+- **Fix:**
+- **Lesson:**
 
 ## How I verified AI-generated code
 - Automated unit test suite with deterministic JSON fixtures (pure logic, no model dependency).
