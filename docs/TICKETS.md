@@ -150,14 +150,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 
 ## S4 · Ingestion (1 h 10 m)
 
-### [ ] T-040 · BlobStore (local + S3) — `MUST` `15m`
+### [x] T-040 · BlobStore (local + S3) — `MUST` `15m`
 - **Agent:** backend-api
 - **Depends on:** T-010
 - **Why:** "Annotated video… saved to storage"; web and worker on different machines in prod.
 - **Scope:** `BlobStore` Protocol (`put_file`, `get_to_path`, `open_range`/`presigned_url`, `delete`), `LocalBlobStore` (path-traversal safe keys), `S3BlobStore` (boto3, endpoint from env); registry in wiring by `BLOB_BACKEND`.
 - **Acceptance:** unit test for key validation (`..` rejected); local adapter round-trip test.
 - **Verify:** `pytest -q -k blob`
-- **Done notes:** _
+- **Done notes:** `BlobStore` protocol, `core/blob_keys.py` (validation + deterministic keys + 300 s presign cap), `LocalBlobStore` (atomic writes, root containment), `S3BlobStore` (boto3; tested with moto), `BLOB_STORES` registry, production requires `s3`. 41 blob tests (key table incl. `..`/abs/backslash/%2e/hidden/NUL, local round trip/overwrite/range/missing/delete/symlink escape, S3 round trip/range/missing/presign expiry/bad bucket, config + registry); symlink-guard mutation caught. 120 tests total. See D-017.
 
 ### [ ] T-041 · Upload endpoint with content validation — `MUST` `20m`
 - **Agent:** backend-api (with auth-security review)

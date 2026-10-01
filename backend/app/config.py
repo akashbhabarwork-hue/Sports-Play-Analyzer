@@ -31,6 +31,20 @@ SESSION_TTL_DAYS = int(os.getenv("SESSION_TTL_DAYS", "7"))
 # always trusted; local dev adds the Vite server, e.g. http://localhost:5173.
 TRUSTED_ORIGINS = tuple(o.strip() for o in os.getenv("TRUSTED_ORIGINS", "").split(",") if o.strip())
 
+# ---- storage ----
+# local: a directory (compose volume / dev). s3: Tigris, R2 or AWS — required in production
+# because web and worker run on different machines and cannot share a disk.
+BLOB_BACKEND = os.getenv("BLOB_BACKEND", "local")
+BLOB_LOCAL_DIR = os.getenv(
+    "BLOB_LOCAL_DIR", os.path.abspath(os.path.join(os.path.dirname(__file__), "../../blobs"))
+)
+S3_ENDPOINT_URL = os.getenv("S3_ENDPOINT_URL", "")
+S3_BUCKET = os.getenv("S3_BUCKET", "")
+S3_REGION = os.getenv("S3_REGION", "")
+S3_ACCESS_KEY_ID = os.getenv("S3_ACCESS_KEY_ID", "")
+S3_SECRET_ACCESS_KEY = os.getenv("S3_SECRET_ACCESS_KEY", "")
+BLOB_BACKENDS = ("local", "s3")
+
 REQUIRED_IN_PRODUCTION = ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "SESSION_SECRET")
 
 
@@ -49,6 +63,13 @@ class Settings:
     cookie_secure: bool = True
     session_ttl_days: int = 7
     trusted_origins: tuple[str, ...] = ()
+    blob_backend: str = "local"
+    blob_local_dir: str = ""
+    s3_endpoint_url: str = ""
+    s3_bucket: str = ""
+    s3_region: str = ""
+    s3_access_key_id: str = ""
+    s3_secret_access_key: str = ""
 
     @property
     def oauth_configured(self) -> bool:
@@ -71,8 +92,24 @@ class Settings:
 
 
 def validate_settings(settings: Settings) -> None:
+    """Fail fast on bad config. Messages name settings, never their values."""
+    if settings.blob_backend not in BLOB_BACKENDS:
+        raise RuntimeError(f"BLOB_BACKEND must be one of: {', '.join(BLOB_BACKENDS)}")
+    s3_values = {
+        "S3_BUCKET": settings.s3_bucket,
+        "S3_ACCESS_KEY_ID": settings.s3_access_key_id,
+        "S3_SECRET_ACCESS_KEY": settings.s3_secret_access_key,
+    }
+    if settings.blob_backend == "s3":
+        missing_s3 = [name for name, value in s3_values.items() if not value]
+        if missing_s3:
+            raise RuntimeError(
+                f"Missing required settings for BLOB_BACKEND=s3: {', '.join(missing_s3)}"
+            )
     if settings.app_env != "production":
         return
+    if settings.blob_backend != "s3":
+        raise RuntimeError("BLOB_BACKEND must be s3 in production (web and worker share no disk)")
     values = {
         "GOOGLE_CLIENT_ID": settings.google_client_id,
         "GOOGLE_CLIENT_SECRET": settings.google_client_secret,
@@ -98,6 +135,13 @@ def load_settings() -> Settings:
         cookie_secure=COOKIE_SECURE,
         session_ttl_days=SESSION_TTL_DAYS,
         trusted_origins=TRUSTED_ORIGINS,
+        blob_backend=BLOB_BACKEND,
+        blob_local_dir=BLOB_LOCAL_DIR,
+        s3_endpoint_url=S3_ENDPOINT_URL,
+        s3_bucket=S3_BUCKET,
+        s3_region=S3_REGION,
+        s3_access_key_id=S3_ACCESS_KEY_ID,
+        s3_secret_access_key=S3_SECRET_ACCESS_KEY,
     )
     validate_settings(settings)
     return settings

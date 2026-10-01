@@ -9,6 +9,7 @@ from fastapi.responses import RedirectResponse
 from fastapi.testclient import TestClient
 from sqlalchemy import create_engine, text
 
+from app.adapters.blob_local import LocalBlobStore
 from app.adapters.db import PostgresHealthCheck
 from app.adapters.pg_queue import PostgresJobQueue
 from app.adapters.pg_repos import (
@@ -86,7 +87,7 @@ def make_settings(secure: bool = False) -> Settings:
     )
 
 
-def make_container(engine, settings: Settings, oauth=None) -> Container:
+def make_container(engine, settings: Settings, oauth=None, blobs=None) -> Container:
     return Container(
         settings=settings,
         health_check=PostgresHealthCheck(engine),
@@ -96,6 +97,7 @@ def make_container(engine, settings: Settings, oauth=None) -> Container:
         jobs=PostgresJobRepo(engine),
         results=PostgresResultRepo(engine),
         queue=PostgresJobQueue(engine),
+        blobs=blobs,
         oauth=oauth,
     )
 
@@ -119,8 +121,13 @@ def settings() -> Settings:
 
 
 @pytest.fixture
-def container(engine, settings, google) -> Container:
-    return make_container(engine, settings, google)
+def blobs(tmp_path) -> LocalBlobStore:
+    return LocalBlobStore(str(tmp_path / "blobs"))
+
+
+@pytest.fixture
+def container(engine, settings, google, blobs) -> Container:
+    return make_container(engine, settings, google, blobs)
 
 
 @pytest.fixture

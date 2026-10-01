@@ -5,6 +5,7 @@ Authorization rule (A3): every method that reads a user's videos, jobs or result
 `tests/unit/test_ports.py` enforces this. "Not found" and "not yours" both return None.
 """
 
+from collections.abc import Iterator
 from datetime import datetime
 from typing import Any, Protocol
 from uuid import UUID
@@ -114,3 +115,31 @@ class OAuthProvider(Protocol):
     async def authorize_redirect(self, request: Any, redirect_uri: str) -> Any: ...
 
     async def fetch_profile(self, request: Any) -> OAuthProfile: ...
+
+
+class BlobStore(Protocol):
+    """Object storage for uploads and annotated videos (local disk or S3-compatible).
+
+    Keys are validated with core.blob_keys.validate_blob_key. Missing keys raise
+    BlobNotFoundError; backend failures raise ExternalServiceError.
+    """
+
+    def put_file(self, key: str, src_path: str, content_type: str) -> None:
+        """Store a file atomically: readers never see a partial object."""
+        ...
+
+    def get_to_path(self, key: str, dest_path: str) -> None: ...
+
+    def size(self, key: str) -> int: ...
+
+    def open_range(self, key: str, start: int, end: int | None) -> Iterator[bytes]:
+        """Bytes start..end inclusive (end None = to the last byte), in chunks."""
+        ...
+
+    def presigned_get_url(self, key: str, ttl_s: int) -> str | None:
+        """Short-lived (≤ 5 min) download URL, or None if the API must stream it itself."""
+        ...
+
+    def delete(self, key: str) -> None:
+        """Idempotent: deleting a missing key is not an error."""
+        ...

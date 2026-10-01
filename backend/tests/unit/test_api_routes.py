@@ -13,7 +13,7 @@ from app.errors import (
 )
 from app.wiring import Container
 
-NO_REPOS = dict.fromkeys(("users", "sessions", "videos", "jobs", "results", "queue"))
+NO_REPOS = dict.fromkeys(("users", "sessions", "videos", "jobs", "results", "queue", "blobs"))
 
 
 class OkHealth:

@@ -10,7 +10,7 @@ from app.core.sessions import hash_token
 from app.entrypoints.api import create_app
 from app.wiring import Container
 
-NO_REPOS = dict.fromkeys(("users", "sessions", "videos", "jobs", "results", "queue"))
+NO_REPOS = dict.fromkeys(("users", "sessions", "videos", "jobs", "results", "queue", "blobs"))
 
 
 class OkHealth:
@@ -27,6 +27,10 @@ def make_settings(**overrides) -> Settings:
         google_client_id="cid.apps.googleusercontent.com",
         google_client_secret="client-secret-value",
         session_secret="s" * 32,
+        blob_backend="s3",
+        s3_bucket="media",
+        s3_access_key_id="key-id",
+        s3_secret_access_key="key-secret",
     )
     return Settings(**{**base, **overrides})
 
