@@ -9,7 +9,7 @@ from datetime import datetime
 from typing import Any, Protocol
 from uuid import UUID
 
-from .models import Job, JobResult, NewVideo, PlayerTrack, User, Video
+from .models import Job, JobOutcome, JobResult, NewVideo, PlayerTrack, User, Video
 
 
 class HealthCheck(Protocol):
@@ -76,3 +76,23 @@ class ResultRepo(Protocol):
     def list_tracks(self, user_id: UUID, job_id: UUID) -> list[PlayerTrack]: ...
 
     def get_track(self, user_id: UUID, job_id: UUID, track_id: int) -> PlayerTrack | None: ...
+
+
+class JobQueue(Protocol):
+    """Worker-only queue operations. Never wired into an HTTP route.
+
+    Every write after `claim` is guarded by `locked_by = worker_id AND status = 'processing'`;
+    a `False` return means this worker lost its lease and must stop without writing results.
+    """
+
+    def claim(self, worker_id: str, lease_s: int) -> Job | None: ...
+
+    def heartbeat(
+        self, job_id: UUID, worker_id: str, progress: int, stage: str, lease_s: int
+    ) -> bool: ...
+
+    def finish(self, job_id: UUID, worker_id: str, outcome: JobOutcome) -> bool: ...
+
+    def fail(self, job_id: UUID, worker_id: str, error_code: str, message: str) -> bool: ...
+
+    def sweep_dead(self) -> int: ...

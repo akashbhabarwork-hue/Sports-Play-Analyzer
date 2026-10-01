@@ -101,3 +101,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** the first atomicity test passed `config=None` expecting a NOT NULL violation, but SQLAlchemy stores it as JSON `null`, so nothing failed; then a non-serialisable value raised a Python `TypeError` rather than a DB error. Switched to a value Postgres itself rejects (NUL in jsonb) and proved the test with a mutation.
 **Explain-it-in-review:** "Authorization lives in the SQL: every user-data query has `user_id` in its WHERE clause, cross-user reads come back empty so the API can 404, and a test fails the build if anyone adds an unscoped read."
 **Next:** T-022 Queue: claim, heartbeat, finish, fail, sweep
+
+---
+
+## 2026-10-01 20:10 IST — T-022 Queue: claim, heartbeat, finish, fail, sweep (agent: database)
+**What changed:** `backend/app/adapters/pg_queue.py` (`PostgresJobQueue`), `JobQueue` protocol and `JobOutcome` model, `LEASE_SECONDS` + `WORKER_ID` in `config.py`/`.env.example`, `Container.queue`; repo helpers in `pg_repos.py` made public (`db_errors`, `row_to`, `rows_to`) for reuse. `tests/integration/test_queue.py` (11 tests).
+**Why:** safe concurrent claiming with SKIP LOCKED, crash recovery via leases, idempotent result writes, and no job stuck in `processing`.
+**Decisions:** D-014 (queue semantics; handled errors are final, only crashes retry).
+**Verification:** local Postgres 16: integration 31 passed, unit 8 passed; concurrency tests stable over 5 repeats; ruff + design checker clean. Mutation checks: removing `FOR UPDATE SKIP LOCKED`, the heartbeat ownership guard, the delete-before-insert, or the `max_attempts` filter each fails a test.
+**AI mistakes caught:** none in this ticket.
+**Explain-it-in-review:** "Workers claim with one SKIP LOCKED statement, hold a lease they keep alive with heartbeats, and can only write while they still own the job; if a worker dies the lease lapses and another worker retries, and after three tries a sweep marks the job failed — so nothing stays stuck in processing."
+**Next:** S2 stage summary, then S3 — T-030 Google OAuth (Authorization Code + PKCE) + sessions

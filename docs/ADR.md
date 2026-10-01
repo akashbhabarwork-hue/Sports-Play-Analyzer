@@ -43,8 +43,9 @@ Source of truth: `backend/app/adapters/db_tables.py`; revision `0001`. UUID PKs,
 - Index justification with EXPLAIN evidence: decisions D-011.
 
 ## 5. Reliability
-- Idempotent worker retry via transactional result writes (`delete` -> `insert` -> `status=succeeded`).
-- Lease heartbeat prevents orphan jobs if worker crashes.
+- Queue in Postgres (D-014): one-statement claim with `FOR UPDATE SKIP LOCKED`; 60 s lease extended by heartbeats; every write after claim is guarded by `locked_by`, so a worker that lost its lease writes nothing.
+- Idempotent retry: `finish` is one transaction (`delete` tracks → `insert` → upsert result → `succeeded`) on natural keys.
+- Crashes retry via lease expiry (≤3 attempts), then `sweep_dead` → `failed/WORKER_CRASHED`; handled errors fail immediately — no job stays `processing`.
 - Granular error codes (`CORRUPT_FILE`, `DURATION_EXCEEDED`, `UNSUPPORTED_FORMAT`, `YOUTUBE_BLOCKED`, `DECODE_ERROR`).
 
 ## 6. CI/CD & rollback

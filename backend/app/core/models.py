@@ -82,3 +82,12 @@ class PlayerTrack:
     possession_frames: int
     heatmap: dict[str, Any]
     track: list[list[float]]
+
+
+@dataclass(frozen=True, slots=True)
+class JobOutcome:
+    """Everything a successful run persists. Track rows' `job_id` is ignored on write."""
+
+    stats: dict[str, Any]
+    annotated_key: str
+    tracks: tuple[PlayerTrack, ...] = ()

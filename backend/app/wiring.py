@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from .adapters.db import PostgresHealthCheck, create_db_engine
+from .adapters.pg_queue import PostgresJobQueue
 from .adapters.pg_repos import (
     PostgresJobRepo,
     PostgresResultRepo,
@@ -9,7 +10,15 @@ from .adapters.pg_repos import (
     PostgresVideoRepo,
 )
 from .config import Settings
-from .core.ports import HealthCheck, JobRepo, ResultRepo, SessionRepo, UserRepo, VideoRepo
+from .core.ports import (
+    HealthCheck,
+    JobQueue,
+    JobRepo,
+    ResultRepo,
+    SessionRepo,
+    UserRepo,
+    VideoRepo,
+)
 
 
 @dataclass(frozen=True, slots=True)
@@ -21,6 +30,7 @@ class Container:
     videos: VideoRepo
     jobs: JobRepo
     results: ResultRepo
+    queue: JobQueue
 
 
 def build_container(settings: Settings) -> Container:
@@ -33,4 +43,5 @@ def build_container(settings: Settings) -> Container:
         videos=PostgresVideoRepo(engine),
         jobs=PostgresJobRepo(engine),
         results=PostgresResultRepo(engine),
+        queue=PostgresJobQueue(engine),
     )
