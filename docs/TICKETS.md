@@ -88,7 +88,7 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Scope:** create Fly app (web+worker process groups), Neon DB, storage bucket; manual `flyctl deploy`; set secrets; run `yt-dlp --dump-single-json <sample>` from the prod machine and record the result.
 - **Acceptance:** `https://<app>/health` ok; decision D-xxx records whether YouTube works from prod and which mitigation (none/cookies/proxy) is planned.
 - **Verify:** `curl -fsS https://<app>/health`
-- **Done notes:** _
+- **Done notes:** **Partial (owner deferred the deploy until the app is complete locally).** YouTube spike done from GitHub-hosted runners (datacenter IPs) via `youtube-spike.yml`: blocked with "Sign in to confirm you're not a bot", with and without a JS runtime — see D-010. Still open: Fly app + Neon + bucket + first deploy + `/health` (tracked as F-005, do before T-100).
 
 ## S2 · Database & job queue (55 m)
 
@@ -433,4 +433,5 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - [ ] **F-001** (T-091) `serve_spa` joins the raw URL path onto the static dir without confirming the resolved path stays inside it — add a `realpath` containment check (path traversal).
 - [ ] **F-002** (devops) Node 20 is past EOL — move the Dockerfile build stage and CI to Node 22 together.
 - [ ] **F-003** (backend-api) `pydantic` and `sqlalchemy` are unpinned in `backend/requirements.txt`; local dev ruff differs from the pinned 0.4.8 — pin and bump deliberately.
+- [ ] **F-005** (devops, before T-100) Finish T-014: Fly app (web+worker), Neon, bucket, first deploy, `/health` live; re-run the YouTube spike from the prod worker (`fly ssh console`) and update D-010. Pick the mitigation (none / cookies / proxy) for A1.
 - [ ] **F-004** (T-020) Remove the "exit 5 = ok" allowance from the CI integration step once integration tests exist.

@@ -68,3 +68,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** `*.ts` gitignore swallowed TypeScript sources; non-existent `api:app` uvicorn target; typecheck checking zero files (AI_USAGE #2, #3).
 **Explain-it-in-review:** "Every push and PR runs three least-privilege jobs with SHA-pinned actions: backend lint/design/tests against real Postgres, frontend lint/typecheck/build, and a Docker build that is actually started and health-checked — which is how we found the image could never have booted."
 **Next:** T-014 First deploy + day-1 YouTube spike
+
+---
+
+## 2026-10-01 17:40 IST — T-014 YouTube spike (partial; deploy deferred) (agent: devops)
+**What changed:** Added `.github/workflows/youtube-spike.yml` (manual or on change; least-privilege, SHA-pinned) that runs yt-dlp metadata + a ≤360p download from a GitHub-hosted runner, once without and once with the deno JS runtime, and reports WORKS / METADATA_ONLY / BLOCKED in the summary and log.
+**Why:** The brief warns YouTube blocks cloud IPs and A1 depends on a YouTube URL; the owner deferred the deploy, and this session's network policy blocks both Fly and YouTube, so a datacenter-IP runner is the closest available stand-in for prod.
+**Decisions:** D-010 — blocked from cloud IPs; baseline mitigation is a clean `YOUTUBE_BLOCKED` error with an upload suggestion; cookies vs proxy left to the owner.
+**Verification:** run 36859379841 — both variants `ERROR: [youtube] jNQXAC9IVRw: Sign in to confirm you're not a bot`, metadata rc=1, download rc=1. First run hid stderr in the step summary only; fixed to echo it into the log.
+**AI mistakes caught:** none.
+**Explain-it-in-review:** "We tested YouTube from datacenter IPs on day 1 rather than at the end: it demands sign-in from cloud hosts regardless of yt-dlp's JS runtime, so the product degrades to a clear 'upload the file instead' error and the live demo needs cookies or a proxy."
+**Next:** T-020 Alembic + initial schema (deploy itself tracked as F-005)
