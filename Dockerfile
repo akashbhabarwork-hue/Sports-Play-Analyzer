@@ -32,11 +32,12 @@ RUN useradd -m -u 1000 appuser && \
     chown -R appuser:appuser /app
 
 USER appuser
-ENV BLOB_LOCAL_DIR=/app/blobs
+ENV BLOB_LOCAL_DIR=/app/blobs \
+    STATIC_DIR=/app/backend/static
 
 EXPOSE 8000
 
 HEALTHCHECK --interval=30s --timeout=10s --start-period=5s --retries=3 \
     CMD curl -fsS http://localhost:8000/health || exit 1
 
-CMD ["uvicorn", "app.entrypoints.api:app", "--host", "0.0.0.0", "--port", "8000"]
+CMD ["uvicorn", "--factory", "app.entrypoints.api:create_app", "--host", "0.0.0.0", "--port", "8000"]

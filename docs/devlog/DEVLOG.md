@@ -57,3 +57,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** None.
 **Explain-it-in-review:** "We created a production-ready, multi-stage Dockerfile that builds the React frontend and copies it into a Python backend container running as a non-root user. The local dev environment is spun up with a single `docker compose up` command covering the database, migrations, web API, and async worker."
 **Next:** T-013 CI workflow
+
+---
+
+## 2026-10-01 17:10 IST — T-013 CI workflow (agent: devops)
+**What changed:** Added `.github/workflows/ci.yml` (backend: ruff lint+format, design checker, unit + integration tests with a Postgres 16 service; frontend: lint, typecheck, build; docker: buildx build without push, then run the image against Postgres and smoke-test `/health` and the SPA root). Fixed everything a clean-checkout CI run would have failed on: `.gitignore` `*.ts` rule removed and the lost `frontend/vite.config.ts`, `src/vite-env.d.ts`, `src/api.ts` recreated; `typecheck` now `tsc -b`; ruff lint/format applied; `STATIC_DIR` setting so the image actually serves the SPA and tests don't need a build; uvicorn `--factory app.entrypoints.api:create_app` in Dockerfile and compose; pytest markers registered.
+**Why:** CI/CD requirement "CI on every PR and push: lint, test, build", least privilege, pinned actions.
+**Decisions:** D-007 (`*.ts` ignore), D-008 (`STATIC_DIR`), D-009 (CI shape, SHA pins).
+**Verification:** ruff 0.4.8 check + format clean; design checker clean; `pytest -m "not integration and not model"` 5 passed; integration run exits 5 (no tests yet, allowed); frontend lint/typecheck/build green and typecheck proven to catch a planted error; `uvicorn --factory` started locally, `/health` 503 without DB, SPA route served; actionlint clean; every `uses:` SHA resolved via `git ls-remote` and confirmed to be a commit.
+**AI mistakes caught:** `*.ts` gitignore swallowed TypeScript sources; non-existent `api:app` uvicorn target; typecheck checking zero files (AI_USAGE #2, #3).
+**Explain-it-in-review:** "Every push and PR runs three least-privilege jobs with SHA-pinned actions: backend lint/design/tests against real Postgres, frontend lint/typecheck/build, and a Docker build that is actually started and health-checked — which is how we found the image could never have booted."
+**Next:** T-014 First deploy + day-1 YouTube spike

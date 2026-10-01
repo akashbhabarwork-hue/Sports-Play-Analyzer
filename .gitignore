@@ -51,7 +51,9 @@ storage/
 *.webm
 *.mkv
 *.avi
-*.ts
+# Transport-stream video; not *.ts, which would also match TypeScript sources
+*.m2ts
+*.mts
 
 # Model Weights
 *.onnx
