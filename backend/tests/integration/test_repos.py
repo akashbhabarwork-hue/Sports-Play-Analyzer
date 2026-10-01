@@ -21,16 +21,14 @@ UPLOAD = NewVideo(source_type="upload", original_filename="clip.mp4", storage_ke
 
 @pytest.fixture
 def repos(engine):
-    # Repos commit their own transactions, so wipe the data after each test.
-    yield {
+    # Tables are wiped after each test by the autouse `clean_db` fixture (conftest).
+    return {
         "users": PostgresUserRepo(engine),
         "sessions": PostgresSessionRepo(engine),
         "videos": PostgresVideoRepo(engine),
         "jobs": PostgresJobRepo(engine),
         "results": PostgresResultRepo(engine),
     }
-    with engine.begin() as conn:
-        conn.execute(text("TRUNCATE users CASCADE"))
 
 
 @pytest.fixture

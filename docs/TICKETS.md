@@ -139,14 +139,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** `pytest -q -k "me or csrf"`
 - **Done notes:** `current_user` on an `/api` router (structural test guards it), `GET /api/me`, strict CSRF middleware (`X-Requested-With: fetch` + trusted Origin/Referer; `TRUSTED_ORIGINS` for Vite dev), UPPER_SNAKE error codes, frontend client sends the header. 32 tests for `-k "me or csrf"` (76 total): no/garbage/expired cookie → 401 envelope, `/api/me` fields, foreign Origin / missing header → 403, logout needs headers. Live: `/api/me` 401, plain curl POST 403, same-origin POST 204. See D-016.
 
-### [ ] T-032 · Test harness: login_as + two-user clients — `MUST` `5m`
+### [x] T-032 · Test harness: login_as + two-user clients — `MUST` `5m`
 - **Agent:** qa
 - **Depends on:** T-031
 - **Why:** "At least one authorization test (user A cannot read user B's job)".
 - **Scope:** conftest fixtures (`settings`, `migrated_db`, `container`, `client`, `login_as`), truncate between tests.
 - **Acceptance:** a placeholder test creates two users with separate cookie jars and hits `/api/me` as each.
 - **Verify:** `pytest -q -m integration -k two_users`
-- **Done notes:** _
+- **Done notes:** Shared fixtures in `tests/integration/conftest.py`: `engine` (= migrated_db), `settings`/`settings_factory`, `container`/`container_factory` (real repos + `FakeGoogle`), `make_client` (one cookie jar per client), `client`, `login_as` (via the real `login_user` service), `csrf_headers`, autouse `clean_db` (TRUNCATE after every test — proven load-bearing: disabling it fails 5 tests). `test_me.py` / `test_auth_flow.py` refactored onto them; per-file truncates removed. `test_two_users.py`: separate identities, per-session logout, identity only from the cookie. 79 tests pass.
 
 ## S4 · Ingestion (1 h 10 m)
 

@@ -134,3 +134,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** put the CSRF helper in `core/` importing `urllib.parse`; the design checker flags `urllib` as I/O — moved to `entrypoints/` where HTTP concerns belong.
 **Explain-it-in-review:** "Every /api route hangs off one router that requires a valid session, and a test fails if one doesn't. Writes additionally need our custom header and our Origin, so a malicious page can't make the browser act with the user's cookie."
 **Next:** T-032 Test harness: login_as + two-user clients
+
+---
+
+## 2026-10-01 23:55 IST — T-032 Test harness: login_as + two-user clients (agent: qa)
+**What changed:** `backend/tests/integration/conftest.py` gained app-level fixtures (`settings`, `settings_factory`, `container`, `container_factory`, `make_client`, `client`, `login_as`, `csrf_headers`, `google`/`FakeGoogle`) and an autouse `clean_db` that truncates after every integration test. `test_me.py` and `test_auth_flow.py` now use them (≈40 lines of duplicated setup removed); repo/queue tests rely on `clean_db` instead of their own truncates. New `test_two_users.py`.
+**Why:** A3 ("user B cannot read user A's job") and every job-scoped endpoint test from S4 on need two independent logged-in users in one test.
+**Decisions:** `login_as` issues sessions through the real `services.auth.login_user` (same code as the OAuth callback, minus Authlib) — fast and faithful; the full callback path stays covered by `test_auth_flow.py`.
+**Verification:** 79 passed (3 for `-k two_users`) on local Postgres 16; ruff + design checker clean. Mutation: disabling `clean_db` fails 5 tests through leaked rows, so test isolation is real.
+**AI mistakes caught:** first version imported helpers with `from .conftest import …`, which fails because the test dirs are not packages — exposed them as `settings_factory` / `container_factory` fixtures instead.
+**Explain-it-in-review:** "Each TestClient is its own browser with its own cookie jar; `login_as` mints a real session for it through the same service the OAuth callback uses, and every integration test starts from empty tables."
+**Next:** S3 stage summary once T-030's manual Google login is confirmed; then S4 — T-040 BlobStore (local + S3)
