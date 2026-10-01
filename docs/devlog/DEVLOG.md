@@ -145,3 +145,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** first version imported helpers with `from .conftest import …`, which fails because the test dirs are not packages — exposed them as `settings_factory` / `container_factory` fixtures instead.
 **Explain-it-in-review:** "Each TestClient is its own browser with its own cookie jar; `login_as` mints a real session for it through the same service the OAuth callback uses, and every integration test starts from empty tables."
 **Next:** S3 stage summary once T-030's manual Google login is confirmed; then S4 — T-040 BlobStore (local + S3)
+
+---
+
+## 2026-10-02 00:30 IST — T-040 BlobStore (local + S3) (agent: backend-api)
+**What changed:** `BlobStore` protocol in `core/ports.py`; `core/blob_keys.py` (`validate_blob_key`, `upload_key`, `annotated_key`, `clamp_presign_ttl`); `adapters/blob_local.py` and `adapters/blob_s3.py`; `BLOB_STORES` registry and `Container.blobs` in `wiring.py`; blob/S3 settings with validation in `config.py`; `InvalidBlobKeyError`, `BlobNotFoundError`. `boto3` runtime dep, `moto` dev dep. `.env.example`/README storage docs fixed (`BLOB_LOCAL_DIR` said `/data/blobs`; Docker uses `/app/blobs`).
+**Threats blocked:** path traversal and symlink escape on local storage, partial-file reads, long-lived public video links, credentials in logs.
+**Decisions:** D-017.
+**Verification:** 120 tests pass (41 for `-k blob`), ruff + design checker clean. Mutation: removing the local root-containment check fails the symlink-escape test.
+**AI mistakes caught:** the first S3 test client was built without SigV4, so the presigned URL used the legacy `Expires=` format and the TTL assertion failed — tests now build the client through the production `make_s3_client`; one config test was written in a needlessly convoluted way and rewritten plainly.
+**Explain-it-in-review:** "Storage is one protocol with a disk and an S3 implementation picked by config; every key is validated, local paths can't escape the root even through symlinks, writes are atomic, and videos are served via 5-minute signed links or streamed by the API."
+**Next:** T-041 Upload endpoint with content validation

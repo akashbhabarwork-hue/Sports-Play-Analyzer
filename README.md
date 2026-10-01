@@ -35,7 +35,10 @@ Rollback: Actions → Rollback → enter previous sha. First-time setup: see [do
 | `SESSION_TTL_DAYS` | `7` | Session lifetime |
 | `TRUSTED_ORIGINS` | `""` | Extra origins (comma-separated) allowed to send unsafe requests; e.g. Vite `http://localhost:5173` |
 | `LEASE_SECONDS` | `60` | Worker lease on a claimed job, extended by heartbeats |
-| `BLOB_BACKEND` | `local` | `local` for disk storage or `s3` for S3-compatible |
+| `BLOB_BACKEND` | `local` | `local` (directory) or `s3` (Tigris/R2/AWS); production requires `s3` |
+| `BLOB_LOCAL_DIR` | `<repo>/blobs` | Directory for `local` (Docker: `/app/blobs`) |
+| `S3_ENDPOINT_URL` / `S3_BUCKET` / `S3_REGION` | `""` | S3-compatible storage; empty endpoint = AWS |
+| `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | `""` | Storage credentials (required for `s3`) |
 | `SAMPLE_FPS` | `5` | Video decoding sample rate (frames/sec) |
 | `CONF_THRESHOLD` | `0.35` | Object detector confidence threshold |
 | `MAX_VIDEO_DURATION_SECONDS` | `60` | Maximum allowed duration for processing |

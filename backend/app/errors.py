@@ -41,3 +41,17 @@ class OAuthLoginError(AppError):
 
     status_code = 400
     code = "OAUTH_FAILED"
+
+
+class InvalidBlobKeyError(AppError):
+    """A storage key failed validation (traversal, bad characters, too long)."""
+
+    status_code = 400
+    code = "INVALID_STORAGE_KEY"
+
+
+class BlobNotFoundError(AppError):
+    """No object is stored under the key."""
+
+    status_code = 404
+    code = "NOT_FOUND"
