@@ -156,3 +156,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** the first S3 test client was built without SigV4, so the presigned URL used the legacy `Expires=` format and the TTL assertion failed — tests now build the client through the production `make_s3_client`; one config test was written in a needlessly convoluted way and rewritten plainly.
 **Explain-it-in-review:** "Storage is one protocol with a disk and an S3 implementation picked by config; every key is validated, local paths can't escape the root even through symlinks, writes are atomic, and videos are served via 5-minute signed links or streamed by the API."
 **Next:** T-041 Upload endpoint with content validation
+
+---
+
+## 2026-10-02 01:15 IST — T-041 Upload endpoint with content validation (agent: backend-api, auth-security review)
+**What changed:** `core/file_sniff.py`, `core/video_rules.py`, `VideoProbe` model and `VideoProber` protocol, `adapters/ffprobe.py`, `services/submit.py` (`submit_upload_job`), `entrypoints/limits.py` (`BodySizeLimitMiddleware`, `copy_capped`), `POST /api/jobs/upload` + `JobAccepted` schema, `NewVideo` gains app-generated `id` + probe fields (repo inserts them), new 413/415/422 errors, `MAX_UPLOAD_SIZE_BYTES` / `MAX_VIDEO_DURATION_SECONDS` / `UPLOAD_TMP_DIR` settings, `Container.prober`. `python-multipart` pinned; CI backend job installs ffmpeg.
+**Threats blocked:** disk/memory exhaustion via huge or length-less uploads, extension spoofing, malformed/huge media, temp-file leaks, jobs referencing missing files.
+**Decisions:** D-018; follow-up F-006 (aliases + validation-error envelope).
+**Verification:** 148 tests pass (31 for `-k upload`) on local Postgres 16 with real ffprobe; ruff + design checker + actionlint clean. Mutations: never removing the temp dir fails 5 tests; skipping the sniff fails the fake-file case. Live server: valid clip 202 + one blob stored + empty temp dir; fake 415; missing CSRF headers 403.
+**AI mistakes caught:** (1) an integration assertion that the body stream was cut off early could never hold — `TestClient` buffers the whole request body first — moved that proof to ASGI-level unit tests; (2) first draft of the size cap would have been turned into a 400 by FastAPI's form-parse error handling, so the middleware swallows the inner response and sends 413 itself; (3) `python-multipart` had never been added to requirements (only present in this environment).
+**Explain-it-in-review:** "Uploads are judged by content, cheapest check first: size at the ASGI layer before parsing, magic bytes, then ffprobe for decodability and duration. The file is stored under a fresh id before the job row exists, so the worker never sees a job without its video, and the temp dir is always removed."
+**Next:** T-042 URL submit endpoint (syntactic SSRF rules)

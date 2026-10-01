@@ -10,3 +10,8 @@ class MeResponse(BaseModel):
     email: str | None
     name: str | None
     avatar_url: str | None
+
+
+class JobAccepted(BaseModel):
+    job_id: UUID
+    status: str

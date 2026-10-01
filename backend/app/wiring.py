@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from .adapters.blob_local import LocalBlobStore
 from .adapters.blob_s3 import S3BlobStore, make_s3_client
 from .adapters.db import PostgresHealthCheck, create_db_engine
+from .adapters.ffprobe import FfprobeVideoProber
 from .adapters.oauth_google import GoogleOAuthClient
 from .adapters.pg_queue import PostgresJobQueue
 from .adapters.pg_repos import (
@@ -23,6 +24,7 @@ from .core.ports import (
     ResultRepo,
     SessionRepo,
     UserRepo,
+    VideoProber,
     VideoRepo,
 )
 
@@ -38,6 +40,7 @@ class Container:
     results: ResultRepo
     queue: JobQueue
     blobs: BlobStore
+    prober: VideoProber
     # None when Google login is not configured (local dev without credentials).
     oauth: OAuthProvider | None = None
 
@@ -72,6 +75,7 @@ def build_container(settings: Settings) -> Container:
         results=PostgresResultRepo(engine),
         queue=PostgresJobQueue(engine),
         blobs=BLOB_STORES[settings.blob_backend](settings),
+        prober=FfprobeVideoProber(),
         oauth=(
             GoogleOAuthClient(settings.google_client_id, settings.google_client_secret)
             if settings.oauth_configured

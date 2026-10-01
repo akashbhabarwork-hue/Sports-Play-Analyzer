@@ -45,6 +45,12 @@ S3_ACCESS_KEY_ID = os.getenv("S3_ACCESS_KEY_ID", "")
 S3_SECRET_ACCESS_KEY = os.getenv("S3_SECRET_ACCESS_KEY", "")
 BLOB_BACKENDS = ("local", "s3")
 
+# ---- ingestion limits ----
+MAX_UPLOAD_SIZE_BYTES = int(os.getenv("MAX_UPLOAD_SIZE_BYTES", str(100 * 1024 * 1024)))
+MAX_VIDEO_DURATION_SECONDS = int(os.getenv("MAX_VIDEO_DURATION_SECONDS", "60"))
+# Per-request temp dirs for uploads live here (default: the system temp dir).
+UPLOAD_TMP_DIR = os.getenv("UPLOAD_TMP_DIR", "")
+
 REQUIRED_IN_PRODUCTION = ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "SESSION_SECRET")
 
 
@@ -70,6 +76,9 @@ class Settings:
     s3_region: str = ""
     s3_access_key_id: str = ""
     s3_secret_access_key: str = ""
+    max_upload_bytes: int = 100 * 1024 * 1024
+    max_video_seconds: int = 60
+    upload_tmp_dir: str = ""
 
     @property
     def oauth_configured(self) -> bool:
@@ -142,6 +151,9 @@ def load_settings() -> Settings:
         s3_region=S3_REGION,
         s3_access_key_id=S3_ACCESS_KEY_ID,
         s3_secret_access_key=S3_SECRET_ACCESS_KEY,
+        max_upload_bytes=MAX_UPLOAD_SIZE_BYTES,
+        max_video_seconds=MAX_VIDEO_DURATION_SECONDS,
+        upload_tmp_dir=UPLOAD_TMP_DIR,
     )
     validate_settings(settings)
     return settings

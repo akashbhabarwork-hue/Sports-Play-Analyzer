@@ -11,6 +11,7 @@ from sqlalchemy import create_engine, text
 
 from app.adapters.blob_local import LocalBlobStore
 from app.adapters.db import PostgresHealthCheck
+from app.adapters.ffprobe import FfprobeVideoProber
 from app.adapters.pg_queue import PostgresJobQueue
 from app.adapters.pg_repos import (
     PostgresJobRepo,
@@ -98,6 +99,7 @@ def make_container(engine, settings: Settings, oauth=None, blobs=None) -> Contai
         results=PostgresResultRepo(engine),
         queue=PostgresJobQueue(engine),
         blobs=blobs,
+        prober=FfprobeVideoProber(),
         oauth=oauth,
     )
 

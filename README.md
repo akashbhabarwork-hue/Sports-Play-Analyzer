@@ -42,7 +42,8 @@ Rollback: Actions → Rollback → enter previous sha. First-time setup: see [do
 | `SAMPLE_FPS` | `5` | Video decoding sample rate (frames/sec) |
 | `CONF_THRESHOLD` | `0.35` | Object detector confidence threshold |
 | `MAX_VIDEO_DURATION_SECONDS` | `60` | Maximum allowed duration for processing |
-| `MAX_UPLOAD_SIZE_BYTES` | `104857600` | Maximum allowed upload size (100 MB) |
+| `MAX_UPLOAD_SIZE_BYTES` | `104857600` | Maximum upload size (100 MB); enforced before and while the body is read |
+| `UPLOAD_TMP_DIR` | system temp | Parent dir for per-request upload temp dirs (always removed) |
 
 ## API
 `GET /auth/login`, `GET /auth/callback`, `POST /auth/logout`, `GET /api/me`,
