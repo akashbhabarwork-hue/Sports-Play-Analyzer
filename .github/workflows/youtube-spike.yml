@@ -1,0 +1,80 @@
+name: YouTube spike
+
+# T-014: does YouTube serve yt-dlp from a cloud/datacenter IP?
+# GitHub-hosted runners sit on Azure IPs, a stand-in for the prod host until we deploy.
+# The jobs stay green either way; the outcome is in the run summary and a warning annotation.
+on:
+  workflow_dispatch:
+    inputs:
+      url:
+        description: YouTube URL to probe
+        default: https://www.youtube.com/watch?v=jNQXAC9IVRw
+  push:
+    paths:
+      - .github/workflows/youtube-spike.yml
+
+permissions: {}
+
+jobs:
+  probe:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 10
+    permissions:
+      contents: read
+    strategy:
+      fail-fast: false
+      matrix:
+        # Without a JS runtime yt-dlp cannot solve YouTube's player challenges; with deno it can.
+        variant: [no-js-runtime, deno]
+    env:
+      URL: ${{ inputs.url || 'https://www.youtube.com/watch?v=jNQXAC9IVRw' }}
+      YT_DLP_VERSION: "2026.8.19"
+    steps:
+      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        with:
+          python-version: "3.12"
+      - name: Install yt-dlp
+        env:
+          EXTRAS: ${{ matrix.variant == 'deno' && 'default,deno' || 'default' }}
+        run: |
+          pip install "yt-dlp[$EXTRAS]==$YT_DLP_VERSION"
+          yt-dlp --version
+      - name: Probe metadata and download
+        env:
+          VARIANT: ${{ matrix.variant }}
+        run: |
+          set +e
+          yt-dlp --dump-single-json --skip-download --no-playlist "$URL" > meta.json 2> meta.err
+          meta_rc=$?
+          yt-dlp --no-playlist -f "best[height<=360][ext=mp4]/best[height<=360]/worst" \
+            -o "clip.%(ext)s" "$URL" > dl.out 2> dl.err
+          dl_rc=$?
+          clip=$(ls clip.* 2>/dev/null | head -1)
+          size=$([ -n "$clip" ] && stat -c %s "$clip" || echo 0)
+
+          if [ "$meta_rc" -eq 0 ] && [ "$dl_rc" -eq 0 ] && [ "$size" -gt 0 ]; then
+            verdict="WORKS"
+          elif [ "$meta_rc" -eq 0 ]; then
+            verdict="METADATA_ONLY"
+          else
+            verdict="BLOCKED"
+          fi
+
+          {
+            echo "## YouTube spike — $VARIANT: **$verdict**"
+            echo "- URL: $URL"
+            echo "- metadata exit code: $meta_rc"
+            if [ "$meta_rc" -eq 0 ]; then
+              python -c "import json; m=json.load(open('meta.json')); print(f\"- title: {m.get('title')} · duration: {m.get('duration')} s · formats: {len(m.get('formats') or [])}\")"
+            fi
+            echo "- download exit code: $dl_rc · file: ${clip:-none} · bytes: $size"
+            echo
+            echo "<details><summary>stderr (last 20 lines)</summary>"
+            echo
+            echo '```'
+            tail -n 20 meta.err dl.err
+            echo '```'
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          echo "::warning title=YouTube spike ($VARIANT)::$verdict (metadata rc=$meta_rc, download rc=$dl_rc, bytes=$size)"
