@@ -18,6 +18,18 @@ STATIC_DIR = os.getenv(
 LEASE_SECONDS = int(os.getenv("LEASE_SECONDS", "60"))
 WORKER_ID = os.getenv("WORKER_ID", f"{socket.gethostname()}-{os.getpid()}")
 
+# ---- auth ----
+# Secrets have no usable default: in production load_settings() refuses to start without
+# them; in dev, /auth/login answers "not configured" instead. Real values live only in .env
+# or host secrets.
+GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
+SESSION_SECRET = os.getenv("SESSION_SECRET", "")
+COOKIE_SECURE = os.getenv("COOKIE_SECURE", "true").lower() == "true"
+SESSION_TTL_DAYS = int(os.getenv("SESSION_TTL_DAYS", "7"))
+
+REQUIRED_IN_PRODUCTION = ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "SESSION_SECRET")
+
 
 @dataclass(frozen=True, slots=True)
 class Settings:
@@ -28,10 +40,42 @@ class Settings:
     static_dir: str = ""
     lease_seconds: int = 60
     worker_id: str = "worker"
+    google_client_id: str = ""
+    google_client_secret: str = ""
+    session_secret: str = ""
+    cookie_secure: bool = True
+    session_ttl_days: int = 7
+
+    @property
+    def oauth_configured(self) -> bool:
+        return bool(self.google_client_id and self.google_client_secret and self.session_secret)
+
+    @property
+    def session_cookie_name(self) -> str:
+        # The __Host- prefix makes browsers require Secure, Path=/ and no Domain.
+        return "__Host-sid" if self.cookie_secure else "sid"
+
+    @property
+    def oauth_redirect_uri(self) -> str:
+        # Built from config, never from request headers, so a proxy cannot spoof it.
+        return f"{self.app_origin.rstrip('/')}/auth/callback"
+
+
+def validate_settings(settings: Settings) -> None:
+    if settings.app_env != "production":
+        return
+    values = {
+        "GOOGLE_CLIENT_ID": settings.google_client_id,
+        "GOOGLE_CLIENT_SECRET": settings.google_client_secret,
+        "SESSION_SECRET": settings.session_secret,
+    }
+    missing = [name for name in REQUIRED_IN_PRODUCTION if not values[name]]
+    if missing:
+        raise RuntimeError(f"Missing required settings in production: {', '.join(missing)}")
 
 
 def load_settings() -> Settings:
-    return Settings(
+    settings = Settings(
         app_env=APP_ENV,
         app_origin=APP_ORIGIN,
         database_url=DATABASE_URL,
@@ -39,4 +83,11 @@ def load_settings() -> Settings:
         static_dir=STATIC_DIR,
         lease_seconds=LEASE_SECONDS,
         worker_id=WORKER_ID,
+        google_client_id=GOOGLE_CLIENT_ID,
+        google_client_secret=GOOGLE_CLIENT_SECRET,
+        session_secret=SESSION_SECRET,
+        cookie_secure=COOKIE_SECURE,
+        session_ttl_days=SESSION_TTL_DAYS,
     )
+    validate_settings(settings)
+    return settings

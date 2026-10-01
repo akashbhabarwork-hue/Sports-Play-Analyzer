@@ -26,16 +26,18 @@ services:
 
   web:
     build: .
-    command: ["uvicorn", "--factory", "app.entrypoints.api:create_app", "--host", "0.0.0.0", "--port", "8000"]
+    command: ["uvicorn", "--factory", "app.entrypoints.api:create_app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
     ports:
       - "8000:8000"
     environment:
       - DATABASE_URL=postgresql+psycopg://postgres:postgres_password@db:5432/sports_analyzer
       - BLOB_LOCAL_DIR=/app/blobs
       - BLOB_BACKEND=local
-      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-placeholder}
-      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-placeholder}
-      - GOOGLE_REDIRECT_URI=http://localhost:8000/auth/callback
+      - APP_ORIGIN=http://localhost:8000
+      # Empty unless set in .env: login then answers "not configured" instead of failing.
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - SESSION_SECRET=${SESSION_SECRET:-}
       - COOKIE_SECURE=false
     volumes:
       - blobs_data:/app/blobs

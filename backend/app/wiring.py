@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 
 from .adapters.db import PostgresHealthCheck, create_db_engine
+from .adapters.oauth_google import GoogleOAuthClient
 from .adapters.pg_queue import PostgresJobQueue
 from .adapters.pg_repos import (
     PostgresJobRepo,
@@ -14,6 +15,7 @@ from .core.ports import (
     HealthCheck,
     JobQueue,
     JobRepo,
+    OAuthProvider,
     ResultRepo,
     SessionRepo,
     UserRepo,
@@ -31,6 +33,8 @@ class Container:
     jobs: JobRepo
     results: ResultRepo
     queue: JobQueue
+    # None when Google login is not configured (local dev without credentials).
+    oauth: OAuthProvider | None = None
 
 
 def build_container(settings: Settings) -> Container:
@@ -44,4 +48,9 @@ def build_container(settings: Settings) -> Container:
         jobs=PostgresJobRepo(engine),
         results=PostgresResultRepo(engine),
         queue=PostgresJobQueue(engine),
+        oauth=(
+            GoogleOAuthClient(settings.google_client_id, settings.google_client_secret)
+            if settings.oauth_configured
+            else None
+        ),
     )

@@ -128,7 +128,7 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Scope:** Authlib Starlette client (S256), `/auth/login`, `/auth/callback`, `/auth/logout`; transient SessionMiddleware cookie for OAuth state only; our `__Host-sid` httpOnly Secure SameSite=Lax cookie; hashed session tokens; decision entry for the async-route exception.
 - **Acceptance:** local login with a real Google test account works; cookie flags verified in devtools; logout invalidates the session row; no token/secret in logs.
 - **Verify:** manual login; `pytest -q -k auth`
-- **Done notes:** _
+- **Done notes:** **Code complete; waiting on the owner's manual Google login + devtools cookie check** (needs a real OAuth client; cannot be done by the agent). Authlib S256 PKCE + state + nonce, `/auth/login`, `/auth/callback`, `POST /auth/logout`, hashed rotated sessions in `__Host-sid`/`sid`, transient `oauth_tx` cookie, D-015 async exception. Tests: 6 unit (real Authlib redirect offline, config, 503, access log) + 7 integration (fake provider: cookie flags secure/dev, hash-only storage, rotation, logout, POST-only, failure redirect, nothing secret logged); mutations on rotation and hashing caught. Found and fixed: uvicorn access log leaked OAuth `code`/`state`.
 
 ### [ ] T-031 · current_user, /api/me, CSRF origin check — `MUST` `10m`
 - **Agent:** auth-security
