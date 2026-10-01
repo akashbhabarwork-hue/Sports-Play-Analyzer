@@ -1,10 +1,10 @@
 import logging
-from sqlalchemy import create_engine
+
+from sqlalchemy import create_engine, text
 from sqlalchemy.exc import SQLAlchemyError
-from sqlalchemy import text
-from ..core.ports import HealthCheck
 
 logger = logging.getLogger(__name__)
+
 
 class PostgresHealthCheck:
     def __init__(self, database_url: str):

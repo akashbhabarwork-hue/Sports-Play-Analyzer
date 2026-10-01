@@ -72,14 +72,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** `docker compose up --build -d && curl -fsS localhost:8000/health`
 - **Done notes:** Built multi-stage Dockerfile, docker-compose.yml with 4 services, and a dummy worker entrypoint. Docker verification skipped locally per request.
 
-### [ ] T-013 · CI workflow — `MUST` `15m` `[review-plan]`
+### [x] T-013 · CI workflow — `MUST` `15m` `[review-plan]`
 - **Agent:** devops
 - **Depends on:** T-012
 - **Why:** CI/CD: "CI on every PR and push: lint, test, build"; least-privilege; pinned actions.
 - **Scope:** `.github/workflows/ci.yml` from skill template; resolve real SHAs for every action (no guessing); postgres service; frontend job; docker build job.
 - **Acceptance:** workflow green on GitHub; `permissions: {}` top-level; every `uses:` has a 40-char SHA + version comment.
 - **Verify:** push branch, check Actions tab; `grep -n "uses:" .github/workflows/ci.yml`
-- **Done notes:** _
+- **Done notes:** `ci.yml` with backend / frontend / docker jobs, all actions SHA-pinned, `permissions: {}`. Docker job also runs the image against Postgres and smoke-tests `/health`. Fixed what CI exposed: `*.ts` gitignore rule (recreated `vite.config.ts`, `vite-env.d.ts`, `api.ts`), ruff lint/format, `STATIC_DIR` setting, uvicorn `--factory` target, no-op `typecheck` script. See D-007..D-009.
 
 ### [ ] T-014 · First deploy + day-1 YouTube spike — `MUST` `20m` `[review-plan]`
 - **Agent:** devops
@@ -430,4 +430,7 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - [ ] **T-B06** Kalman filter / appearance re-ID to reduce ID switches — cv-pipeline
 
 ## Follow-ups (added by /review or acceptance runs)
-_(none yet)_
+- [ ] **F-001** (T-091) `serve_spa` joins the raw URL path onto the static dir without confirming the resolved path stays inside it — add a `realpath` containment check (path traversal).
+- [ ] **F-002** (devops) Node 20 is past EOL — move the Dockerfile build stage and CI to Node 22 together.
+- [ ] **F-003** (backend-api) `pydantic` and `sqlalchemy` are unpinned in `backend/requirements.txt`; local dev ruff differs from the pinned 0.4.8 — pin and bump deliberately.
+- [ ] **F-004** (T-020) Remove the "exit 5 = ok" allowance from the CI integration step once integration tests exist.
