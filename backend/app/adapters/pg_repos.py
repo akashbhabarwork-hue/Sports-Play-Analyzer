@@ -28,7 +28,7 @@ R = TypeVar("R")
 T = TypeVar("T")
 
 
-def _db_errors(fn: Callable[P, R]) -> Callable[P, R]:
+def db_errors(fn: Callable[P, R]) -> Callable[P, R]:
     @functools.wraps(fn)
     def wrapper(*args: P.args, **kwargs: P.kwargs) -> R:
         try:
@@ -40,13 +40,13 @@ def _db_errors(fn: Callable[P, R]) -> Callable[P, R]:
     return wrapper
 
 
-def _to(cls: type[T], row: RowMapping | None) -> T | None:
+def row_to(cls: type[T], row: RowMapping | None) -> T | None:
     if row is None:
         return None
     return cls(**{f.name: row[f.name] for f in fields(cls)})
 
 
-def _to_list(cls: type[T], rows: list[RowMapping]) -> list[T]:
+def rows_to(cls: type[T], rows: list[RowMapping]) -> list[T]:
     return [cls(**{f.name: r[f.name] for f in fields(cls)}) for r in rows]
 
 
@@ -54,7 +54,7 @@ class PostgresUserRepo:
     def __init__(self, engine: Engine):
         self.engine = engine
 
-    @_db_errors
+    @db_errors
     def upsert_from_oauth(
         self,
         provider: str,
@@ -71,20 +71,20 @@ class PostgresUserRepo:
             .returning(*users.c)
         )
         with self.engine.begin() as conn:
-            return _to(User, conn.execute(stmt).mappings().one())
+            return row_to(User, conn.execute(stmt).mappings().one())
 
-    @_db_errors
+    @db_errors
     def get(self, user_id: UUID) -> User | None:
         with self.engine.connect() as conn:
             row = conn.execute(select(users).where(users.c.id == user_id)).mappings().first()
-        return _to(User, row)
+        return row_to(User, row)
 
 
 class PostgresSessionRepo:
     def __init__(self, engine: Engine):
         self.engine = engine
 
-    @_db_errors
+    @db_errors
     def create(self, token_hash: bytes, user_id: UUID, expires_at: datetime) -> None:
         with self.engine.begin() as conn:
             conn.execute(
@@ -93,7 +93,7 @@ class PostgresSessionRepo:
                 )
             )
 
-    @_db_errors
+    @db_errors
     def get_user_by_token(self, token_hash: bytes) -> User | None:
         stmt = (
             select(users)
@@ -101,19 +101,19 @@ class PostgresSessionRepo:
             .where(sessions.c.token_hash == token_hash, sessions.c.expires_at > func.now())
         )
         with self.engine.connect() as conn:
-            return _to(User, conn.execute(stmt).mappings().first())
+            return row_to(User, conn.execute(stmt).mappings().first())
 
-    @_db_errors
+    @db_errors
     def delete(self, token_hash: bytes) -> None:
         with self.engine.begin() as conn:
             conn.execute(delete(sessions).where(sessions.c.token_hash == token_hash))
 
-    @_db_errors
+    @db_errors
     def delete_all_for_user(self, user_id: UUID) -> int:
         with self.engine.begin() as conn:
             return conn.execute(delete(sessions).where(sessions.c.user_id == user_id)).rowcount
 
-    @_db_errors
+    @db_errors
     def delete_expired(self) -> int:
         with self.engine.begin() as conn:
             return conn.execute(
@@ -125,19 +125,19 @@ class PostgresVideoRepo:
     def __init__(self, engine: Engine):
         self.engine = engine
 
-    @_db_errors
+    @db_errors
     def get(self, user_id: UUID, video_id: UUID) -> Video | None:
         stmt = select(videos).where(videos.c.id == video_id, videos.c.user_id == user_id)
         with self.engine.connect() as conn:
-            return _to(Video, conn.execute(stmt).mappings().first())
+            return row_to(Video, conn.execute(stmt).mappings().first())
 
-    @_db_errors
+    @db_errors
     def get_for_worker(self, video_id: UUID) -> Video | None:
         with self.engine.connect() as conn:
             row = conn.execute(select(videos).where(videos.c.id == video_id)).mappings().first()
-        return _to(Video, row)
+        return row_to(Video, row)
 
-    @_db_errors
+    @db_errors
     def set_media_for_worker(
         self,
         video_id: UUID,
@@ -168,7 +168,7 @@ class PostgresJobRepo:
     def __init__(self, engine: Engine):
         self.engine = engine
 
-    @_db_errors
+    @db_errors
     def create_with_video(self, user_id: UUID, new_video: NewVideo, config: dict[str, Any]) -> Job:
         # One transaction: a failed job insert must not leave an orphan video row.
         with self.engine.begin() as conn:
@@ -193,15 +193,15 @@ class PostgresJobRepo:
                 .mappings()
                 .one()
             )
-        return _to(Job, row)
+        return row_to(Job, row)
 
-    @_db_errors
+    @db_errors
     def get(self, user_id: UUID, job_id: UUID) -> Job | None:
         stmt = select(jobs).where(jobs.c.id == job_id, jobs.c.user_id == user_id)
         with self.engine.connect() as conn:
-            return _to(Job, conn.execute(stmt).mappings().first())
+            return row_to(Job, conn.execute(stmt).mappings().first())
 
-    @_db_errors
+    @db_errors
     def list_for_user(self, user_id: UUID, limit: int = 50) -> list[Job]:
         # Served by ix_jobs_user_created (user_id, created_at DESC).
         stmt = (
@@ -211,12 +211,12 @@ class PostgresJobRepo:
             .limit(limit)
         )
         with self.engine.connect() as conn:
-            return _to_list(Job, conn.execute(stmt).mappings().all())
+            return rows_to(Job, conn.execute(stmt).mappings().all())
 
-    @_db_errors
+    @db_errors
     def get_for_worker(self, job_id: UUID) -> Job | None:
         with self.engine.connect() as conn:
-            return _to(
+            return row_to(
                 Job, conn.execute(select(jobs).where(jobs.c.id == job_id)).mappings().first()
             )
 
@@ -225,7 +225,7 @@ class PostgresResultRepo:
     def __init__(self, engine: Engine):
         self.engine = engine
 
-    @_db_errors
+    @db_errors
     def get(self, user_id: UUID, job_id: UUID) -> JobResult | None:
         stmt = (
             select(job_results)
@@ -233,9 +233,9 @@ class PostgresResultRepo:
             .where(job_results.c.job_id == job_id, jobs.c.user_id == user_id)
         )
         with self.engine.connect() as conn:
-            return _to(JobResult, conn.execute(stmt).mappings().first())
+            return row_to(JobResult, conn.execute(stmt).mappings().first())
 
-    @_db_errors
+    @db_errors
     def list_tracks(self, user_id: UUID, job_id: UUID) -> list[PlayerTrack]:
         stmt = (
             select(player_tracks)
@@ -244,9 +244,9 @@ class PostgresResultRepo:
             .order_by(player_tracks.c.track_id)
         )
         with self.engine.connect() as conn:
-            return _to_list(PlayerTrack, conn.execute(stmt).mappings().all())
+            return rows_to(PlayerTrack, conn.execute(stmt).mappings().all())
 
-    @_db_errors
+    @db_errors
     def get_track(self, user_id: UUID, job_id: UUID, track_id: int) -> PlayerTrack | None:
         stmt = (
             select(player_tracks)
@@ -258,4 +258,4 @@ class PostgresResultRepo:
             )
         )
         with self.engine.connect() as conn:
-            return _to(PlayerTrack, conn.execute(stmt).mappings().first())
+            return row_to(PlayerTrack, conn.execute(stmt).mappings().first())

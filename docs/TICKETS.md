@@ -110,14 +110,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** `pytest -q backend/tests -m integration -k repo`
 - **Done notes:** `core/models.py` dataclasses, 5 Protocols in `core/ports.py`, `adapters/pg_repos.py` (User/Session/Video/Job/Result repos), shared engine in `wiring.py`. Every video/job/result read is `user_id`-scoped; worker-only methods end `_for_worker`, enforced by `tests/unit/test_ports.py`. 7 repo integration tests (upsert, create/list newest-first, B cannot read A's job/video/result/tracks, unknown ids, worker methods, atomic `create_with_video`, session expiry/logout-all) — mutation-checked. See D-013.
 
-### [ ] T-022 · Queue: claim, heartbeat, finish, fail, sweep — `MUST` `20m` `[review-plan]`
+### [x] T-022 · Queue: claim, heartbeat, finish, fail, sweep — `MUST` `20m` `[review-plan]`
 - **Agent:** database
 - **Depends on:** T-021
 - **Why:** "Workers claim jobs safely (SELECT … FOR UPDATE SKIP LOCKED)"; "Idempotent retry… no jobs stuck in processing".
 - **Scope:** queries from skill `postgres-job-queue`; lease + attempts; `finish_job` single transaction (delete→insert→succeeded); `fail_job`; dead-letter sweep.
 - **Acceptance:** tests: concurrent claim gives distinct jobs; expired lease reclaimed; attempts exhausted → `failed/WORKER_CRASHED`; double finish → same row counts; stale heartbeat → rowcount 0.
 - **Verify:** `pytest -q backend/tests -m integration -k queue`
-- **Done notes:** _
+- **Done notes:** `adapters/pg_queue.py` (`PostgresJobQueue`: claim / heartbeat / finish / fail / sweep_dead), `JobQueue` protocol + `JobOutcome`, `LEASE_SECONDS`/`WORKER_ID` config, wired into `Container`. 11 queue tests: distinct concurrent claims (8 threads, 20 jobs) and single-job race, expired lease reclaimed (attempts 2), exhausted → `failed/WORKER_CRASHED`, double finish refused with same counts, retried finish replaces rows, stale worker heartbeat/finish/fail → False and no writes, handled failures final. 4 mutations caught. See D-014.
 
 ## S3 · Authentication & authorization (45 m)
 
