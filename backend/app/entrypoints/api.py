@@ -4,7 +4,7 @@ import secrets
 import time
 from datetime import UTC, datetime
 
-from fastapi import FastAPI, Request, Response
+from fastapi import APIRouter, Depends, FastAPI, Request, Response
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -12,9 +12,18 @@ from pythonjsonlogger import jsonlogger
 from starlette.middleware.sessions import SessionMiddleware
 
 from ..config import Settings, load_settings
-from ..errors import AppError, OAuthLoginError, ServiceUnavailableError
-from ..services.auth import login_user, logout
+from ..core.models import User
+from ..errors import (
+    AppError,
+    CsrfRejectedError,
+    OAuthLoginError,
+    ServiceUnavailableError,
+    UnauthorizedError,
+)
+from ..services.auth import login_user, logout, user_for_token
 from ..wiring import Container, build_container
+from .csrf import is_request_trusted
+from .schemas import MeResponse
 
 access_logger = logging.getLogger("app.access")
 
@@ -41,6 +50,13 @@ def setup_logging():
         logging.getLogger(name).setLevel(logging.WARNING)
 
 
+def error_response(exc: AppError) -> JSONResponse:
+    return JSONResponse(
+        status_code=exc.status_code,
+        content={"error": {"code": exc.code, "message": str(exc)}},
+    )
+
+
 def create_app(container: Container | None = None) -> FastAPI:
     setup_logging()
 
@@ -59,6 +75,28 @@ def create_app(container: Container | None = None) -> FastAPI:
         same_site="lax",
         https_only=settings.cookie_secure,
     )
+
+    # CSRF defence in depth on top of SameSite=Lax: unsafe methods must send
+    # X-Requested-With: fetch and come from a trusted Origin (entrypoints/csrf.py).
+    # Exceptions raised in middleware skip the exception handlers, so the envelope is
+    # returned directly.
+    trusted_origins = settings.csrf_trusted_origins
+
+    @app.middleware("http")
+    async def reject_cross_site_writes(request: Request, call_next):
+        headers = request.headers
+        if not is_request_trusted(
+            request.method,
+            headers.get("origin"),
+            headers.get("referer"),
+            headers.get("x-requested-with"),
+            trusted_origins,
+        ):
+            access_logger.warning(
+                "csrf rejected", extra={"method": request.method, "path": request.url.path}
+            )
+            return error_response(CsrfRejectedError("Request rejected: cross-site request"))
+        return await call_next(request)
 
     # Our access log replaces uvicorn's (run with --no-access-log): uvicorn logs full query
     # strings, which would leak OAuth `code`/`state` from /auth/callback. Path only here.
@@ -80,10 +118,7 @@ def create_app(container: Container | None = None) -> FastAPI:
 
     @app.exception_handler(AppError)
     async def app_error_handler(request: Request, exc: AppError):
-        return JSONResponse(
-            status_code=exc.status_code,
-            content={"error": {"code": exc.__class__.__name__, "message": str(exc)}},
-        )
+        return error_response(exc)
 
     @app.get("/health")
     def health():
@@ -99,6 +134,7 @@ def create_app(container: Container | None = None) -> FastAPI:
         )
 
     register_auth_routes(app, container)
+    register_api_routes(app, container)
 
     frontend_dir = container.settings.static_dir
     if frontend_dir and os.path.exists(frontend_dir):
@@ -181,3 +217,29 @@ def register_auth_routes(app: FastAPI, container: Container) -> None:
             samesite="lax",
         )
         return response
+
+
+def make_current_user(container: Container):
+    """FastAPI dependency: the logged-in User, or 401 for a missing/unknown/expired session."""
+    cookie_name = container.settings.session_cookie_name
+
+    def current_user(request: Request) -> User:
+        user = user_for_token(container.sessions, request.cookies.get(cookie_name))
+        if user is None:
+            raise UnauthorizedError("Please log in")
+        return user
+
+    return current_user
+
+
+def register_api_routes(app: FastAPI, container: Container) -> None:
+    current_user = make_current_user(container)
+    # Every /api route hangs off this router, so none can skip authentication;
+    # tests/unit/test_api_routes.py fails if an /api route lacks the dependency.
+    api = APIRouter(prefix="/api", dependencies=[Depends(current_user)])
+
+    @api.get("/me", response_model=MeResponse)
+    def me(user: User = Depends(current_user)) -> MeResponse:
+        return MeResponse(id=user.id, email=user.email, name=user.name, avatar_url=user.avatar_url)
+
+    app.include_router(api)

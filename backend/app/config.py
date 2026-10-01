@@ -27,6 +27,9 @@ GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
 SESSION_SECRET = os.getenv("SESSION_SECRET", "")
 COOKIE_SECURE = os.getenv("COOKIE_SECURE", "true").lower() == "true"
 SESSION_TTL_DAYS = int(os.getenv("SESSION_TTL_DAYS", "7"))
+# Extra origins allowed to send unsafe requests (CSRF check), comma-separated. APP_ORIGIN is
+# always trusted; local dev adds the Vite server, e.g. http://localhost:5173.
+TRUSTED_ORIGINS = tuple(o.strip() for o in os.getenv("TRUSTED_ORIGINS", "").split(",") if o.strip())
 
 REQUIRED_IN_PRODUCTION = ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "SESSION_SECRET")
 
@@ -45,6 +48,7 @@ class Settings:
     session_secret: str = ""
     cookie_secure: bool = True
     session_ttl_days: int = 7
+    trusted_origins: tuple[str, ...] = ()
 
     @property
     def oauth_configured(self) -> bool:
@@ -54,6 +58,11 @@ class Settings:
     def session_cookie_name(self) -> str:
         # The __Host- prefix makes browsers require Secure, Path=/ and no Domain.
         return "__Host-sid" if self.cookie_secure else "sid"
+
+    @property
+    def csrf_trusted_origins(self) -> frozenset[str]:
+        origins = (self.app_origin, *self.trusted_origins)
+        return frozenset(o.rstrip("/").lower() for o in origins if o)
 
     @property
     def oauth_redirect_uri(self) -> str:
@@ -88,6 +97,7 @@ def load_settings() -> Settings:
         session_secret=SESSION_SECRET,
         cookie_secure=COOKIE_SECURE,
         session_ttl_days=SESSION_TTL_DAYS,
+        trusted_origins=TRUSTED_ORIGINS,
     )
     validate_settings(settings)
     return settings

@@ -33,6 +33,7 @@ Rollback: Actions → Rollback → enter previous sha. First-time setup: see [do
 | `GOOGLE_CLIENT_SECRET` | `""` | Google OAuth client secret; required in production |
 | `COOKIE_SECURE` | `true` | `true`: session cookie `__Host-sid` (Secure); `false` for local http: cookie `sid` |
 | `SESSION_TTL_DAYS` | `7` | Session lifetime |
+| `TRUSTED_ORIGINS` | `""` | Extra origins (comma-separated) allowed to send unsafe requests; e.g. Vite `http://localhost:5173` |
 | `LEASE_SECONDS` | `60` | Worker lease on a claimed job, extended by heartbeats |
 | `BLOB_BACKEND` | `local` | `local` for disk storage or `s3` for S3-compatible |
 | `SAMPLE_FPS` | `5` | Video decoding sample rate (frames/sec) |
@@ -41,7 +42,7 @@ Rollback: Actions → Rollback → enter previous sha. First-time setup: see [do
 | `MAX_UPLOAD_SIZE_BYTES` | `104857600` | Maximum allowed upload size (100 MB) |
 
 ## API
-`GET /auth/login`, `GET /auth/callback`, `POST /auth/logout`,
+`GET /auth/login`, `GET /auth/callback`, `POST /auth/logout`, `GET /api/me`,
 `POST /api/jobs/upload`, `POST /api/jobs/url`, `GET /api/jobs`, `GET /api/jobs/{id}`,
 `GET /api/jobs/{id}/stats`, `GET /api/jobs/{id}/players/{pid}`, `GET /api/jobs/{id}/video`, `GET /health`
 
