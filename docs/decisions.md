@@ -128,3 +128,10 @@ Chosen: `POST /api/jobs/upload` (multipart `file`, login + CSRF) → checks chea
 5. App-generated `video_id` → blob `uploads/{video_id}/source.{ext}` stored **before** the video+job rows (one transaction, probe metadata + config snapshot); if the insert fails the blob is deleted, so the worker never sees a job without its file.
 6. 202 `{job_id, status}`.
 Also: `python-multipart` was used by FastAPI but missing from requirements — pinned; CI backend job installs ffmpeg again. `/jobs/...` aliases (D-004) deferred to T-070.
+
+### D-019 URL submit: syntactic SSRF rules, canonical URLs only (2026-10-02, T-042)
+Context: "YouTube URL: fetched server-side"; host allowlist; both input paths feed one pipeline.
+Chosen: `core/url_rules.py: canonicalize_youtube_url` (pure). Rejects empty/over-2048/whitespace/control/backslash input; requires `https`, no userinfo (or `@` in the authority), port absent or 443, and host **exactly** in {youtube.com, www.youtube.com, m.youtube.com, youtu.be} after lower-casing and stripping one trailing dot — which also rules out IP hosts (incl. integer/hex forms), look-alike suffixes, punycode homoglyphs, percent-encoding and other subdomains (music.). Extracts the 11-char id from `/watch?v=` (conflicting `v` values rejected), `youtu.be/<id>`, `/shorts|embed|live/<id>` and rebuilds `https://www.youtube.com/watch?v=<id>`; only this canonical URL is stored or ever handed to yt-dlp. `POST /api/jobs/url` (JSON, ≤2048 chars) → 202 with no network I/O; failures → 422 `URL_NOT_ALLOWED`.
+Network-level SSRF (DNS → public IPs only, redirect re-validation, byte/duration caps) stays in the worker (T-043).
+Tooling: the design checker treated every `urllib` import as I/O, which would have forced this pure parser out of `core/`; it now allows `urllib.parse` specifically (still flags `urllib.request` and bare `import urllib`).
+Measured: live 202 in ~8 ms warm (48 ms cold); CI asserts median of 5 < 100 ms.

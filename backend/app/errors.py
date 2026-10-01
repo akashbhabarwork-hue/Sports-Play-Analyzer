@@ -75,3 +75,8 @@ class CorruptFileError(AppError):
 class DurationExceededError(AppError):
     status_code = 422
     code = "DURATION_EXCEEDED"
+
+
+class UrlNotAllowedError(AppError):
+    status_code = 422
+    code = "URL_NOT_ALLOWED"

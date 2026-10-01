@@ -167,3 +167,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** (1) an integration assertion that the body stream was cut off early could never hold — `TestClient` buffers the whole request body first — moved that proof to ASGI-level unit tests; (2) first draft of the size cap would have been turned into a 400 by FastAPI's form-parse error handling, so the middleware swallows the inner response and sends 413 itself; (3) `python-multipart` had never been added to requirements (only present in this environment).
 **Explain-it-in-review:** "Uploads are judged by content, cheapest check first: size at the ASGI layer before parsing, magic bytes, then ffprobe for decodability and duration. The file is stored under a fresh id before the job row exists, so the worker never sees a job without its video, and the temp dir is always removed."
 **Next:** T-042 URL submit endpoint (syntactic SSRF rules)
+
+---
+
+## 2026-10-02 01:45 IST — T-042 URL submit endpoint (syntactic SSRF rules) (agent: auth-security)
+**What changed:** `core/url_rules.py` (`canonicalize_youtube_url`, `YouTubeRef`), `UrlNotAllowedError` (422 `URL_NOT_ALLOWED`), `services/submit.py: submit_url_job`, `UrlSubmit` schema and `POST /api/jobs/url`. Design checker (`.agent/skills/python-backend-design/scripts/check_design.py`) now treats `urllib.parse` as pure.
+**Threats blocked:** SSRF via non-YouTube hosts, IP literals, look-alike/suffix hosts, userinfo and backslash parser differentials, odd ports, non-https schemes; raw user strings reaching yt-dlp.
+**Decisions:** D-019.
+**Verification:** 220 tests pass (72 for url_rules/url_submit) on local Postgres 16; ruff + design checker clean. Mutations caught: suffix host matching, dropped userinfo check, any port, storing the raw URL. Live: 202 in ~8 ms warm; `youtube.com.evil.io` → 422; only the canonical URL stored.
+**AI mistakes caught:** none in the code; the design checker's blanket `urllib` rule was a false positive for a pure parser — fixed narrowly in the checker rather than moving the module out of `core/`.
+**Explain-it-in-review:** "A submitted link must be https, on one of four exact YouTube hostnames, with no credentials or odd port; we pull out the 11-character video id and rebuild the URL ourselves, so only that canonical URL is ever stored or passed to yt-dlp. DNS and redirect checks happen later, in the worker, right before any download."
+**Next:** T-043 Worker fetch stage: yt-dlp + SSRF-safe download

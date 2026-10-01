@@ -22,11 +22,11 @@ from ..errors import (
     UnauthorizedError,
 )
 from ..services.auth import login_user, logout, user_for_token
-from ..services.submit import UploadLimits, submit_upload_job
+from ..services.submit import UploadLimits, submit_upload_job, submit_url_job
 from ..wiring import Container, build_container
 from .csrf import is_request_trusted
 from .limits import BodySizeLimitMiddleware, copy_capped
-from .schemas import JobAccepted, MeResponse
+from .schemas import JobAccepted, MeResponse, UrlSubmit
 
 access_logger = logging.getLogger("app.access")
 
@@ -275,6 +275,13 @@ def register_api_routes(app: FastAPI, container: Container) -> None:
                 limits,
                 {"max_video_seconds": limits.max_duration_s},
             )
+        return JobAccepted(job_id=job.id, status=job.status)
+
+    @api.post("/jobs/url", status_code=202, response_model=JobAccepted)
+    def submit_url(body: UrlSubmit, user: User = Depends(current_user)) -> JobAccepted:
+        job = submit_url_job(
+            container.jobs, user.id, body.url, {"max_video_seconds": limits.max_duration_s}
+        )
         return JobAccepted(job_id=job.id, status=job.status)
 
     app.include_router(api)
