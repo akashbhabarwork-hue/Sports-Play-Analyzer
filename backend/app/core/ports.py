@@ -9,7 +9,16 @@ from datetime import datetime
 from typing import Any, Protocol
 from uuid import UUID
 
-from .models import Job, JobOutcome, JobResult, NewVideo, PlayerTrack, User, Video
+from .models import (
+    Job,
+    JobOutcome,
+    JobResult,
+    NewVideo,
+    OAuthProfile,
+    PlayerTrack,
+    User,
+    Video,
+)
 
 
 class HealthCheck(Protocol):
@@ -96,3 +105,12 @@ class JobQueue(Protocol):
     def fail(self, job_id: UUID, worker_id: str, error_code: str, message: str) -> bool: ...
 
     def sweep_dead(self) -> int: ...
+
+
+class OAuthProvider(Protocol):
+    """Login provider (Authorization Code + PKCE). Async because Authlib's Starlette client is;
+    only the two /auth routes call it (D-015). `request` is the framework request object."""
+
+    async def authorize_redirect(self, request: Any, redirect_uri: str) -> Any: ...
+
+    async def fetch_profile(self, request: Any) -> OAuthProfile: ...

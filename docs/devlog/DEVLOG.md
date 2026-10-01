@@ -112,3 +112,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** none in this ticket.
 **Explain-it-in-review:** "Workers claim with one SKIP LOCKED statement, hold a lease they keep alive with heartbeats, and can only write while they still own the job; if a worker dies the lease lapses and another worker retries, and after three tries a sweep marks the job failed — so nothing stays stuck in processing."
 **Next:** S2 stage summary, then S3 — T-030 Google OAuth (Authorization Code + PKCE) + sessions
+
+---
+
+## 2026-10-01 21:00 IST — T-030 Google OAuth (Authorization Code + PKCE) + sessions (agent: auth-security)
+**What changed:** `adapters/oauth_google.py` (Authlib, explicit Google endpoints), `services/auth.py` (`login_user` with rotation, `logout`, `user_for_token`), `core/sessions.py` (`hash_token`, `session_expiry`), `OAuthProfile` + `OAuthProvider` protocol, auth settings + production validation in `config.py`, `SessionMiddleware` (`oauth_tx`) and `/auth/login`, `/auth/callback`, `POST /auth/logout` in `api.py`, JSON access-log middleware; `ServiceUnavailableError`, `OAuthLoginError`. Deps `authlib`, `httpx2`, `itsdangerous`. `.env.example`/compose use `APP_ORIGIN`; compose no longer injects placeholder Google credentials; uvicorn runs `--no-access-log`.
+**Threats blocked:** code interception (PKCE S256), forged callbacks (state, nonce, ID-token validation), XSS token theft (httpOnly), DB leak (hash-only tokens), session fixation (rotation), logout CSRF via GET (POST only), secrets/codes in logs.
+**Decisions:** D-015.
+**Verification:** unit 14 passed, integration 38 passed (52 total) on local Postgres 16; ruff + design checker clean. Live server: `/auth/login` → 302 to Google with S256 challenge, state, nonce and `oauth_tx` cookie (httponly, lax, 600 s); forged `state` → 303 `/login?error=oauth_failed` (`MismatchingStateError` logged by type only); logout 204. Mutations: removing rotation and storing the raw token each fail tests. **Not yet done:** real Google login — needs the owner's OAuth client.
+**AI mistakes caught:** smoke test showed uvicorn's default access log writing `/auth/callback?code=…&state=…` — switched to `--no-access-log` + a path-only access-log middleware, with a test. Also a log-capture test initially saw nothing because `create_app()` replaces root handlers.
+**Explain-it-in-review:** "Authlib does the OAuth: PKCE S256, state and nonce, and ID-token validation. We then issue our own random session token in an httpOnly __Host- cookie, store only its hash, rotate it on every login and delete it on logout; and we make sure the one-time OAuth code never lands in our logs."
+**Next:** owner verifies real login; then T-031 current_user, /api/me, CSRF origin check

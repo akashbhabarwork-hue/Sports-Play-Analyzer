@@ -27,9 +27,13 @@ Rollback: Actions → Rollback → enter previous sha. First-time setup: see [do
 | Variable | Default | Meaning |
 |---|---|---|
 | `DATABASE_URL` | `postgresql://...` | Postgres connection string |
-| `SESSION_SECRET` | `""` | Key used for signing session tokens |
-| `GOOGLE_CLIENT_ID` | `""` | Google OAuth Client ID |
-| `GOOGLE_CLIENT_SECRET` | `""` | Google OAuth Client Secret |
+| `APP_ORIGIN` | `http://localhost:8000` | Public origin; OAuth redirect URI is `APP_ORIGIN/auth/callback` |
+| `SESSION_SECRET` | `""` | Signs the short-lived `oauth_tx` cookie (OAuth state/nonce/PKCE); required in production |
+| `GOOGLE_CLIENT_ID` | `""` | Google OAuth client ID; required in production (dev: login says "not configured") |
+| `GOOGLE_CLIENT_SECRET` | `""` | Google OAuth client secret; required in production |
+| `COOKIE_SECURE` | `true` | `true`: session cookie `__Host-sid` (Secure); `false` for local http: cookie `sid` |
+| `SESSION_TTL_DAYS` | `7` | Session lifetime |
+| `LEASE_SECONDS` | `60` | Worker lease on a claimed job, extended by heartbeats |
 | `BLOB_BACKEND` | `local` | `local` for disk storage or `s3` for S3-compatible |
 | `SAMPLE_FPS` | `5` | Video decoding sample rate (frames/sec) |
 | `CONF_THRESHOLD` | `0.35` | Object detector confidence threshold |
@@ -37,6 +41,7 @@ Rollback: Actions → Rollback → enter previous sha. First-time setup: see [do
 | `MAX_UPLOAD_SIZE_BYTES` | `104857600` | Maximum allowed upload size (100 MB) |
 
 ## API
+`GET /auth/login`, `GET /auth/callback`, `POST /auth/logout`,
 `POST /api/jobs/upload`, `POST /api/jobs/url`, `GET /api/jobs`, `GET /api/jobs/{id}`,
 `GET /api/jobs/{id}/stats`, `GET /api/jobs/{id}/players/{pid}`, `GET /api/jobs/{id}/video`, `GET /health`
 

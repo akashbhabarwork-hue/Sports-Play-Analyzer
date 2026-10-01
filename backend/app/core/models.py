@@ -91,3 +91,14 @@ class JobOutcome:
     stats: dict[str, Any]
     annotated_key: str
     tracks: tuple[PlayerTrack, ...] = ()
+
+
+@dataclass(frozen=True, slots=True)
+class OAuthProfile:
+    """Verified identity returned by an OAuth provider after a successful login."""
+
+    provider: str
+    sub: str
+    email: str | None
+    name: str | None
+    avatar_url: str | None
