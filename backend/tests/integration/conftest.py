@@ -100,6 +100,8 @@ def make_container(engine, settings: Settings, oauth=None, blobs=None) -> Contai
         queue=PostgresJobQueue(engine),
         blobs=blobs,
         prober=FfprobeVideoProber(),
+        media_info=None,
+        downloader=None,
         oauth=oauth,
     )
 

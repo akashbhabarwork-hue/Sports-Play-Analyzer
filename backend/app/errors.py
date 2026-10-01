@@ -80,3 +80,15 @@ class DurationExceededError(AppError):
 class UrlNotAllowedError(AppError):
     status_code = 422
     code = "URL_NOT_ALLOWED"
+
+
+class YouTubeBlockedError(AppError):
+    """YouTube refused our server (bot check, 403/429, sign-in required)."""
+
+    status_code = 422
+    code = "YOUTUBE_BLOCKED"
+
+
+class DownloadFailedError(AppError):
+    status_code = 422
+    code = "DOWNLOAD_FAILED"

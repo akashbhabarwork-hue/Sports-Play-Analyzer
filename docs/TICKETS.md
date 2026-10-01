@@ -177,14 +177,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** `pytest -q -k url_rules`
 - **Done notes:** `core/url_rules.py` (exact host allowlist, https, no userinfo/odd ports/IPs, id extraction for watch/youtu.be/shorts/embed/live, canonical rebuild) + `POST /api/jobs/url` → 202, canonical URL stored, no network. 63 url_rules cases + 9 endpoint tests (canonical stored, 422 without inserts, body shape, 401/403, median-of-5 < 100 ms). 4 mutations caught (suffix host match, no userinfo check, any port, storing raw input). Live: ~8 ms warm. Design checker narrowed to allow `urllib.parse` in core. See D-019.
 
-### [ ] T-043 · Worker fetch stage: yt-dlp + SSRF-safe download — `MUST` `25m` `[review-plan]`
+### [x] T-043 · Worker fetch stage: yt-dlp + SSRF-safe download — `MUST` `25m` `[review-plan]`
 - **Agent:** auth-security
 - **Depends on:** T-042
 - **Why:** "Block private and internal IPs, including redirects"; "Hard duration cap"; "No shell string interpolation"; YouTube blocking handled gracefully.
 - **Scope:** `core/net_rules.py` (`is_public_ip`), `adapters/ytdlp_fetcher.py` (arg list, `--use-extractors youtube`, verified flags, optional cookies/proxy from env), `adapters/safe_http_fetcher.py` (manual redirects ≤5, per-hop host+IP validation, byte cap), stderr → `YOUTUBE_BLOCKED` classifier, duration check → `DURATION_EXCEEDED`.
 - **Acceptance:** IP table tests; redirect-to-metadata-IP test blocked; classifier test; manual run on a real short YouTube URL locally downloads ≤60 s file.
 - **Verify:** `pytest -q -k "net_rules or fetch or classifier"`
-- **Done notes:** _
+- **Done notes:** `core/net_rules.py`, `core/ytdlp_errors.py`, `check_remote_media`, `adapters/ytdlp_fetcher.py` (flags verified on 2026.08.19), `adapters/safe_http_fetcher.py`, `services/fetch.py`, shared `validate_video_file`, optional cookies/proxy config, `scripts/fetch_check.py`. 103 tests for this ticket (313 total): IP table incl. mapped/6to4/Teredo, media-host allowlist, classifier with the real T-014 stderr, downloader (redirect to 169.254.169.254 / http / private-resolving allowlisted host / mixed DNS / odd port / userinfo all blocked before contact, 5-hop limit, byte cap, statuses), yt-dlp adapter (arg list, `--` last, no shell, cookies 0600 + deleted even on failure, Cookie header never forwarded), service (store + record, reject long/live before download, re-probe downloaded bytes, cleanup). 7 mutations caught. **Manual real-URL run pending on the owner's machine** (this session cannot reach YouTube; the script fails cleanly here with DOWNLOAD_FAILED). See D-020.
 
 ## S5 · Tracking & metrics core — pure, no model (55 m)
 

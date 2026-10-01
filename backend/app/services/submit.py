@@ -7,8 +7,8 @@ from typing import Any
 from uuid import UUID, uuid4
 
 from ..core.blob_keys import upload_key
-from ..core.file_sniff import SNIFF_BYTES, sniff_video_container
-from ..core.models import Job, NewVideo
+from ..core.file_sniff import SNIFF_BYTES, Container, sniff_video_container
+from ..core.models import Job, NewVideo, VideoProbe
 from ..core.ports import BlobStore, JobRepo, VideoProber
 from ..core.url_rules import canonicalize_youtube_url
 from ..core.video_rules import UNSUPPORTED_MESSAGE, check_video_limits
@@ -21,6 +21,22 @@ logger = logging.getLogger(__name__)
 class UploadLimits:
     max_bytes: int
     max_duration_s: int
+
+
+def validate_video_file(
+    path: str, prober: VideoProber, max_duration_s: int
+) -> tuple[Container, VideoProbe]:
+    """Judge a local file by content: magic bytes, then ffprobe + limits.
+
+    Shared by uploads and URL downloads so both inputs pass the same checks.
+    """
+    with open(path, "rb") as f:
+        container = sniff_video_container(f.read(SNIFF_BYTES))
+    if container is None:
+        raise UnsupportedFormatError(UNSUPPORTED_MESSAGE)
+    probe = prober.probe(path)
+    check_video_limits(probe, max_duration_s)
+    return container, probe
 
 
 def submit_upload_job(
@@ -39,13 +55,7 @@ def submit_upload_job(
     an app-generated video id before the rows exist, so the worker can never claim a job
     whose file is missing; if the insert fails the blob is removed again.
     """
-    with open(path, "rb") as f:
-        container = sniff_video_container(f.read(SNIFF_BYTES))
-    if container is None:
-        raise UnsupportedFormatError(UNSUPPORTED_MESSAGE)
-
-    probe = prober.probe(path)
-    check_video_limits(probe, limits.max_duration_s)
+    container, probe = validate_video_file(path, prober, limits.max_duration_s)
 
     video_id = uuid4()
     key = upload_key(video_id, container.extension)
