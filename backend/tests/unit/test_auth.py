@@ -70,7 +70,7 @@ def test_auth_login_not_configured_is_a_clean_503():
     response = client.get("/auth/login", follow_redirects=False)
 
     assert response.status_code == 503
-    assert response.json()["error"]["code"] == "ServiceUnavailableError"
+    assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
 
 
 def test_cookie_name_and_redirect_uri_follow_settings():

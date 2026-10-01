@@ -123,3 +123,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** smoke test showed uvicorn's default access log writing `/auth/callback?code=…&state=…` — switched to `--no-access-log` + a path-only access-log middleware, with a test. Also a log-capture test initially saw nothing because `create_app()` replaces root handlers.
 **Explain-it-in-review:** "Authlib does the OAuth: PKCE S256, state and nonce, and ID-token validation. We then issue our own random session token in an httpOnly __Host- cookie, store only its hash, rotate it on every login and delete it on logout; and we make sure the one-time OAuth code never lands in our logs."
 **Next:** owner verifies real login; then T-031 current_user, /api/me, CSRF origin check
+
+---
+
+## 2026-10-01 23:30 IST — T-031 current_user, /api/me, CSRF origin check (agent: auth-security)
+**What changed:** `make_current_user` dependency and an `/api` router that applies it; `GET /api/me` with `MeResponse` (`entrypoints/schemas.py`); CSRF middleware using `entrypoints/csrf.py:is_request_trusted`; `UnauthorizedError` (401) and `CsrfRejectedError` (403); stable UPPER_SNAKE `code` on every `AppError`, used by the error envelope; `TRUSTED_ORIGINS` setting (replaces `CORS_ORIGINS` in `.env.example`); frontend `api.ts` sends `X-Requested-With: fetch`. Tests: `unit/test_csrf.py`, `unit/test_api_routes.py`, `integration/test_me.py`; logout tests now send same-origin headers.
+**Threats blocked:** unauthenticated API access, expired/forged sessions, CSRF (custom header + Origin/Referer allowlist on top of SameSite=Lax).
+**Decisions:** D-016.
+**Verification:** 76 tests pass (32 for `-k "me or csrf"`) on local Postgres 16; ruff + design checker clean; frontend lint/typecheck/build green. Live server: `/api/me` without cookie → 401 `UNAUTHORIZED`; plain `curl -X POST /auth/logout` → 403 `CSRF_REJECTED`; with Origin + header → 204.
+**AI mistakes caught:** put the CSRF helper in `core/` importing `urllib.parse`; the design checker flags `urllib` as I/O — moved to `entrypoints/` where HTTP concerns belong.
+**Explain-it-in-review:** "Every /api route hangs off one router that requires a valid session, and a test fails if one doesn't. Writes additionally need our custom header and our Origin, so a malicious page can't make the browser act with the user's cookie."
+**Next:** T-032 Test harness: login_as + two-user clients

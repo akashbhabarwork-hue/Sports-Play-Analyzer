@@ -88,6 +88,12 @@ def session_rows(engine) -> list[tuple[bytes, str]]:
     return [(bytes(r[0]), r[1]) for r in rows]
 
 
+def same_origin(client: TestClient) -> dict[str, str]:
+    """Headers our SPA sends on unsafe requests (CSRF check, T-031)."""
+    origin = "https://app.example" if client.base_url.scheme == "https" else "http://localhost:8000"
+    return {"Origin": origin, "X-Requested-With": "fetch"}
+
+
 def login(client: TestClient):
     return client.get("/auth/callback?code=c&state=s", follow_redirects=False)
 
@@ -139,7 +145,7 @@ def test_logout_deletes_session_row_and_expires_cookie(engine, make_client):
     login(client)
     assert len(session_rows(engine)) == 1
 
-    response = client.post("/auth/logout")
+    response = client.post("/auth/logout", headers=same_origin(client))
 
     assert response.status_code == 204
     assert session_rows(engine) == []
@@ -173,7 +179,7 @@ def test_tokens_and_secrets_never_logged(make_client, caplog):
 
     login(client)
     token = client.cookies.get("__Host-sid")
-    client.post("/auth/logout")
+    client.post("/auth/logout", headers=same_origin(client))
 
     assert "user logged in" in caplog.text
     for secret in (token, "s" * 32, "secret"):

@@ -130,14 +130,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** manual login; `pytest -q -k auth`
 - **Done notes:** **Code complete; waiting on the owner's manual Google login + devtools cookie check** (needs a real OAuth client; cannot be done by the agent). Authlib S256 PKCE + state + nonce, `/auth/login`, `/auth/callback`, `POST /auth/logout`, hashed rotated sessions in `__Host-sid`/`sid`, transient `oauth_tx` cookie, D-015 async exception. Tests: 6 unit (real Authlib redirect offline, config, 503, access log) + 7 integration (fake provider: cookie flags secure/dev, hash-only storage, rotation, logout, POST-only, failure redirect, nothing secret logged); mutations on rotation and hashing caught. Found and fixed: uvicorn access log leaked OAuth `code`/`state`.
 
-### [ ] T-031 · current_user, /api/me, CSRF origin check — `MUST` `10m`
+### [x] T-031 · current_user, /api/me, CSRF origin check — `MUST` `10m`
 - **Agent:** auth-security
 - **Depends on:** T-030
 - **Why:** server-side authz on every route; defence in depth for cookie auth.
 - **Scope:** `current_user` dependency, `/api/me`, Origin + `X-Requested-With` check on unsafe methods.
 - **Acceptance:** no cookie → 401 envelope; foreign Origin POST → 403; `/api/me` returns id/email/name.
 - **Verify:** `pytest -q -k "me or csrf"`
-- **Done notes:** _
+- **Done notes:** `current_user` on an `/api` router (structural test guards it), `GET /api/me`, strict CSRF middleware (`X-Requested-With: fetch` + trusted Origin/Referer; `TRUSTED_ORIGINS` for Vite dev), UPPER_SNAKE error codes, frontend client sends the header. 32 tests for `-k "me or csrf"` (76 total): no/garbage/expired cookie → 401 envelope, `/api/me` fields, foreign Origin / missing header → 403, logout needs headers. Live: `/api/me` 401, plain curl POST 403, same-origin POST 204. See D-016.
 
 ### [ ] T-032 · Test harness: login_as + two-user clients — `MUST` `5m`
 - **Agent:** qa

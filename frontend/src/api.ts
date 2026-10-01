@@ -33,7 +33,8 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   const res = await fetch(path, {
     credentials: 'same-origin',
     ...init,
-    headers: { Accept: 'application/json', ...init.headers },
+    // X-Requested-With is required by the server's CSRF check on unsafe methods.
+    headers: { Accept: 'application/json', 'X-Requested-With': 'fetch', ...init.headers },
   })
   if (!res.ok) {
     throw await toApiError(res)
