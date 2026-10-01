@@ -92,14 +92,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 
 ## S2 · Database & job queue (55 m)
 
-### [ ] T-020 · Alembic + initial schema + indexes — `MUST` `20m` `[review-plan]`
+### [x] T-020 · Alembic + initial schema + indexes — `MUST` `20m` `[review-plan]`
 - **Agent:** database
 - **Depends on:** T-010
 - **Why:** "Postgres, with versioned migrations", "Foreign keys, and at least one index you can justify", "Every job belongs to a user_id".
 - **Scope:** Alembic setup, `adapters/db_tables.py` (Core Tables, naming convention), revision 0001 with `users, sessions, videos, jobs, job_results, player_tracks`, CHECK constraints, `ix_jobs_claimable` (partial), `ix_jobs_user_created`, `ix_sessions_user`; working downgrade.
 - **Acceptance:** `alembic upgrade head` then `downgrade base` then `upgrade head` all succeed; decisions.md has the index justification lines.
 - **Verify:** those three commands against compose DB
-- **Done notes:** _
+- **Done notes:** `db_tables.py` (Core tables, naming convention) + revision `0001` (6 tables, CHECKs, 3 indexes, full downgrade); `alembic.ini` + `migrations/env.py` read `DATABASE_URL`. upgrade → downgrade → upgrade verified on local Postgres 16; 13 integration tests (cycle, `alembic check` drift guard, every CHECK/unique/PK, cascade, index defs). Index EXPLAIN evidence in D-011. Also: pinned sqlalchemy/alembic, compose `migrate` no longer swallows failures, `.env.example` URL uses `+psycopg`, CI exit-5 allowance removed (F-004).
 
 ### [ ] T-021 · User-scoped repositories — `MUST` `15m`
 - **Agent:** database
@@ -432,6 +432,6 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 ## Follow-ups (added by /review or acceptance runs)
 - [ ] **F-001** (T-091) `serve_spa` joins the raw URL path onto the static dir without confirming the resolved path stays inside it — add a `realpath` containment check (path traversal).
 - [ ] **F-002** (devops) Node 20 is past EOL — move the Dockerfile build stage and CI to Node 22 together.
-- [ ] **F-003** (backend-api) `pydantic` and `sqlalchemy` are unpinned in `backend/requirements.txt`; local dev ruff differs from the pinned 0.4.8 — pin and bump deliberately.
+- [ ] **F-003** (backend-api) `pydantic` is unpinned in `backend/requirements.txt` (sqlalchemy pinned in T-020); local dev ruff differs from the pinned 0.4.8 — pin and bump deliberately.
 - [ ] **F-005** (devops, before T-100) Finish T-014: Fly app (web+worker), Neon, bucket, first deploy, `/health` live; re-run the YouTube spike from the prod worker (`fly ssh console`) and update D-010. Pick the mitigation (none / cookies / proxy) for A1.
-- [ ] **F-004** (T-020) Remove the "exit 5 = ok" allowance from the CI integration step once integration tests exist.
+- [x] **F-004** (T-020) Remove the "exit 5 = ok" allowance from the CI integration step once integration tests exist.

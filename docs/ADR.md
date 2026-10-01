@@ -33,12 +33,14 @@ probe → stream frames → detect/track/metrics → encode → persist in one t
 | YouTube blocking | Graceful `YOUTUBE_BLOCKED` error + upload fallback | Datacenter IPs frequently challenged by YouTube anti-bot | User must upload file if cloud IP is blocked |
 
 ## 4. Data model & indexes
-- `users`: Google sub, email, display name, created_at.
-- `sessions`: hashed token, user_id, expires_at, created_at (Index: `ix_sessions_user`).
-- `videos`: source_type (upload/url), source_path/url, duration_seconds, fps, width, height, user_id.
-- `jobs`: status, attempts, lease_until, worker_id, progress, stage, error_code, user_id (Indexes: partial `ix_jobs_claimable`, composite `ix_jobs_user_created`).
-- `job_results`: job_id (PK/FK), stats JSON, video_blob_key, created_at.
-- `player_tracks`: job_id, player_id, team, jersey_color, positions JSON.
+Source of truth: `backend/app/adapters/db_tables.py`; revision `0001`. UUID PKs, `timestamptz`, named constraints, children `ON DELETE CASCADE`.
+- `users`: provider + provider_sub (unique), email, name, avatar_url.
+- `sessions`: `token_hash` (sha256 of cookie, PK), user_id, expires_at (Index: `ix_sessions_user`).
+- `videos`: user_id, source_type `upload|url` (url required iff `url`), storage_key, size/duration/width/height/fps.
+- `jobs`: user_id NOT NULL, video_id, status `queued|processing|succeeded|failed`, progress 0–100, stage, error_code (required when failed) + message, attempts/max_attempts, locked_by, lease_expires_at, config JSONB (Indexes: partial `ix_jobs_claimable`, composite `ix_jobs_user_created`).
+- `job_results`: job_id (PK/FK — one result per job), stats JSONB, annotated_key.
+- `player_tracks`: PK (job_id, track_id) so retries replace rows; team `A|B|unknown`, distances, possession_frames, heatmap + track JSONB.
+- Index justification with EXPLAIN evidence: decisions D-011.
 
 ## 5. Reliability
 - Idempotent worker retry via transactional result writes (`delete` -> `insert` -> `status=succeeded`).

@@ -56,16 +56,7 @@ jobs:
       - name: Unit tests
         run: pytest -q -m "not integration and not model"
       - name: Integration tests
-        # pytest exits 5 when nothing is collected; allowed until T-020 adds integration tests.
-        run: |
-          set +e
-          pytest -q -m integration
-          rc=$?
-          if [ "$rc" -eq 5 ]; then
-            echo "::notice::No integration tests collected yet"
-            exit 0
-          fi
-          exit "$rc"
+        run: pytest -q -m integration
 
   frontend:
     runs-on: ubuntu-24.04
