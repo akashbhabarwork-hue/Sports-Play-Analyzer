@@ -172,17 +172,22 @@ class PostgresJobRepo:
     def create_with_video(self, user_id: UUID, new_video: NewVideo, config: dict[str, Any]) -> Job:
         # One transaction: a failed job insert must not leave an orphan video row.
         with self.engine.begin() as conn:
+            values = {
+                "user_id": user_id,
+                "source_type": new_video.source_type,
+                "source_url": new_video.source_url,
+                "original_filename": new_video.original_filename,
+                "storage_key": new_video.storage_key,
+                "size_bytes": new_video.size_bytes,
+                "duration_s": new_video.duration_s,
+                "width": new_video.width,
+                "height": new_video.height,
+                "fps": new_video.fps,
+            }
+            if new_video.id is not None:
+                values["id"] = new_video.id
             video_id = conn.execute(
-                insert(videos)
-                .values(
-                    user_id=user_id,
-                    source_type=new_video.source_type,
-                    source_url=new_video.source_url,
-                    original_filename=new_video.original_filename,
-                    storage_key=new_video.storage_key,
-                    size_bytes=new_video.size_bytes,
-                )
-                .returning(videos.c.id)
+                insert(videos).values(**values).returning(videos.c.id)
             ).scalar_one()
             row = (
                 conn.execute(

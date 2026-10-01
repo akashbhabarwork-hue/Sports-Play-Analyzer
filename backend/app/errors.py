@@ -55,3 +55,23 @@ class BlobNotFoundError(AppError):
 
     status_code = 404
     code = "NOT_FOUND"
+
+
+class PayloadTooLargeError(AppError):
+    status_code = 413
+    code = "PAYLOAD_TOO_LARGE"
+
+
+class UnsupportedFormatError(AppError):
+    status_code = 415
+    code = "UNSUPPORTED_FORMAT"
+
+
+class CorruptFileError(AppError):
+    status_code = 422
+    code = "CORRUPT_FILE"
+
+
+class DurationExceededError(AppError):
+    status_code = 422
+    code = "DURATION_EXCEEDED"

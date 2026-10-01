@@ -117,3 +117,14 @@ Context: uploads and annotated videos must be shared between web and worker, whi
 Chosen: `BlobStore` protocol (`put_file`, `get_to_path`, `size`, `open_range`, `presigned_get_url`, `delete`) with `LocalBlobStore` (compose/dev) and `S3BlobStore` (boto3, SigV4, endpoint from env — Tigris, R2 or AWS), selected by a `BLOB_STORES` dict registry on `BLOB_BACKEND`. Keys: `core/blob_keys.py` validates every key (segments of `[A-Za-z0-9._-]`, none starting with `.`, no `..`/absolute/empty/backslash, ≤512 chars) and builds deterministic keys (`uploads/{video_id}/source.{ext}`, `jobs/{job_id}/annotated.mp4`) so retries overwrite. Local adapter also resolves the path and requires it to stay under the root (blocks symlink escapes) and writes atomically (temp file + `os.replace`). Presigned URLs are capped at 300 s; local returns `None` so the API streams with Range (T-070). Missing keys → `BlobNotFoundError`; other backend failures → `ExternalServiceError`, logged without credentials or exception text.
 Config: production refuses `BLOB_BACKEND=local`; `s3` requires bucket + keys (names reported, never values).
 Testing: S3 adapter tested in-process with `moto` (dev-only dependency) through the same `make_s3_client` factory production uses.
+
+### D-018 Upload validation pipeline (2026-10-02, T-041)
+Context: "Max 60 s and 100 MB"; "check content by inspecting the file, not the extension… clean up temp files"; "returns a job_id immediately".
+Chosen: `POST /api/jobs/upload` (multipart `file`, login + CSRF) → checks cheapest first:
+1. `BodySizeLimitMiddleware` (pure ASGI, upload path only): `Content-Length` > limit + 1 MB → 413 before the app runs; otherwise counts received bytes and, once past the cap, stops feeding the parser and replaces whatever the app answers with 413. Needed because Starlette spools the whole multipart body to disk before the route runs, and FastAPI turns any parse-time exception into its own 400.
+2. Chunked copy (1 MB) into a per-request `TemporaryDirectory` with a second byte cap; the directory is removed in every outcome.
+3. Magic-byte sniff (`core/file_sniff.py`): ISO-BMFF `ftyp` (MP4/MOV), EBML (MKV/WebM), `RIFF…AVI `; extension and Content-Type ignored → else 415 `UNSUPPORTED_FORMAT`.
+4. `ffprobe` (argument list, `--` before the path, no shell, 15 s timeout): failure/no video stream → 422 `CORRUPT_FILE`; `core/video_rules.py`: duration > 60 s (+0.5 s) → 422 `DURATION_EXCEEDED`; side > 4096 px → 422.
+5. App-generated `video_id` → blob `uploads/{video_id}/source.{ext}` stored **before** the video+job rows (one transaction, probe metadata + config snapshot); if the insert fails the blob is deleted, so the worker never sees a job without its file.
+6. 202 `{job_id, status}`.
+Also: `python-multipart` was used by FastAPI but missing from requirements — pinned; CI backend job installs ffmpeg again. `/jobs/...` aliases (D-004) deferred to T-070.

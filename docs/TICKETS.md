@@ -159,14 +159,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** `pytest -q -k blob`
 - **Done notes:** `BlobStore` protocol, `core/blob_keys.py` (validation + deterministic keys + 300 s presign cap), `LocalBlobStore` (atomic writes, root containment), `S3BlobStore` (boto3; tested with moto), `BLOB_STORES` registry, production requires `s3`. 41 blob tests (key table incl. `..`/abs/backslash/%2e/hidden/NUL, local round trip/overwrite/range/missing/delete/symlink escape, S3 round trip/range/missing/presign expiry/bad bucket, config + registry); symlink-guard mutation caught. 120 tests total. See D-017.
 
-### [ ] T-041 · Upload endpoint with content validation — `MUST` `20m`
+### [x] T-041 · Upload endpoint with content validation — `MUST` `20m`
 - **Agent:** backend-api (with auth-security review)
 - **Depends on:** T-022, T-031, T-040
 - **Why:** "File upload: Max 60 s and 100 MB"; "Check content by inspecting the file, not the extension… clean up temp files"; "returns a job_id immediately".
 - **Scope:** `POST /api/jobs/upload`: Content-Length precheck, chunked copy with byte cap, magic-byte sniff (`core/file_sniff.py`), ffprobe check, store blob, insert video+job (config snapshot), 202 `{job_id}`; temp dir cleanup in `finally`.
 - **Acceptance:** tiny.mp4 → 202; fake.mp4 → 415 UNSUPPORTED_FORMAT; corrupt.mp4 → 422 CORRUPT_FILE; oversize (test limit) → 413; long clip → 422 DURATION_EXCEEDED; temp dir empty after each.
 - **Verify:** `pytest -q -k upload`
-- **Done notes:** _
+- **Done notes:** `POST /api/jobs/upload`: ASGI body-size cap (Content-Length + received bytes), chunked capped copy, magic-byte sniff, ffprobe + duration/size rules, blob-before-insert with cleanup on failure, 202 `{job_id}`; temp dir always removed. 31 upload tests (fixtures generated with ffmpeg: tiny → 202; fake → 415; corrupt and truncated → 422 CORRUPT_FILE; 61 s → 422 DURATION_EXCEEDED; oversize via Content-Length and chunked → 413; 401/403; nothing left in temp dir, blobs or DB after rejections). Mutations on temp cleanup and sniffing caught. Live: valid 202, fake 415, no CSRF 403. Pinned missing `python-multipart`; CI installs ffmpeg. See D-018.
 
 ### [ ] T-042 · URL submit endpoint (syntactic SSRF rules) — `MUST` `10m`
 - **Agent:** auth-security
@@ -433,5 +433,6 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - [ ] **F-001** (T-091) `serve_spa` joins the raw URL path onto the static dir without confirming the resolved path stays inside it — add a `realpath` containment check (path traversal).
 - [ ] **F-002** (devops) Node 20 is past EOL — move the Dockerfile build stage and CI to Node 22 together.
 - [ ] **F-003** (backend-api) `pydantic` is unpinned in `backend/requirements.txt` (sqlalchemy pinned in T-020); local dev ruff differs from the pinned 0.4.8 — pin and bump deliberately.
+- [ ] **F-006** (T-070) Add the `/jobs/...` aliases from D-004 alongside the read endpoints; also return validation errors (e.g. missing `file` field) in the `{error:{code,message}}` envelope (T-091).
 - [ ] **F-005** (devops, before T-100) Finish T-014: Fly app (web+worker), Neon, bucket, first deploy, `/health` live; re-run the YouTube spike from the prod worker (`fly ssh console`) and update D-010. Pick the mitigation (none / cookies / proxy) for A1.
 - [x] **F-004** (T-020) Remove the "exit 5 = ok" allowance from the CI integration step once integration tests exist.

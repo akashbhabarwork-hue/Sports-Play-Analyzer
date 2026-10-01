@@ -1,10 +1,11 @@
 import logging
 import os
 import secrets
+import tempfile
 import time
 from datetime import UTC, datetime
 
-from fastapi import APIRouter, Depends, FastAPI, Request, Response
+from fastapi import APIRouter, Depends, FastAPI, Request, Response, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
@@ -21,11 +22,15 @@ from ..errors import (
     UnauthorizedError,
 )
 from ..services.auth import login_user, logout, user_for_token
+from ..services.submit import UploadLimits, submit_upload_job
 from ..wiring import Container, build_container
 from .csrf import is_request_trusted
-from .schemas import MeResponse
+from .limits import BodySizeLimitMiddleware, copy_capped
+from .schemas import JobAccepted, MeResponse
 
 access_logger = logging.getLogger("app.access")
+
+UPLOAD_PATH = "/api/jobs/upload"
 
 OAUTH_TX_COOKIE = "oauth_tx"
 OAUTH_TX_MAX_AGE = 600  # state/nonce/PKCE verifier only live for the login round trip
@@ -135,6 +140,12 @@ def create_app(container: Container | None = None) -> FastAPI:
 
     register_auth_routes(app, container)
     register_api_routes(app, container)
+    # Added last = outermost user middleware: it sees the raw body before any parsing.
+    app.add_middleware(
+        BodySizeLimitMiddleware,
+        paths=frozenset({UPLOAD_PATH}),
+        max_file_bytes=settings.max_upload_bytes,
+    )
 
     frontend_dir = container.settings.static_dir
     if frontend_dir and os.path.exists(frontend_dir):
@@ -241,5 +252,29 @@ def register_api_routes(app: FastAPI, container: Container) -> None:
     @api.get("/me", response_model=MeResponse)
     def me(user: User = Depends(current_user)) -> MeResponse:
         return MeResponse(id=user.id, email=user.email, name=user.name, avatar_url=user.avatar_url)
+
+    limits = UploadLimits(
+        max_bytes=container.settings.max_upload_bytes,
+        max_duration_s=container.settings.max_video_seconds,
+    )
+    tmp_root = container.settings.upload_tmp_dir or None
+
+    @api.post("/jobs/upload", status_code=202, response_model=JobAccepted)
+    def upload_video(file: UploadFile, user: User = Depends(current_user)) -> JobAccepted:
+        # Per-request temp dir, removed in every outcome (success, 4xx, crash).
+        with tempfile.TemporaryDirectory(dir=tmp_root, prefix="upload-") as tmp:
+            path = os.path.join(tmp, "source")
+            copy_capped(file.file, path, limits.max_bytes)
+            job = submit_upload_job(
+                container.jobs,
+                container.blobs,
+                container.prober,
+                user.id,
+                path,
+                file.filename,
+                limits,
+                {"max_video_seconds": limits.max_duration_s},
+            )
+        return JobAccepted(job_id=job.id, status=job.status)
 
     app.include_router(api)

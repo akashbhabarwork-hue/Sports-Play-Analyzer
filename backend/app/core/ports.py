@@ -19,6 +19,7 @@ from .models import (
     PlayerTrack,
     User,
     Video,
+    VideoProbe,
 )
 
 
@@ -142,4 +143,10 @@ class BlobStore(Protocol):
 
     def delete(self, key: str) -> None:
         """Idempotent: deleting a missing key is not an error."""
+        ...
+
+
+class VideoProber(Protocol):
+    def probe(self, path: str) -> VideoProbe:
+        """Read container/stream metadata; raises CorruptFileError if unreadable."""
         ...

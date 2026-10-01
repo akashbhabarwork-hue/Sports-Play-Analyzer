@@ -5,7 +5,9 @@ from app.entrypoints.api import create_app
 from app.wiring import Container
 
 # Repositories are not exercised by these tests.
-NO_REPOS = dict.fromkeys(("users", "sessions", "videos", "jobs", "results", "queue", "blobs"))
+NO_REPOS = dict.fromkeys(
+    ("users", "sessions", "videos", "jobs", "results", "queue", "blobs", "prober")
+)
 
 
 class FakeHealthCheck:

@@ -26,6 +26,13 @@ class NewVideo:
     original_filename: str | None = None
     storage_key: str | None = None  # set for uploads; url sources get one when fetched
     size_bytes: int | None = None
+    # Uploads know these up front: the id names the blob before the row exists, and the
+    # probe fields come from ffprobe. URL sources leave them None (DB generates the id).
+    id: UUID | None = None
+    duration_s: float | None = None
+    width: int | None = None
+    height: int | None = None
+    fps: float | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -102,3 +109,14 @@ class OAuthProfile:
     email: str | None
     name: str | None
     avatar_url: str | None
+
+
+@dataclass(frozen=True, slots=True)
+class VideoProbe:
+    """What ffprobe reports about a file's first video stream."""
+
+    format_name: str
+    duration_s: float
+    width: int
+    height: int
+    fps: float | None
