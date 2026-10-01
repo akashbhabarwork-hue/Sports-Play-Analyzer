@@ -168,14 +168,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** `pytest -q -k upload`
 - **Done notes:** `POST /api/jobs/upload`: ASGI body-size cap (Content-Length + received bytes), chunked capped copy, magic-byte sniff, ffprobe + duration/size rules, blob-before-insert with cleanup on failure, 202 `{job_id}`; temp dir always removed. 31 upload tests (fixtures generated with ffmpeg: tiny → 202; fake → 415; corrupt and truncated → 422 CORRUPT_FILE; 61 s → 422 DURATION_EXCEEDED; oversize via Content-Length and chunked → 413; 401/403; nothing left in temp dir, blobs or DB after rejections). Mutations on temp cleanup and sniffing caught. Live: valid 202, fake 415, no CSRF 403. Pinned missing `python-multipart`; CI installs ffmpeg. See D-018.
 
-### [ ] T-042 · URL submit endpoint (syntactic SSRF rules) — `MUST` `10m`
+### [x] T-042 · URL submit endpoint (syntactic SSRF rules) — `MUST` `10m`
 - **Agent:** auth-security
 - **Depends on:** T-041
 - **Why:** "YouTube URL: fetched server-side"; "Host allowlist"; "Both paths must feed the same pipeline".
 - **Scope:** `core/url_rules.py` normalise to canonical watch URL; `POST /api/jobs/url` inserts video(source_type=url)+job, 202. No network call in the request.
 - **Acceptance:** unit table tests (accepted forms, rejected tricks incl. `youtube.com.evil.io`, userinfo, ports, http); endpoint returns 202 < 100 ms.
 - **Verify:** `pytest -q -k url_rules`
-- **Done notes:** _
+- **Done notes:** `core/url_rules.py` (exact host allowlist, https, no userinfo/odd ports/IPs, id extraction for watch/youtu.be/shorts/embed/live, canonical rebuild) + `POST /api/jobs/url` → 202, canonical URL stored, no network. 63 url_rules cases + 9 endpoint tests (canonical stored, 422 without inserts, body shape, 401/403, median-of-5 < 100 ms). 4 mutations caught (suffix host match, no userinfo check, any port, storing raw input). Live: ~8 ms warm. Design checker narrowed to allow `urllib.parse` in core. See D-019.
 
 ### [ ] T-043 · Worker fetch stage: yt-dlp + SSRF-safe download — `MUST` `25m` `[review-plan]`
 - **Agent:** auth-security

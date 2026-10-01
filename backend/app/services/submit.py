@@ -10,6 +10,7 @@ from ..core.blob_keys import upload_key
 from ..core.file_sniff import SNIFF_BYTES, sniff_video_container
 from ..core.models import Job, NewVideo
 from ..core.ports import BlobStore, JobRepo, VideoProber
+from ..core.url_rules import canonicalize_youtube_url
 from ..core.video_rules import UNSUPPORTED_MESSAGE, check_video_limits
 from ..errors import UnsupportedFormatError
 
@@ -68,5 +69,19 @@ def submit_upload_job(
     logger.info(
         "upload job queued",
         extra={"user_id": str(user_id), "job_id": str(job.id), "container": container.name},
+    )
+    return job
+
+
+def submit_url_job(jobs: JobRepo, user_id: UUID, raw_url: str, config: dict[str, Any]) -> Job:
+    """Queue a job for a YouTube link. No network here: the worker fetches it (T-043).
+
+    Only the canonical URL rebuilt from the video id is stored, never the raw input.
+    """
+    ref = canonicalize_youtube_url(raw_url)
+    job = jobs.create_with_video(user_id, NewVideo(source_type="url", source_url=ref.url), config)
+    logger.info(
+        "url job queued",
+        extra={"user_id": str(user_id), "job_id": str(job.id), "video_ref": ref.video_id},
     )
     return job

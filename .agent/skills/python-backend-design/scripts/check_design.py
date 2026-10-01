@@ -22,6 +22,8 @@ FORBIDDEN_IMPORTS = {
 IO_MODULES = {"os", "requests", "httpx", "sqlite3", "boto3", "subprocess", "socket",
               "psycopg", "psycopg2", "sqlalchemy", "aiohttp", "urllib"}
 IO_CALLS = {"open", "print", "input"}
+# Submodules of IO_MODULES that do no I/O (pure string parsing) and are fine in core.
+PURE_SUBMODULES = {"urllib.parse"}
 ALLOWED_BASES = {"Protocol", "Exception", "AppError", "BaseModel"}
 BANNED_CLASS_SUFFIXES = ("Factory", "Builder", "Manager", "Helper", "Helpers", "Utils", "Util")
 
@@ -48,6 +50,17 @@ def imported_roots(node: ast.AST) -> list[str]:
     if isinstance(node, ast.ImportFrom) and node.module and node.level == 0:
         return [node.module.split(".")[0]]
     return []
+
+
+def imports_only_pure(node: ast.AST) -> bool:
+    """True if every module this import statement names is in PURE_SUBMODULES."""
+    if isinstance(node, ast.Import):
+        names = [a.name for a in node.names]
+    elif isinstance(node, ast.ImportFrom) and node.module:
+        names = [node.module]
+    else:
+        return False
+    return all(name in PURE_SUBMODULES for name in names)
 
 
 def base_name(b: ast.expr) -> str:
@@ -82,7 +95,7 @@ def check_file(path: Path, root: Path) -> list[Violation]:
                 add(node, "pydantic-boundary", "pydantic outside entrypoints; use frozen dataclasses")
             if layer in FORBIDDEN_IMPORTS and mod in FORBIDDEN_IMPORTS[layer]:
                 add(node, "layer-direction", f"'{layer}' must not import '{mod}'")
-            if layer == "core" and mod in IO_MODULES:
+            if layer == "core" and mod in IO_MODULES and not imports_only_pure(node):
                 add(node, "pure-core", f"core imports I/O module '{mod}'")
 
         if isinstance(node, ast.Attribute) and node.attr == "argv" and base_name(node.value) == "sys":
