@@ -4,6 +4,9 @@ from app.config import Settings
 from app.entrypoints.api import create_app
 from app.wiring import Container
 
+# Repositories are not exercised by these tests.
+NO_REPOS = dict.fromkeys(("users", "sessions", "videos", "jobs", "results"))
+
 
 class FakeHealthCheck:
     def __init__(self, is_ok: bool):
@@ -20,7 +23,7 @@ def test_health_ok():
         database_url="sqlite:///:memory:",
         git_sha="test_sha",
     )
-    container = Container(settings=settings, health_check=FakeHealthCheck(True))
+    container = Container(**NO_REPOS, settings=settings, health_check=FakeHealthCheck(True))
     app = create_app(container)
     client = TestClient(app)
 
@@ -36,7 +39,7 @@ def test_health_db_down():
         database_url="sqlite:///:memory:",
         git_sha="test_sha",
     )
-    container = Container(settings=settings, health_check=FakeHealthCheck(False))
+    container = Container(**NO_REPOS, settings=settings, health_check=FakeHealthCheck(False))
     app = create_app(container)
     client = TestClient(app)
 

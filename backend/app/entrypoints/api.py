@@ -36,7 +36,7 @@ def create_app(container: Container | None = None) -> FastAPI:
     @app.exception_handler(AppError)
     async def app_error_handler(request: Request, exc: AppError):
         return JSONResponse(
-            status_code=400,
+            status_code=exc.status_code,
             content={"error": {"code": exc.__class__.__name__, "message": str(exc)}},
         )
 
