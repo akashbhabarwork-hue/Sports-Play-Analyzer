@@ -16,9 +16,7 @@ UPLOAD = NewVideo(source_type="upload", storage_key="u/clip.mp4")
 
 @pytest.fixture
 def queue(engine):
-    yield PostgresJobQueue(engine)
-    with engine.begin() as conn:
-        conn.execute(text("TRUNCATE users CASCADE"))
+    return PostgresJobQueue(engine)  # tables wiped by the autouse `clean_db` fixture
 
 
 @pytest.fixture
