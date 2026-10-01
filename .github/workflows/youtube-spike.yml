@@ -77,4 +77,6 @@ jobs:
             echo "</details>"
           } >> "$GITHUB_STEP_SUMMARY"
 
+          echo "--- yt-dlp stderr (metadata, download) ---"
+          tail -n 20 meta.err dl.err
           echo "::warning title=YouTube spike ($VARIANT)::$verdict (metadata rc=$meta_rc, download rc=$dl_rc, bytes=$size)"
