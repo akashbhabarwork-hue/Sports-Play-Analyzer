@@ -101,14 +101,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** those three commands against compose DB
 - **Done notes:** `db_tables.py` (Core tables, naming convention) + revision `0001` (6 tables, CHECKs, 3 indexes, full downgrade); `alembic.ini` + `migrations/env.py` read `DATABASE_URL`. upgrade → downgrade → upgrade verified on local Postgres 16; 13 integration tests (cycle, `alembic check` drift guard, every CHECK/unique/PK, cascade, index defs). Index EXPLAIN evidence in D-011. Also: pinned sqlalchemy/alembic, compose `migrate` no longer swallows failures, `.env.example` URL uses `+psycopg`, CI exit-5 allowance removed (F-004).
 
-### [ ] T-021 · User-scoped repositories — `MUST` `15m`
+### [x] T-021 · User-scoped repositories — `MUST` `15m`
 - **Agent:** database
 - **Depends on:** T-020
 - **Why:** "Users can only access their own jobs… enforced server-side".
 - **Scope:** Protocols in `core/ports.py`; `PostgresUserRepo`, `PostgresSessionRepo`, `PostgresVideoRepo`, `PostgresJobRepo` (every read takes `user_id`), `PostgresResultRepo`.
 - **Acceptance:** no job/video/result read method without `user_id` except worker-only methods (named `*_for_worker`); integration tests for upsert user + create/list jobs.
 - **Verify:** `pytest -q backend/tests -m integration -k repo`
-- **Done notes:** _
+- **Done notes:** `core/models.py` dataclasses, 5 Protocols in `core/ports.py`, `adapters/pg_repos.py` (User/Session/Video/Job/Result repos), shared engine in `wiring.py`. Every video/job/result read is `user_id`-scoped; worker-only methods end `_for_worker`, enforced by `tests/unit/test_ports.py`. 7 repo integration tests (upsert, create/list newest-first, B cannot read A's job/video/result/tracks, unknown ids, worker methods, atomic `create_with_video`, session expiry/logout-all) — mutation-checked. See D-013.
 
 ### [ ] T-022 · Queue: claim, heartbeat, finish, fail, sweep — `MUST` `20m` `[review-plan]`
 - **Agent:** database

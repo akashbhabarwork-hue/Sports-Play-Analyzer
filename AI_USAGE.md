@@ -33,6 +33,12 @@ Setup: project rules, specialist agent personas, skills and workflows in `.agent
 - **Fix:** `uvicorn --factory app.entrypoints.api:create_app`; `typecheck` is now `tsc -b`; CI's docker job runs the built image and smoke-tests `/health`.
 - **Lesson:** A "skipped verification" note is a debt — add an automated check that would have failed.
 
+### 4. A test that could not fail
+- **What it did:** The first atomicity test for `create_with_video` passed `config=None` to force the job insert to fail, assuming a NOT NULL violation. SQLAlchemy serialises `None` to JSON `null`, so the insert succeeded and the "test" asserted nothing useful.
+- **How I caught it:** The test failed for the wrong reason (no exception), and the next attempt raised a Python `TypeError` instead of a database error.
+- **Fix:** Use a value Postgres rejects (`\u0000` in jsonb), then temporarily split the method into two transactions to confirm the test goes red (orphan video row).
+- **Lesson:** Mutation-check new safety tests: break the code on purpose and watch the test fail.
+
 ## How I verified AI-generated code
 - Automated unit test suite with deterministic JSON fixtures (pure logic, no model dependency).
 - Integration tests against migrated Postgres schema with multi-user isolation checks.

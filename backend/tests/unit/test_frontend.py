@@ -4,6 +4,9 @@ from app.config import Settings
 from app.entrypoints.api import create_app
 from app.wiring import Container
 
+# Repositories are not exercised by these tests.
+NO_REPOS = dict.fromkeys(("users", "sessions", "videos", "jobs", "results"))
+
 
 class FakeHealthCheck:
     def check_db(self) -> bool:
@@ -18,7 +21,9 @@ def make_client(static_dir: str) -> TestClient:
         git_sha="test_sha",
         static_dir=static_dir,
     )
-    return TestClient(create_app(Container(settings=settings, health_check=FakeHealthCheck())))
+    return TestClient(
+        create_app(Container(**NO_REPOS, settings=settings, health_check=FakeHealthCheck()))
+    )
 
 
 def test_frontend_spa_fallback(tmp_path):

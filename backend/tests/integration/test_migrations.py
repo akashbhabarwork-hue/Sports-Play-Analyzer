@@ -1,36 +1,13 @@
-import os
 import uuid
-from pathlib import Path
 
 import pytest
 from alembic import command
-from alembic.config import Config
-from sqlalchemy import create_engine, text
+from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 pytestmark = pytest.mark.integration
 
-TEST_DATABASE_URL = os.getenv("TEST_DATABASE_URL", "")
-ALEMBIC_INI = Path(__file__).resolve().parents[2] / "alembic.ini"
 TABLES = {"users", "sessions", "videos", "jobs", "job_results", "player_tracks"}
-
-
-@pytest.fixture(scope="module")
-def alembic_cfg() -> Config:
-    if not TEST_DATABASE_URL:
-        pytest.skip("TEST_DATABASE_URL not set")
-    cfg = Config(str(ALEMBIC_INI))
-    cfg.attributes["database_url"] = TEST_DATABASE_URL
-    return cfg
-
-
-@pytest.fixture(scope="module")
-def engine(alembic_cfg):
-    eng = create_engine(TEST_DATABASE_URL)
-    command.downgrade(alembic_cfg, "base")
-    command.upgrade(alembic_cfg, "head")
-    yield eng
-    eng.dispose()
 
 
 @pytest.fixture

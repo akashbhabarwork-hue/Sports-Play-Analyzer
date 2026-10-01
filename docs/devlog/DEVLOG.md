@@ -90,3 +90,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** imported a non-existent `sqlalchemy.Real` (it is `REAL`) — caught by the first DDL compile, fixed before any commit.
 **Explain-it-in-review:** "The schema lives in one Core module and a reviewed Alembic revision that a test keeps in sync; constraints enforce the job state machine at the database level, and the partial claim index stays tiny because finished jobs fall out of it."
 **Next:** T-021 User-scoped repositories
+
+---
+
+## 2026-10-01 19:30 IST — T-021 User-scoped repositories (agent: database)
+**What changed:** `core/models.py` (User, NewVideo, Video, Job, JobResult, PlayerTrack), Protocols `UserRepo/SessionRepo/VideoRepo/JobRepo/ResultRepo` in `core/ports.py`, `adapters/pg_repos.py` with the five Postgres repos, `create_db_engine` shared by repos and `PostgresHealthCheck`, `Container` now carries the repos, `ExternalServiceError` (502) and the error handler uses `status_code`. Tests: `unit/test_ports.py`, `integration/conftest.py` (shared migrated DB), `integration/test_repos.py`.
+**Why:** server-side per-user isolation (A3) is enforced in the data layer, not left to each route.
+**Decisions:** D-013.
+**Verification:** local Postgres 16: integration 20 passed (7 repo + 13 migration), unit 8 passed; ruff, design checker clean; `/health` ok with the new wiring. Mutation checks: splitting `create_with_video` into two transactions makes the atomicity test fail (orphan video); adding `JobRepo.get_any(job_id)` makes `test_ports` fail.
+**AI mistakes caught:** the first atomicity test passed `config=None` expecting a NOT NULL violation, but SQLAlchemy stores it as JSON `null`, so nothing failed; then a non-serialisable value raised a Python `TypeError` rather than a DB error. Switched to a value Postgres itself rejects (NUL in jsonb) and proved the test with a mutation.
+**Explain-it-in-review:** "Authorization lives in the SQL: every user-data query has `user_id` in its WHERE clause, cross-user reads come back empty so the API can 404, and a test fails the build if anyone adds an unscoped read."
+**Next:** T-022 Queue: claim, heartbeat, finish, fail, sweep
