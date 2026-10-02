@@ -260,6 +260,46 @@ table.jobs tr:last-child td {
   font-weight: 700;
 }
 
+.field.inline {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.inline-check {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.heatmap {
+  margin: 0 auto;
+  display: grid;
+  gap: 0.5rem;
+  width: 100%;
+  max-width: 760px; /* 16:9 at this width ≈ 430 px tall: fits a laptop screen */
+}
+
+.heatmap canvas {
+  display: block;
+  border-radius: 8px;
+}
+
+.legend {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.legend-ramp {
+  width: 140px;
+  height: 10px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, rgba(255, 220, 0, 0.55), rgba(215, 25, 28, 0.9));
+}
+
 @media (max-width: 640px) {
   .topbar {
     flex-wrap: wrap;

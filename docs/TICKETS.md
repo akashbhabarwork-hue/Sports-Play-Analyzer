@@ -316,13 +316,13 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** manual
 - **Done notes:** `/app/jobs/:jobId`: header (filename/URL, submitted, status chip); active → progress + stage, polls every 2 s until done (a polling blip keeps the job on screen); failed → `ErrorBanner` (headline per code from `logic/results.ts`, server message, code, next-step button — "Upload the file instead" for `YOUTUBE_BLOCKED`/`DOWNLOAD_FAILED`); succeeded → `<video controls playsInline src=/api/jobs/{id}/video>` + 4 stats cards (players tracked, ball visible %, top possession, total distance in frame diagonals); API 404 → "Job not found" (A3); unknown routes → Not found. 5 new tests (32 total). Play/seek + A3 view in the S8 preview-server walkthrough.
 
-### [ ] T-084 · Heatmap view + player selector — `MUST` `20m`
+### [x] T-084 · Heatmap view + player selector — `MUST` `20m`
 - **Agent:** frontend
 - **Depends on:** T-083
 - **Scope:** canvas heatmap, pitch outline, legend, selector (All / Team A / Team B / #ids), optional track overlay.
 - **Acceptance:** switching players redraws within 200 ms; keyboard accessible select.
 - **Verify:** manual A1 final step
-- **Done notes:** _
+- **Done notes:** `HeatmapPanel` (team maps from stats = instant; player map fetched once then cached), `HeatmapCanvas` (DPR-scaled, ResizeObserver, neutral pitch outline, yellow→red ramp, legend, optional path overlay, `role="img"` label, max 760 px wide), native `<select>` `PlayerSelector` (All / Team A (n) / Team B (n) / `#id · team · distance`), pure `logic/heatmap.ts` (cell geometry, colour ramp, track points, options, selection parsing). Browser (preview server, visible tab): switches redrew in 41–125 ms incl. first player fetch 42 ms, cached 41 ms. 11 new tests (43 total incl. logout regression).
 
 ## S9 · Security hardening (25 m)
 

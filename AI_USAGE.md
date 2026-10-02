@@ -75,6 +75,12 @@ Setup: project rules, specialist agent personas, skills and workflows in `.agent
 - **Fix:** Renamed to `src/logic/` and amended the unpushed commit; CI change staged on top of the committed `ci.yml` only, leaving the owner's local edit out.
 - **Lesson:** After every commit, compare `git show --stat` with the files you meant to add; check what the repo actually tracks before giving advice about `.gitignore`.
 
+### 11. Bugs only a real browser showed
+- **What it did:** (a) The T-080 logout let a failed `POST /auth/logout` (5xx / network) escape, so the user clicked "Log out" and stayed on the page. (b) The first heatmap colours (pale yellow at 25 % opacity) turned olive-brown over the green pitch, and the canvas was taller than a laptop screen. Unit tests, lint and the build were all green for both.
+- **How I caught it:** An S8 walkthrough in Chrome against a throwaway preview server (real FastAPI app + built SPA over the in-memory repos, a job produced by the real pipeline). Its fake session store had no `delete`, which happened to reproduce a failing logout.
+- **Fix:** `logic/session.signOut` always clears local state (regression test); heatmap opacity starts at 0.55 and the canvas is capped at 760 px wide. Two false alarms were ruled out with evidence, not assumed: the extension's network panel showed `503` for video range requests while the server log had `206`, and a 14.8 s "redraw" was Chrome throttling a background tab (`document.hidden = true`).
+- **Lesson:** Green checks don't cover UX; drive the real thing, and verify surprising measurements against a second source before acting on them.
+
 ## How I verified AI-generated code
 - Automated unit test suite with deterministic JSON fixtures (pure logic, no model dependency).
 - Integration tests against migrated Postgres schema with multi-user isolation checks.

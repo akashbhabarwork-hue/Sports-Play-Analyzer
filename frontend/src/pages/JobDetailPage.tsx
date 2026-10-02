@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { ApiError, api } from '../api'
 import { ErrorBanner } from '../components/ErrorBanner'
+import { HeatmapPanel } from '../components/HeatmapPanel'
 import { ProgressBar } from '../components/ProgressBar'
 import { StatsCards } from '../components/StatsCards'
 import { StatusChip } from '../components/StatusChip'
@@ -89,7 +90,14 @@ export function JobDetailPage() {
       {j.status === 'succeeded' && (
         <>
           <VideoPlayer src={api.videoUrl(j.id)} />
-          {stats ? <StatsCards stats={stats} /> : <p className="muted">Loading stats…</p>}
+          {stats ? (
+            <>
+              <StatsCards stats={stats} />
+              <HeatmapPanel jobId={j.id} stats={stats} />
+            </>
+          ) : (
+            <p className="muted">Loading stats…</p>
+          )}
         </>
       )}
     </section>
