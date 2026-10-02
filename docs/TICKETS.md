@@ -352,10 +352,10 @@ Scope added by the owner after S8: full visual/UX brief. Backend first so the UI
 - **Verify:** `pytest -q -k process_job`
 - **Done notes:** Plan approved (S8b). `_analyse` (pass 1) + `_rendered_frames` (pass 2) in `services/process.py`; stages analysing → computing → rendering → saving with bands in `core/pipeline` (`STAGES`, `render_pct`); `FrameAnnotator.draw(..., teams)` colours boxes A #2563EB / B #E11D48 / unknown grey, white/black id labels, legend of teams present + ball. Tests: band order, annotator pixel colours (BGR of the brief's hex), stepper order, every pass-2 frame drawn with the same split as the stats, lease lost during rendering writes nothing — 29 local. Measured with real YOLOX: rendering 0.23 s vs analysing 10.34 s (≈2 %). See D-031.
 
-### [ ] T-088 · Design system + app shell — `MUST` `30m`
+### [x] T-088 · Design system + app shell — `MUST` `30m`
 - **Agent:** frontend · **Depends on:** T-084
 - **Scope:** tokens (brief palette, light/dark), Inter, SVG icons, original logo, sidebar → top bar + drawer <900 px, user menu, Settings page.
-- **Done notes:** _
+- **Done notes:** `styles/tokens.css` (brief palette, 12 px radius, shadows, light + `prefers-color-scheme` dark, focus ring), new `index.css` base (buttons, inputs, cards), Inter via Google Fonts (**T-091: CSP must allow fonts.googleapis.com / fonts.gstatic.com**), inline SVG icon set, original `LogoMark`, `AppShell` (sidebar ≥900 px; top bar + drawer with backdrop/Esc <900 px), `UserMenu` (initials avatar, name, email, Settings, Log out; Esc/outside click), `SettingsPage` (account, privacy note, logout). Routes: `/login` (old `/app/login` and `/app/submit` redirect), `/app/new`, `/app/settings`. 3 new tests (46).
 
 ### [ ] T-089 · Landing + sign-in pages — `MUST` `25m`
 - **Agent:** frontend · **Depends on:** T-088

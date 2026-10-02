@@ -306,3 +306,17 @@ table.jobs tr:last-child td {
     gap: 0.75rem;
   }
 }
+
+/* Legacy alias for pages not yet redesigned (removed with T-097). */
+.button {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-weight: 600;
+  padding: 0.55rem 1rem;
+  border-radius: var(--radius-sm);
+  background: var(--primary);
+  color: var(--on-primary);
+  text-decoration: none;
+  border: 0;
+}

@@ -376,3 +376,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** none.
 **Explain-it-in-review:** "We can only know the teams after watching the whole clip, so we watch it twice: first pass finds and tracks players (the expensive part), then we split teams, then a second, cheap pass redraws the boxes in team colours. Measured, the second pass is about 2 % of the time."
 **Next:** T-088 Design system + app shell (frontend)
+
+---
+
+## 2026-10-02 14:30 IST — T-088 Design system + app shell (agent: frontend)
+**What changed:** `frontend/src/styles/tokens.css`, rewritten `index.css`, `components/{icons,Logo,AppShell,UserMenu}.tsx`, `components/shell.css`, `pages/SettingsPage.tsx`, `logic/user.ts` + test, routes in `App.tsx` (`/login`, `/app/new`, `/app/settings`, redirects from old paths), Inter font links; old `Layout.tsx` removed; temporary `.button` alias in `App.css` for not-yet-redesigned pages.
+**Why:** the owner's UI brief (D-030): light app shell, indigo primary, sidebar collapsing under 900 px, user menu, dark mode via CSS variables.
+**Decisions:** all colours are tokens so dark mode is one override block; Google's G mark used only on the Google sign-in button (their branding rule); Inter from Google Fonts (CSP allow-list in T-091).
+**Verification:** lint, typecheck, `npm test` (46 passed), build ✓. Visual check in the S8b walkthrough (end of T-097).
+**AI mistakes caught:** one batch edit ran from the repo root instead of `frontend/` and failed without changing anything — re-run from the right directory.
+**Explain-it-in-review:** "Every colour is a CSS variable, so dark mode is one block of overrides. On small screens the sidebar becomes a drawer you open from the top bar; Escape or a tap outside closes it."
+**Next:** T-089 Landing + sign-in pages

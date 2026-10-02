@@ -1,4 +1,4 @@
-// Messages for /app/login?error=… (the backend redirects there when Google login fails).
+// Messages for /login?error=… (the backend redirects there when Google login fails).
 // Only known codes map to text; anything else gets a generic line, never the raw query value.
 const MESSAGES: Record<string, string> = {
   oauth_failed: 'Google sign-in did not complete. Please try again.',

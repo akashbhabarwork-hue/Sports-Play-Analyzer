@@ -32,7 +32,7 @@ export function JobsPage() {
     <section>
       <div className="page-head">
         <h1>Your analyses</h1>
-        <Link className="button" to="/app/submit">
+        <Link className="button" to="/app/new">
           New analysis
         </Link>
       </div>
@@ -45,7 +45,7 @@ export function JobsPage() {
       {jobs?.length === 0 && (
         <div className="card center">
           <p>No analyses yet.</p>
-          <Link to="/app/submit">Upload a clip or paste a YouTube link</Link>
+          <Link to="/app/new">Upload a clip or paste a YouTube link</Link>
         </div>
       )}
       {jobs && jobs.length > 0 && (

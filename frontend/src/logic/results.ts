@@ -5,7 +5,7 @@ export interface ErrorHelp {
   action: { label: string; to: string } | null
 }
 
-const UPLOAD = '/app/submit'
+const UPLOAD = '/app/new'
 
 // Titles for the failure codes the worker records (D-026). The server's own message is shown
 // underneath; this adds a headline and the obvious next step.
