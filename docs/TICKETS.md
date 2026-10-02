@@ -197,14 +197,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** `pytest -q backend/tests/unit -k track`
 - **Done notes:** `Box`/`Detection`/`Track`/`TrackerParams`/`TrackerState` in `core/models.py`; `core/tracking.py` (`iou_matrix`, `associate` via Hungarian, `predict`, `update`, `player_detections`, `pick_ball`); tracker settings + range validation in `config.py`, `wiring.tracker_params`. 7 fixtures from `tests/fixtures/make_track_fixtures.py`. 33 tests in ~0.1 s (the 8 from the skill + exact-max-age boundary, low boxes can't start or grow tracks, optimal-vs-greedy matching, min_hits=1, tiny-box filter, settings flow + 8 bad-setting cases). 7 mutations caught (no stage 2, no prediction, tentative kept on miss, max-age off-by-one, tentative in stage 2, minimised IoU, no IoU floor). `TRACKER_MAX_AGE` default 30 → 10. numpy + scipy pinned. See D-021.
 
-### [ ] T-051 · Metrics: distance, heatmaps, ball %, possession — `MUST` `20m`
+### [x] T-051 · Metrics: distance, heatmaps, ball %, possession — `MUST` `20m`
 - **Agent:** cv-pipeline
 - **Depends on:** T-050
 - **Why:** Metrics list in brief §6; "Unit tests for… metric maths".
 - **Scope:** `core/metrics.py`, `core/heatmap.py`, `core/possession.py`; stats JSON builder matching the contract in skill `sports-metrics`.
 - **Acceptance:** tests from skill (line distance, jitter, gap, heatmap edges, ball 25 %, possession hysteresis) pass.
 - **Verify:** `pytest -q backend/tests/unit -k "metric or heatmap or possession"`
-- **Done notes:** _
+- **Done notes:** `FrameObservation`/`MetricsParams`/`MatchMetrics` models; `core/heatmap.py` (`heatmap_cell`, `build_heatmap`, `sum_heatmaps`), `core/possession.py` (candidate, hysteresis owners, counts), `core/metrics.py` (`path_distance`, `ball_visible_pct`, `build_stats` → stats JSON + `player_tracks` rows); metrics settings + validation, `wiring.metrics_params`. 33 tests in < 1 s (skill cases: 100 px line, ±1 px jitter, gap, heatmap edges + totals, 3/12 = 25.0, P1-1-frame/P2-5-frames hysteresis; plus standing wobble = 0, slow walker, short pass, ball gaps, stats contract, rows, team heatmap sums, empty video, settings). 9 mutations caught. See D-022.
 
 ### [ ] T-052 · Team split by jersey colour — `MUST` `10m`
 - **Agent:** cv-pipeline

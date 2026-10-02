@@ -17,7 +17,7 @@ from .adapters.pg_repos import (
 from .adapters.safe_http_fetcher import SafeHttpDownloader
 from .adapters.ytdlp_fetcher import YtDlpMetadataFetcher
 from .config import Settings
-from .core.models import TrackerParams
+from .core.models import MetricsParams, TrackerParams
 from .core.ports import (
     BlobStore,
     HealthCheck,
@@ -79,6 +79,17 @@ def tracker_params(settings: Settings) -> TrackerParams:
         max_age=settings.tracker_max_age,
         min_hits=settings.tracker_min_hits,
         min_box_area_rel=settings.min_box_area_rel,
+    )
+
+
+def metrics_params(settings: Settings) -> MetricsParams:
+    return MetricsParams(
+        jitter_px=settings.jitter_px,
+        max_gap_frames=settings.tracker_max_age,
+        heatmap_w=settings.heatmap_grid_w,
+        heatmap_h=settings.heatmap_grid_h,
+        possession_dist_ratio=settings.possession_dist_ratio,
+        possession_min_frames=settings.possession_min_frames,
     )
 
 

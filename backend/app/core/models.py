@@ -180,3 +180,31 @@ class TrackerState:
     tracks: tuple[Track, ...] = ()
     next_internal: int = 1
     next_public: int = 1
+
+
+@dataclass(frozen=True, slots=True)
+class FrameObservation:
+    """What the pipeline saw in one sampled frame: the input to every metric."""
+
+    frame_idx: int  # sampled-frame index (0, 1, 2, …)
+    t_s: float  # video time in seconds
+    tracks: tuple[Track, ...]  # confirmed tracks matched in this frame
+    ball: Box | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class MetricsParams:
+    jitter_px: float
+    max_gap_frames: int  # don't bridge distance across longer gaps (= tracker max age)
+    heatmap_w: int
+    heatmap_h: int
+    possession_dist_ratio: float  # ball within ratio × player box height of the feet
+    possession_min_frames: int
+
+
+@dataclass(frozen=True, slots=True)
+class MatchMetrics:
+    """Output of core.metrics.build_stats: the stats JSON and one row per player."""
+
+    stats: dict[str, Any]
+    tracks: tuple[PlayerTrack, ...]

@@ -71,6 +71,16 @@ TRACKER_MIN_HITS = int(os.getenv("TRACKER_MIN_HITS", "3"))
 # Boxes smaller than this fraction of the frame area are ignored (crowd, far-away noise).
 MIN_BOX_AREA_REL = float(os.getenv("MIN_BOX_AREA_REL", "0.0005"))
 
+# ---- metrics (core/metrics.py, heatmap.py, possession.py) ----
+# Feet movements under JITTER_PX pixels are detector wobble, not running.
+JITTER_PX = float(os.getenv("JITTER_PX", "2.0"))
+HEATMAP_GRID_W = int(os.getenv("HEATMAP_GRID_W", "32"))
+HEATMAP_GRID_H = int(os.getenv("HEATMAP_GRID_H", "18"))
+# A player "has" the ball when it is within this many box heights of their feet, for at
+# least POSSESSION_MIN_FRAMES sampled frames in a row.
+POSSESSION_DIST_RATIO = float(os.getenv("POSSESSION_DIST_RATIO", "0.5"))
+POSSESSION_MIN_FRAMES = int(os.getenv("POSSESSION_MIN_FRAMES", "3"))
+
 REQUIRED_IN_PRODUCTION = ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "SESSION_SECRET")
 
 
@@ -108,6 +118,11 @@ class Settings:
     tracker_max_age: int = 10
     tracker_min_hits: int = 3
     min_box_area_rel: float = 0.0005
+    jitter_px: float = 2.0
+    heatmap_grid_w: int = 32
+    heatmap_grid_h: int = 18
+    possession_dist_ratio: float = 0.5
+    possession_min_frames: int = 3
 
     @property
     def oauth_configured(self) -> bool:
@@ -145,6 +160,7 @@ def validate_settings(settings: Settings) -> None:
                 f"Missing required settings for BLOB_BACKEND=s3: {', '.join(missing_s3)}"
             )
     validate_tracker_settings(settings)
+    validate_metrics_settings(settings)
     if settings.app_env != "production":
         return
     if settings.blob_backend != "s3":
@@ -168,6 +184,15 @@ def validate_tracker_settings(settings: Settings) -> None:
         raise RuntimeError("TRACKER_MAX_AGE and TRACKER_MIN_HITS must be at least 1")
     if not 0 <= settings.min_box_area_rel < 1:
         raise RuntimeError("MIN_BOX_AREA_REL must be in [0, 1)")
+
+
+def validate_metrics_settings(settings: Settings) -> None:
+    if settings.jitter_px < 0:
+        raise RuntimeError("JITTER_PX must be >= 0")
+    if not (1 <= settings.heatmap_grid_w <= 256 and 1 <= settings.heatmap_grid_h <= 256):
+        raise RuntimeError("HEATMAP_GRID_W and HEATMAP_GRID_H must be between 1 and 256")
+    if settings.possession_dist_ratio <= 0 or settings.possession_min_frames < 1:
+        raise RuntimeError("POSSESSION_DIST_RATIO must be > 0 and POSSESSION_MIN_FRAMES >= 1")
 
 
 def load_settings() -> Settings:
@@ -204,6 +229,11 @@ def load_settings() -> Settings:
         tracker_max_age=TRACKER_MAX_AGE,
         tracker_min_hits=TRACKER_MIN_HITS,
         min_box_area_rel=MIN_BOX_AREA_REL,
+        jitter_px=JITTER_PX,
+        heatmap_grid_w=HEATMAP_GRID_W,
+        heatmap_grid_h=HEATMAP_GRID_H,
+        possession_dist_ratio=POSSESSION_DIST_RATIO,
+        possession_min_frames=POSSESSION_MIN_FRAMES,
     )
     validate_settings(settings)
     return settings

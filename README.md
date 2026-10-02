@@ -50,6 +50,10 @@ Rollback: Actions → Rollback → enter previous sha. First-time setup: see [do
 | `TRACKER_MAX_AGE` | `10` | Sampled frames a hidden player keeps their id (10 at 5 fps = 2 s) |
 | `TRACKER_MIN_HITS` | `3` | Sightings before a track is confirmed and gets a player id |
 | `MIN_BOX_AREA_REL` | `0.0005` | Ignore player boxes smaller than this fraction of the frame |
+| `JITTER_PX` | `2.0` | Feet movements below this (pixels) are detector wobble, not distance |
+| `HEATMAP_GRID_W` / `HEATMAP_GRID_H` | `32` / `18` | Heatmap grid size |
+| `POSSESSION_DIST_RATIO` | `0.5` | Ball counts as at a player's feet within this × their box height |
+| `POSSESSION_MIN_FRAMES` | `3` | Sampled frames in a row before possession changes hands |
 | `MAX_VIDEO_DURATION_SECONDS` | `60` | Maximum allowed duration for processing |
 | `MAX_UPLOAD_SIZE_BYTES` | `104857600` | Maximum upload size (100 MB); enforced before and while the body is read |
 | `UPLOAD_TMP_DIR` | system temp | Parent dir for per-request upload temp dirs (always removed) |

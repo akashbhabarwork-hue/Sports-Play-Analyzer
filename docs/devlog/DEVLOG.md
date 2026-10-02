@@ -200,3 +200,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** the first test set did not cover tentative tracks being fed by low-confidence boxes — found by the mutation run, test added.
 **Explain-it-in-review:** "Each frame we predict where every player should be, match confident boxes to those predictions with the Hungarian algorithm, then let weak boxes keep already-known players alive. A player gets a number only after three sightings, so one-frame false positives never show up and ids stay 1..N."
 **Next:** T-051 Metrics: distance, heatmaps, ball %, possession
+
+---
+
+## 2026-10-02 11:15 IST — T-051 Metrics: distance, heatmaps, ball %, possession (agent: cv-pipeline)
+**What changed:** `FrameObservation`, `MetricsParams`, `MatchMetrics` in `core/models.py`; `core/heatmap.py`, `core/possession.py`, `core/metrics.py` (`build_stats` → stats JSON + `player_tracks` rows); `JITTER_PX`, `HEATMAP_GRID_W/H`, `POSSESSION_DIST_RATIO`, `POSSESSION_MIN_FRAMES` settings with validation; `wiring.metrics_params`.
+**Threats blocked:** n/a (pure maths); bad metric config fails at startup.
+**Decisions:** D-022 (one pass at the end; jitter measured from the last counted point; loose ball is a hysteresis candidate; stats carry team/all heatmaps).
+**Verification:** 33 metric tests in < 1 s; full suite, ruff and design checker clean. 9 mutations caught (no jitter filter, reference moved every frame, gap bridged, no hysteresis, no reset after a long ball gap, reset on any gap, no possession distance limit, no heatmap clamp, wrong ball-% denominator).
+**AI mistakes caught:** (1) the skill's literal jitter rule ("skip steps < JITTER_PX") would give a player walking 1 px per sampled frame zero distance — replaced with a dead-band from the last counted point and a test for the slow walker; (2) my first gap-bridging test had wrong arithmetic (the bridged step didn't move), so it asserted the wrong number — fixed the test data so the bridged step is a real 100 px jump.
+**Explain-it-in-review:** "The worker records what it saw each frame; at the end, plain functions turn that into distance (ignoring detector wobble), heatmaps, ball visibility and possession, where the ball has to stay with a new player for three frames before it changes hands."
+**Next:** T-052 Team split by jersey colour
