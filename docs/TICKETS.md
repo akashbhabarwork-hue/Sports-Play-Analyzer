@@ -402,14 +402,14 @@ Scope added by the owner after S8: full visual/UX brief. Backend first so the UI
 - **Verify:** `pytest -q -k headers`; `curl -I`
 - **Done notes:** Pure `core/security_headers.py` (CSP: self + Google Fonts + S3 endpoint origin in path- and virtual-hosted form + `CSP_MEDIA_ORIGINS`; nosniff, DENY, Referrer-Policy, Permissions-Policy; HSTS only `APP_ENV=production`; `no-store` on `/api`, `/auth`, `/jobs` unless the route set Cache-Control). Outermost `harden_responses` middleware also catches unhandled exceptions → 500 `INTERNAL` "Something went wrong (ref xxxx)", traceback + ref only in logs. CORS only when `CORS_ORIGINS` set (exact http(s) origins, `*` refused at startup; also CSRF-trusted). Envelope everywhere: `RequestValidationError` → 422 `VALIDATION_ERROR` ("url: Field required", no input echoed), framework 404/405 → `NOT_FOUND`/`METHOD_NOT_ALLOWED` (+ `Allow`). `serve_spa` realpath containment (F-001; test reads `TOP-SECRET` without it). `-k headers` → 21 passed; browser on preview server under the real CSP: Inter fonts, annotated video plays, canvas heatmap, thumbnail — 0 CSP console errors. See D-033.
 
-### [ ] T-092 · Secret scanning in CI — `SHOULD` `5m`
+### [x] T-092 · Secret scanning in CI — `SHOULD` `5m`
 - **Agent:** devops
 - **Depends on:** T-013
 - **Why:** "Nothing sensitive in git history".
 - **Scope:** pinned gitleaks step over full history (`fetch-depth: 0`).
 - **Acceptance:** CI green; scan output clean.
 - **Verify:** Actions log
-- **Done notes:** _
+- **Done notes:** New `secrets` job in `ci.yml` (`contents: read`, checkout pinned SHA with `fetch-depth: 0`, `persist-credentials: false`): downloads gitleaks **v8.30.1** linux_x64, `sha256sum --check` against the hash from the release's official checksums file, `gitleaks git --redact --exit-code 1`. Local run with the same version (Windows build, hash verified): 54 commits, **no leaks** — no `.gitleaks.toml` allowlist needed. Test string `password=hunter2` in T-091 replaced before commit to avoid a false positive. CI result: first run on the S9 PR. See D-034.
 
 ## S10 · CD, production config, rollback (40 m)
 

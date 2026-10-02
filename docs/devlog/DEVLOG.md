@@ -464,3 +464,13 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** F-001 traversal in the original SPA route (regression test proven to read the secret without the fix); `/jobs` aliases missing from no-store; `caplog` assumption — see AI_USAGE #14.
 **Explain-it-in-review:** "Every response gets a strict CSP — only our own scripts, Google Fonts and our storage host for video — plus nosniff, frame-deny and HSTS in production. CORS is off because the SPA is same-origin. Every error, even a crash, comes back in the same JSON shape with no internals; a crash gives the user a reference id we can find in the logs."
 **Next:** T-092 Secret scanning in CI
+---
+
+## 2026-10-02 15:57 IST — T-092 Secret scanning in CI (agent: devops)
+**What changed:** `.github/workflows/ci.yml` new `secrets` job (pinned checkout, full history, gitleaks v8.30.1 downloaded + sha256-verified, `gitleaks git --redact --exit-code 1`). Only this job was staged — the local `.agent` → `.claude` path edit in the same file stays uncommitted.
+**Why:** "Nothing sensitive in git history".
+**Decisions:** D-034 (plain pinned binary instead of gitleaks-action; full history; redacted output; no allowlist needed).
+**Verification:** same gitleaks version locally (Windows zip, hash matched the checksums file): 54 commits scanned, no leaks, exit 0. Staged workflow parses (jobs: backend, secrets, frontend, docker). **Not yet run in CI** — first run on the S9 PR.
+**AI mistakes caught:** none in this ticket (the T-091 test string that could have tripped gitleaks was changed before committing).
+**Explain-it-in-review:** "Every push scans the whole git history with gitleaks, a pinned version whose checksum we verify, so even a secret deleted later fails the build. Findings are redacted in the log."
+**Next:** S9 stage summary, then S10 deploy (T-014 / T-100)
