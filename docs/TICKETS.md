@@ -273,14 +273,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** `pytest -q -m integration -k api_read`
 - **Done notes:** Plan approved (owner chose: keep `/jobs…` aliases, SPA pages under `/app/…`). `GET /api/jobs`, `/{id}`, `/stats`, `/players/{pid}`, `/heatmap?team=`, `/video` (+ `/jobs…` aliases, hidden from OpenAPI; `POST /jobs/upload|url` aliases). 404 for missing/foreign before 409 for not-succeeded; video = presigned 302 (S3, ≤300 s) or Range streaming (200/206/416). 45 local tests (Range parser + API over user-scoped fakes); `tests/integration/test_api_read.py` (3, **CI-only**). Browser seek → T-083. See D-028.
 
-### [ ] T-071 · Required authorization test (A vs B) — `MUST` `5m`
+### [x] T-071 · Required authorization test (A vs B) — `MUST` `5m`
 - **Agent:** qa
 - **Depends on:** T-070, T-032
 - **Why:** "At least one authorization test (user A cannot read user B's job)".
 - **Scope:** the test from skill `testing-strategy` covering every job-scoped endpoint + list.
 - **Acceptance:** passes; fails if any repository `user_id` filter is removed (try it once, revert).
 - **Verify:** `pytest -q -m integration -k user_b_cannot`
-- **Done notes:** _
+- **Done notes:** `tests/integration/test_authz_user_b_cannot.py` (26 cases, **CI-only**) + `tests/unit/test_authz_matrix.py` (27, local): every job endpoint × `/api/jobs` and `/jobs` aliases; B gets 404 (identical to a random id, even where A gets 409); A's jobs absent from B's list. Mutation-checked locally: removing `user_id` from job lookup (14 fail) or list (2 fail) is caught; a results-only filter removal is masked by the job-ownership check (defence in depth) and covered by T-021's repo test. SQL-level mutation re-run queued for the Docker pass.
 
 ## S8 · Frontend (1 h 10 m)
 
