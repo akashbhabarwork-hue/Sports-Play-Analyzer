@@ -22,6 +22,25 @@ class CsrfRejectedError(AppError):
     code = "CSRF_REJECTED"
 
 
+class NotFoundError(AppError):
+    """Missing OR owned by someone else: the two are deliberately indistinguishable (A3)."""
+
+    status_code = 404
+    code = "NOT_FOUND"
+
+
+class JobNotReadyError(AppError):
+    """Results were asked for before the job succeeded."""
+
+    status_code = 409
+    code = "JOB_NOT_READY"
+
+
+class RangeNotSatisfiableError(AppError):
+    status_code = 416
+    code = "RANGE_NOT_SATISFIABLE"
+
+
 class ExternalServiceError(AppError):
     """A dependency (database, storage, upstream API) failed; details stay in the logs."""
 

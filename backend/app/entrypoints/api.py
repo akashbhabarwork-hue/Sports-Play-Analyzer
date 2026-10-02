@@ -4,33 +4,58 @@ import secrets
 import tempfile
 import time
 from datetime import UTC, datetime
+from typing import Literal
+from uuid import UUID
 
 from fastapi import APIRouter, Depends, FastAPI, Request, Response, UploadFile
 from fastapi.concurrency import run_in_threadpool
-from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
+from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from starlette.middleware.sessions import SessionMiddleware
 
 from ..config import Settings, load_settings
-from ..core.models import User
+from ..core.http_range import parse_range
+from ..core.models import Job, User
 from ..errors import (
     AppError,
     CsrfRejectedError,
     OAuthLoginError,
+    RangeNotSatisfiableError,
     ServiceUnavailableError,
     UnauthorizedError,
 )
 from ..services.auth import login_user, logout, user_for_token
+from ..services.read_job import (
+    JobView,
+    PlayerView,
+    VideoAccess,
+    get_heatmap,
+    get_job,
+    get_player,
+    get_stats,
+    get_video,
+    list_jobs,
+)
 from ..services.submit import UploadLimits, submit_upload_job, submit_url_job
 from ..wiring import Container, build_container
 from .csrf import is_request_trusted
 from .limits import BodySizeLimitMiddleware, copy_capped
 from .log_config import setup_logging
-from .schemas import JobAccepted, MeResponse, UrlSubmit
+from .schemas import (
+    Heatmap,
+    JobAccepted,
+    JobDetail,
+    JobList,
+    MeResponse,
+    PlayerDetail,
+    StatsResponse,
+    UrlSubmit,
+    VideoInfo,
+)
 
 access_logger = logging.getLogger("app.access")
 
-UPLOAD_PATH = "/api/jobs/upload"
+UPLOAD_PATHS = frozenset({"/api/jobs/upload", "/jobs/upload"})  # canonical + D-004 alias
 
 OAUTH_TX_COOKIE = "oauth_tx"
 OAUTH_TX_MAX_AGE = 600  # state/nonce/PKCE verifier only live for the login round trip
@@ -125,7 +150,7 @@ def create_app(container: Container | None = None) -> FastAPI:
     # Added last = outermost user middleware: it sees the raw body before any parsing.
     app.add_middleware(
         BodySizeLimitMiddleware,
-        paths=frozenset({UPLOAD_PATH}),
+        paths=UPLOAD_PATHS,
         max_file_bytes=settings.max_upload_bytes,
     )
 
@@ -137,7 +162,8 @@ def create_app(container: Container | None = None) -> FastAPI:
 
         @app.get("/{full_path:path}", include_in_schema=False)
         def serve_spa(full_path: str):
-            if full_path.startswith(("api/", "auth/")) or full_path == "health":
+            # /jobs… are API aliases (D-004); the SPA's own pages live under /app/… (D-028).
+            if full_path.startswith(("api/", "auth/", "jobs/")) or full_path in ("health", "jobs"):
                 return JSONResponse(status_code=404, content={"detail": "Not Found"})
 
             # Serve specific files in dist root (like vite.svg, etc) if they exist
@@ -225,11 +251,83 @@ def make_current_user(container: Container):
     return current_user
 
 
+def job_summary(job: Job) -> dict:
+    error = {"code": job.error_code, "message": job.error_message} if job.error_code else None
+    return {
+        "id": job.id,
+        "status": job.status,
+        "progress": job.progress,
+        "stage": job.stage,
+        "error": error,
+        "created_at": job.created_at,
+        "finished_at": job.finished_at,
+    }
+
+
+def job_detail(view: JobView) -> JobDetail:
+    v = view.video
+    video = (
+        VideoInfo(
+            source_type=v.source_type,
+            original_filename=v.original_filename,
+            source_url=v.source_url,
+            duration_s=v.duration_s,
+        )
+        if v
+        else None
+    )
+    return JobDetail(
+        **job_summary(view.job),
+        started_at=view.job.started_at,
+        attempts=view.job.attempts,
+        video=video,
+    )
+
+
+def player_detail(view: PlayerView) -> PlayerDetail:
+    t = view.track
+    return PlayerDetail(
+        player_id=t.track_id,
+        team=t.team,
+        distance_px=t.distance_px,
+        distance_rel=t.distance_rel,
+        frames_visible=t.frames_visible,
+        possession_pct=view.possession_pct,
+        track=t.track,
+        heatmap=Heatmap(**t.heatmap),
+    )
+
+
+def video_response(container: Container, access: VideoAccess, range_header: str | None):
+    """302 to a short-lived storage URL (S3), or stream it ourselves with Range support so
+    the browser's <video> can seek without downloading the whole file."""
+    if access.url is not None:
+        return RedirectResponse(access.url, status_code=302, headers={"Cache-Control": "no-store"})
+    try:
+        byte_range = parse_range(range_header, access.size)
+    except RangeNotSatisfiableError as e:
+        response = error_response(e)
+        response.headers["Content-Range"] = f"bytes */{access.size}"
+        return response
+    headers = {"Accept-Ranges": "bytes", "Cache-Control": "private, max-age=300"}
+    if byte_range is None:
+        start, end, status = 0, access.size - 1, 200
+    else:
+        (start, end), status = byte_range, 206
+        headers["Content-Range"] = f"bytes {start}-{end}/{access.size}"
+    headers["Content-Length"] = str(end - start + 1)
+    body = container.blobs.open_range(access.key, start, end)
+    return StreamingResponse(body, status_code=status, media_type="video/mp4", headers=headers)
+
+
 def register_api_routes(app: FastAPI, container: Container) -> None:
     current_user = make_current_user(container)
     # Every /api route hangs off this router, so none can skip authentication;
     # tests/unit/test_api_routes.py fails if an /api route lacks the dependency.
     api = APIRouter(prefix="/api", dependencies=[Depends(current_user)])
+    # Job routes live on their own router, mounted at /api/jobs… (canonical) and at /jobs…
+    # (aliases matching the brief's curl examples, D-004). Same handlers, same auth.
+    jobs = APIRouter(dependencies=[Depends(current_user)])
 
     @api.get("/me", response_model=MeResponse)
     def me(user: User = Depends(current_user)) -> MeResponse:
@@ -241,7 +339,7 @@ def register_api_routes(app: FastAPI, container: Container) -> None:
     )
     tmp_root = container.settings.upload_tmp_dir or None
 
-    @api.post("/jobs/upload", status_code=202, response_model=JobAccepted)
+    @jobs.post("/jobs/upload", status_code=202, response_model=JobAccepted)
     def upload_video(file: UploadFile, user: User = Depends(current_user)) -> JobAccepted:
         # Per-request temp dir, removed in every outcome (success, 4xx, crash).
         with tempfile.TemporaryDirectory(dir=tmp_root, prefix="upload-") as tmp:
@@ -259,11 +357,45 @@ def register_api_routes(app: FastAPI, container: Container) -> None:
             )
         return JobAccepted(job_id=job.id, status=job.status)
 
-    @api.post("/jobs/url", status_code=202, response_model=JobAccepted)
+    @jobs.post("/jobs/url", status_code=202, response_model=JobAccepted)
     def submit_url(body: UrlSubmit, user: User = Depends(current_user)) -> JobAccepted:
         job = submit_url_job(
             container.jobs, user.id, body.url, {"max_video_seconds": limits.max_duration_s}
         )
         return JobAccepted(job_id=job.id, status=job.status)
 
+    # ---- reads (T-070): all scoped to the session user; foreign or missing ids → 404 ----
+
+    @jobs.get("/jobs", response_model=JobList)
+    def jobs_list(user: User = Depends(current_user)) -> JobList:
+        return JobList(jobs=[job_summary(j) for j in list_jobs(container.jobs, user.id)])
+
+    @jobs.get("/jobs/{job_id}", response_model=JobDetail)
+    def job_get(job_id: UUID, user: User = Depends(current_user)) -> JobDetail:
+        return job_detail(get_job(container.jobs, container.videos, user.id, job_id))
+
+    @jobs.get("/jobs/{job_id}/stats")
+    def job_stats(job_id: UUID, user: User = Depends(current_user)) -> StatsResponse:
+        return get_stats(container.jobs, container.results, user.id, job_id)
+
+    @jobs.get("/jobs/{job_id}/players/{player_id}", response_model=PlayerDetail)
+    def job_player(job_id: UUID, player_id: int, user: User = Depends(current_user)):
+        view = get_player(container.jobs, container.results, user.id, job_id, player_id)
+        return player_detail(view)
+
+    @jobs.get("/jobs/{job_id}/heatmap", response_model=Heatmap)
+    def job_heatmap(
+        job_id: UUID,
+        team: Literal["all", "A", "B"] = "all",
+        user: User = Depends(current_user),
+    ):
+        return get_heatmap(container.jobs, container.results, user.id, job_id, team)
+
+    @jobs.get("/jobs/{job_id}/video")
+    def job_video(job_id: UUID, request: Request, user: User = Depends(current_user)):
+        access = get_video(container.jobs, container.results, container.blobs, user.id, job_id)
+        return video_response(container, access, request.headers.get("range"))
+
+    api.include_router(jobs)
     app.include_router(api)
+    app.include_router(jobs, include_in_schema=False)  # /jobs… aliases (D-004)

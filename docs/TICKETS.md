@@ -264,14 +264,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 
 ## S7 · Read API (25 m)
 
-### [ ] T-070 · Job read endpoints — `MUST` `20m`
+### [x] T-070 · Job read endpoints — `MUST` `20m`
 - **Agent:** backend-api
 - **Depends on:** T-062
 - **Why:** API list in brief: `GET /jobs/{id}`, `/stats`, `/players/{pid}`; UI needs list, video, heatmap.
 - **Scope:** `GET /api/jobs`, `/api/jobs/{id}` (status, progress, stage, error), `/stats` (409 if not done), `/players/{pid}`, `/heatmap?team=`, `/video` (Range stream locally or 302 presigned ≤5 min); `/jobs/...` alias if decided in T-002; all user-scoped → 404.
 - **Acceptance:** response shapes match skill `sports-metrics` contract; video seeks in browser.
 - **Verify:** `pytest -q -m integration -k api_read`
-- **Done notes:** _
+- **Done notes:** Plan approved (owner chose: keep `/jobs…` aliases, SPA pages under `/app/…`). `GET /api/jobs`, `/{id}`, `/stats`, `/players/{pid}`, `/heatmap?team=`, `/video` (+ `/jobs…` aliases, hidden from OpenAPI; `POST /jobs/upload|url` aliases). 404 for missing/foreign before 409 for not-succeeded; video = presigned 302 (S3, ≤300 s) or Range streaming (200/206/416). 45 local tests (Range parser + API over user-scoped fakes); `tests/integration/test_api_read.py` (3, **CI-only**). Browser seek → T-083. See D-028.
 
 ### [ ] T-071 · Required authorization test (A vs B) — `MUST` `5m`
 - **Agent:** qa
@@ -433,7 +433,7 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - [ ] **F-001** (T-091) `serve_spa` joins the raw URL path onto the static dir without confirming the resolved path stays inside it — add a `realpath` containment check (path traversal).
 - [ ] **F-002** (devops) Node 20 is past EOL — move the Dockerfile build stage and CI to Node 22 together.
 - [ ] **F-003** (backend-api) `pydantic` is unpinned in `backend/requirements.txt` (sqlalchemy pinned in T-020); local dev ruff differs from the pinned 0.4.8 — pin and bump deliberately.
-- [ ] **F-006** (T-070) Add the `/jobs/...` aliases from D-004 alongside the read endpoints; also return validation errors (e.g. missing `file` field) in the `{error:{code,message}}` envelope (T-091).
+- [ ] **F-006** (T-070) ~~Add the `/jobs/...` aliases from D-004 alongside the read endpoints~~ (done in T-070, D-028); still open: return validation errors (e.g. missing `file` field, bad `?team=`) in the `{error:{code,message}}` envelope (T-091).
 - [ ] **F-005** (devops, before T-100) Finish T-014: Fly app (web+worker), Neon, bucket, first deploy, `/health` live; re-run the YouTube spike from the prod worker (`fly ssh console`) and update D-010. Pick the mitigation (none / cookies / proxy) for A1.
 - [x] **F-004** (T-020) Remove the "exit 5 = ok" allowance from the CI integration step once integration tests exist.
 - [ ] **F-007** (backend-api) Snapshot the full pipeline config into `jobs.config` at submit time (today only `max_video_seconds`; `stats.config` already records the effective values per result — D-026).

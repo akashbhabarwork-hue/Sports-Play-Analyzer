@@ -266,3 +266,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** a DB outage during an idle poll would have killed the worker (AI_USAGE #9) — found in self-review, regression tests written first, then fixed.
 **Explain-it-in-review:** "The worker loop is deliberately boring: sweep jobs that ran out of attempts, claim the next one with SKIP LOCKED, process it, repeat. The safety is in the queue — leases, attempt counts and a one-transaction finish — so if the worker dies anywhere, the lease runs out and another worker redoes the job from scratch without duplicating anything. On SIGTERM it finishes the job it has, then exits."
 **Next:** T-070 Job read endpoints (backend-api) — T-064 (SHOULD) needs the prod worker, so it waits for the deploy.
+
+---
+
+## 2026-10-02 12:59 IST — T-070 Job read endpoints (agent: backend-api)
+**What changed:** `services/read_job.py` (list, get, stats, player, heatmap, video access), pure `core/http_range.py`, errors `NotFoundError`/`JobNotReadyError`/`RangeNotSatisfiableError`, response schemas (`JobSummary`, `JobDetail`, `JobList`, `VideoInfo`, `PlayerDetail`, `Heatmap`), `api.py` job routes on one router mounted at `/api/jobs…` and `/jobs…` (aliases), video route with Range streaming or presigned 302, upload alias under the body-size limit, `serve_spa` leaves `/jobs…` to the API; tests `tests/unit/test_http_range.py`, `tests/unit/test_read_api.py` (+ shared `tests/api_fakes.py`), `tests/integration/test_api_read.py`.
+**Why:** brief API list + UI needs; scenarios A1 (video, heatmap) and A3 (404 for other users).
+**Decisions:** D-028 (404 before 409; presigned 302 on S3 vs Range streaming locally; aliases + SPA under `/app/…`, chosen by the owner in plan review).
+**Verification:** plan approved first (touches authorization). Locally `pytest -q -k "http_range or read_api"` → 45 passed; full unit suite 460 passed, 1 failed (pre-existing Windows-only chmod test); ruff, format, design checker clean. **Not run locally:** `pytest -q -m integration -k api_read` (3 tests, CI first run). Browser seek check comes with the frontend (T-083).
+**AI mistakes caught:** design checker flagged `JobDetail(JobSummary)` inheritance (house rule) → fields spelled out; a no-op assertion in the list test removed during self-review.
+**Explain-it-in-review:** "Every read starts by looking the job up together with your user id, so somebody else's job looks exactly like a job that doesn't exist — 404. Results before the job finishes are a 409. The video is either a 5-minute signed link to object storage or, locally, streamed by us with Range support so the player can seek."
+**Next:** T-071 Required authorization test (A vs B) (qa)
