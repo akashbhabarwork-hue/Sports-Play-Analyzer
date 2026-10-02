@@ -420,3 +420,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** none.
 **Explain-it-in-review:** "The list is one request; filters and counts are just grouping on the client. It refreshes every two seconds only while something is still running."
 **Next:** T-096 Processing view (stepper)
+
+---
+
+## 2026-10-02 14:39 IST — T-096 Processing view (stepper) (agent: frontend)
+**What changed:** `frontend/src/components/ProcessingView.tsx` + `processing.css`, `logic/stepper.ts` + tests, `logic/jobs.ts` stage labels from the brief, `JobDetailPage` routes non-succeeded jobs to the processing view; `ErrorBanner`/`ProgressBar` removed.
+**Why:** brief screen 6; the steps are real worker stages since T-087 (D-031).
+**Decisions:** step states are derived only from `status` + `stage` (never guessed from time); failed jobs mark the failing step when the backend kept the stage.
+**Verification:** lint, typecheck, `npm test` (66), build ✓.
+**AI mistakes caught:** none.
+**Explain-it-in-review:** "The stepper is a pure function of the job's status and stage, so it shows exactly what the worker reports — Fetching only appears for YouTube links."
+**Next:** T-097 Results tabs + smooth heatmaps

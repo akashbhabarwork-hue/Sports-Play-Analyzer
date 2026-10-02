@@ -372,10 +372,10 @@ Scope added by the owner after S8: full visual/UX brief. Backend first so the UI
 - **Scope:** filter chips with counts, table/cards with thumbnail, sport, status + progress, actions (View results / Resubmit / copy id), polling, empty state.
 - **Done notes:** `/app` = `MyVideosPage` (old `JobsPage` removed): header + New analysis, filter chips All/Processing/Completed/Failed with client-side counts (`aria-pressed`), table (thumbnail from `thumbnail_url` or placeholder, title via `jobTitle` fallback chain, duration, sport, status chip + inline progress bar/% for processing + failure message, local created time), actions (View results / View progress / Resubmit — URLs re-POST same link+sport+title, uploads → New analysis), `RowMenu` ⋮ (Open, Copy job ID with live-region notice), rows become cards < 700 px, empty-state illustration + CTA, 2 s polling only while active. New `StatusChip` (Queued/Processing/Completed/Failed per brief colours). Pure `logic/videos.ts`. 6 new tests (59).
 
-### [ ] T-096 · Processing view (stepper) — `MUST` `25m`
+### [x] T-096 · Processing view (stepper) — `MUST` `25m`
 - **Agent:** frontend · **Depends on:** T-087, T-088
 - **Scope:** stage stepper (queued → fetching (URL) → analysing → computing → rendering → saving), current-step card, source card, failure card, auto-switch to results.
-- **Done notes:** _
+- **Done notes:** `ProcessingView` (queued/processing/failed jobs on `/app/jobs/:id`): back link, title + subtitle, job-ID chip with copy, source card (worker thumbnail, title/URL, duration, size, status), current-step card with progress bar, vertical stepper from pure `logic/stepper.ts` (done = green check, current = spinner + `aria-current="step"`, todo = grey, failed = red; "Fetching video" only for URL jobs; no stage yet → first worker step current), original abstract runner illustration, failure card (server message, headline, monospace code, next-step button e.g. YOUTUBE_BLOCKED → "Upload the file instead" → `/app/new`). Page switches to results when polling sees `succeeded`. Stage labels per brief. Old `ErrorBanner`/`ProgressBar` removed. 7 new tests (66).
 
 ### [ ] T-097 · Results tabs + smooth heatmaps — `MUST` `45m`
 - **Agent:** frontend · **Depends on:** T-086, T-087, T-088

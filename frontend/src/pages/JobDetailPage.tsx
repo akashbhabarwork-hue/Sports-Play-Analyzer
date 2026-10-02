@@ -1,14 +1,14 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useParams } from 'react-router-dom'
 import { ApiError, api } from '../api'
-import { ErrorBanner } from '../components/ErrorBanner'
 import { HeatmapPanel } from '../components/HeatmapPanel'
-import { ProgressBar } from '../components/ProgressBar'
+import { ProcessingView } from '../components/ProcessingView'
 import { StatsCards } from '../components/StatsCards'
 import { StatusChip } from '../components/StatusChip'
 import { VideoPlayer } from '../components/VideoPlayer'
 import { usePolling } from '../hooks/usePolling'
-import { POLL_MS, formatWhen, isActive, shortId, stageLabel } from '../logic/jobs'
+import { POLL_MS, formatWhen, isActive } from '../logic/jobs'
+import { jobTitle } from '../logic/videos'
 import type { JobDetail, Stats } from '../types'
 import { NotFoundPage } from './NotFoundPage'
 
@@ -67,38 +67,26 @@ export function JobDetailPage() {
   }
 
   const { job: j } = load
-  const source = j.video?.original_filename ?? j.video?.source_url ?? `#${shortId(j.id)}`
+  // Queued, processing or failed → the processing view (stepper / error card). When polling
+  // sees "succeeded" this same page switches to the results (T-096, T-097).
+  if (j.status !== 'succeeded') return <ProcessingView job={j} />
   return (
     <section className="stack">
       <div className="page-head">
         <div>
-          <h1 className="ellipsis">{source}</h1>
+          <h1 className="ellipsis">{jobTitle(j)}</h1>
           <p className="muted">Submitted {formatWhen(j.created_at)}</p>
         </div>
         <StatusChip status={j.status} />
       </div>
-
-      {isActive(j) && (
-        <div className="card">
-          <ProgressBar value={j.progress} label={stageLabel(j.stage) || 'Waiting for a worker'} />
-          <p className="muted">This page updates by itself. A 60 s clip takes a few minutes.</p>
-        </div>
-      )}
-
-      {j.status === 'failed' && j.error && <ErrorBanner error={j.error} />}
-
-      {j.status === 'succeeded' && (
+      <VideoPlayer src={api.videoUrl(j.id)} />
+      {stats ? (
         <>
-          <VideoPlayer src={api.videoUrl(j.id)} />
-          {stats ? (
-            <>
-              <StatsCards stats={stats} />
-              <HeatmapPanel jobId={j.id} stats={stats} />
-            </>
-          ) : (
-            <p className="muted">Loading stats…</p>
-          )}
+          <StatsCards stats={stats} />
+          <HeatmapPanel jobId={j.id} stats={stats} />
         </>
+      ) : (
+        <p className="muted">Loading stats…</p>
       )}
     </section>
   )

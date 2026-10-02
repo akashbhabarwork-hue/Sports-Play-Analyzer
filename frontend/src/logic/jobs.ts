@@ -1,4 +1,4 @@
-import type { JobStatus, JobSummary } from '../types'
+import type { JobStatus, JobSummary, Stage } from '../types'
 
 export const POLL_MS = 2000
 
@@ -21,16 +21,18 @@ export function statusLabel(status: JobStatus): string {
   return STATUS[status] ?? status
 }
 
-// Worker stages from services/process.py (D-026).
-const STAGES: Record<string, string> = {
-  fetching: 'Downloading video',
-  analysing: 'Tracking players',
+// Worker stages from services/process.py (D-031), worded as in the UI brief.
+export const STAGE_LABELS: Record<Stage, string> = {
+  fetching: 'Fetching video',
+  analysing: 'Analysing frames',
+  computing: 'Computing stats & heatmaps',
+  rendering: 'Rendering annotated video',
   saving: 'Saving results',
 }
 
 export function stageLabel(stage: string | null): string {
   if (!stage) return ''
-  return STAGES[stage] ?? stage
+  return STAGE_LABELS[stage as Stage] ?? stage
 }
 
 export function shortId(id: string): string {

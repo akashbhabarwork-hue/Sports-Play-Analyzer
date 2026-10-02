@@ -21,8 +21,8 @@ describe('job status helpers', () => {
   it('labels statuses and worker stages in plain words', () => {
     expect(statusLabel('succeeded')).toBe('Completed')
     expect(statusLabel('processing')).toBe('Processing')
-    expect(stageLabel('fetching')).toBe('Downloading video')
-    expect(stageLabel('analysing')).toBe('Tracking players')
+    expect(stageLabel('fetching')).toBe('Fetching video')
+    expect(stageLabel('analysing')).toBe('Analysing frames')
     expect(stageLabel(null)).toBe('')
     expect(stageLabel('something-new')).toBe('something-new')
   })
