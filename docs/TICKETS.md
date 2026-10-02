@@ -235,14 +235,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** `pytest -q -k "nms or decode"`; `pytest -q -m model` locally
 - **Done notes:** YOLOX-S `0.1.1rc0` (URL via GitHub API, sha256 `c5c2d13e…8063`, checked in Dockerfile → `/models/yolox_s.onnx`). Real model inspected: `[1,3,640,640]` → `[1,8400,85]` raw. Pure `core/detection.py` (decode, NMS, per-class person/ball scores, players ≥ `TRACKER_LOW_THRESH`, top-K, one ball, rescale + clip); `OnnxYoloxDetector` (letterbox, startup shape check → `MODEL_ERROR`); `FakeDetector`. 26 tests incl. `model` smoke on `tests/fixtures/people.jpg` (≥3 players ≥0.5); ~160 ms/frame locally. Pinned onnxruntime 1.30.0 + opencv-python-headless 5.0.0.93. See D-025.
 
-### [ ] T-062 · process_job service end-to-end — `MUST` `25m` `[review-plan]`
+### [x] T-062 · process_job service end-to-end — `MUST` `25m` `[review-plan]`
 - **Agent:** cv-pipeline
 - **Depends on:** T-022, T-043, T-051, T-052, T-061
 - **Why:** Worker + Outputs sections of the brief; progress %.
 - **Scope:** fetch (url) or load (upload) → probe → stream → detect → track → accumulate → draw → encode → upload `jobs/{id}/annotated.mp4` → `finish_job`; heartbeats with progress/stage; error-code mapping; temp cleanup.
 - **Acceptance:** integration test with FakeDetector + tiny.mp4 → succeeded, stats JSON valid, player_tracks rows, blob exists; corrupt-but-sniffable file → failed/DECODE_ERROR.
 - **Verify:** `pytest -q -m integration -k process_job`
-- **Done notes:** _
+- **Done notes:** Plan approved. `services/process.py` (`process_job`, `PipelinePorts`, `ProcessConfig`, streamed `_annotated_frames` generator feeding the encoder), pure `core/pipeline.py` (progress bands, team sampling, config snapshot), `adapters/opencv_annotator.py`, `FrameAnnotator` port, `LeaseLostError`, settings `HEARTBEAT_EVERY_FRAMES`/`TEAM_SAMPLE_EVERY`/`TEAM_MAX_SAMPLES`, wiring `process_config`/`build_pipeline_ports`/`build_detector`. Final input errors → `failed` + code; transient → re-raised for retry; lost lease → stop, no writes. Locally (real ffmpeg, fakes): success with stats/tracks/playable video, progress rises fetching→analysing→saving <100, temp dir cleaned, truncated-but-sniffable MP4 → `DECODE_ERROR`, `MODEL_ERROR` final, lost lease writes nothing, storage outage re-raised, URL source fetched first — 9 tests, 2 mutations caught. `tests/integration/test_process_job_pg.py` (submit → claim → process against Postgres) **not run locally — CI-only while Docker is deferred**. See D-026.
 
 ### [ ] T-063 · Worker loop + crash-retry idempotency — `MUST` `15m`
 - **Agent:** database
@@ -436,3 +436,4 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - [ ] **F-006** (T-070) Add the `/jobs/...` aliases from D-004 alongside the read endpoints; also return validation errors (e.g. missing `file` field) in the `{error:{code,message}}` envelope (T-091).
 - [ ] **F-005** (devops, before T-100) Finish T-014: Fly app (web+worker), Neon, bucket, first deploy, `/health` live; re-run the YouTube spike from the prod worker (`fly ssh console`) and update D-010. Pick the mitigation (none / cookies / proxy) for A1.
 - [x] **F-004** (T-020) Remove the "exit 5 = ok" allowance from the CI integration step once integration tests exist.
+- [ ] **F-007** (backend-api) Snapshot the full pipeline config into `jobs.config` at submit time (today only `max_video_seconds`; `stats.config` already records the effective values per result — D-026).

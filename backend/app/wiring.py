@@ -1,11 +1,14 @@
 from collections.abc import Callable
-from dataclasses import dataclass
+from dataclasses import asdict, dataclass
 
 from .adapters.blob_local import LocalBlobStore
 from .adapters.blob_s3 import S3BlobStore, make_s3_client
 from .adapters.db import PostgresHealthCheck, create_db_engine
+from .adapters.ffmpeg_video import FfmpegFrameReader, FfmpegVideoEncoder
 from .adapters.ffprobe import FfprobeVideoProber
 from .adapters.oauth_google import GoogleOAuthClient
+from .adapters.onnx_detector import OnnxYoloxDetector
+from .adapters.opencv_annotator import OpenCvFrameAnnotator
 from .adapters.pg_queue import PostgresJobQueue
 from .adapters.pg_repos import (
     PostgresJobRepo,
@@ -17,9 +20,10 @@ from .adapters.pg_repos import (
 from .adapters.safe_http_fetcher import SafeHttpDownloader
 from .adapters.ytdlp_fetcher import YtDlpMetadataFetcher
 from .config import Settings
-from .core.models import MetricsParams, TrackerParams
+from .core.models import DetectorParams, MetricsParams, PipelineParams, TrackerParams
 from .core.ports import (
     BlobStore,
+    Detector,
     HealthCheck,
     JobQueue,
     JobRepo,
@@ -32,6 +36,8 @@ from .core.ports import (
     VideoProber,
     VideoRepo,
 )
+from .services.process import PipelinePorts, ProcessConfig
+from .services.submit import UploadLimits
 
 
 @dataclass(frozen=True, slots=True)
@@ -90,6 +96,70 @@ def metrics_params(settings: Settings) -> MetricsParams:
         heatmap_h=settings.heatmap_grid_h,
         possession_dist_ratio=settings.possession_dist_ratio,
         possession_min_frames=settings.possession_min_frames,
+    )
+
+
+def pipeline_params(settings: Settings) -> PipelineParams:
+    return PipelineParams(
+        sample_fps=settings.sample_fps,
+        max_seconds=settings.max_video_seconds,
+        max_frame_side=settings.max_frame_side,
+        heartbeat_every_frames=settings.heartbeat_every_frames,
+        team_sample_every=settings.team_sample_every,
+        team_max_samples=settings.team_max_samples,
+        team_min_separation=settings.team_min_separation,
+    )
+
+
+def detector_params(settings: Settings) -> DetectorParams:
+    return DetectorParams(
+        input_size=settings.detect_input_size,
+        player_min_score=settings.tracker_low_thresh,  # tracker stage 2 needs weak boxes (D-021)
+        ball_min_score=settings.ball_conf_threshold,
+        nms_iou=settings.nms_threshold,
+        max_candidates=settings.detect_max_candidates,
+    )
+
+
+def process_config(settings: Settings) -> ProcessConfig:
+    tracker, metrics, detector = (
+        tracker_params(settings),
+        metrics_params(settings),
+        detector_params(settings),
+    )
+    return ProcessConfig(
+        pipeline=pipeline_params(settings),
+        tracker=tracker,
+        metrics=metrics,
+        limits=UploadLimits(settings.max_upload_bytes, settings.max_video_seconds),
+        lease_s=settings.lease_seconds,
+        extra_config={
+            "tracker": asdict(tracker),
+            "metrics": asdict(metrics),
+            "detector": {"model": "yolox_s", **asdict(detector)},
+        },
+        tmp_root=settings.upload_tmp_dir or None,
+    )
+
+
+def build_detector(settings: Settings) -> Detector:
+    """Loads the model (~36 MB, a second or two). Only the worker calls this, never the web app."""
+    return OnnxYoloxDetector(settings.model_path, detector_params(settings), settings.ort_threads)
+
+
+def build_pipeline_ports(container: Container, detector: Detector) -> PipelinePorts:
+    s = container.settings
+    return PipelinePorts(
+        queue=container.queue,
+        videos=container.videos,
+        blobs=container.blobs,
+        prober=container.prober,
+        media_info=container.media_info,
+        downloader=container.downloader,
+        frames=FfmpegFrameReader(),
+        encoder=FfmpegVideoEncoder(crf=s.encode_crf, preset=s.encode_preset),
+        detector=detector,
+        annotator=OpenCvFrameAnnotator(),
     )
 
 

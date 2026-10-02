@@ -68,6 +68,14 @@ ENCODE_CRF = int(os.getenv("ENCODE_CRF", "26"))
 ENCODE_PRESET = os.getenv("ENCODE_PRESET", "veryfast")
 ENCODE_PRESETS = ("ultrafast", "superfast", "veryfast", "faster", "fast", "medium")
 
+# ---- worker pass (services/process.py) ----
+# Heartbeat (extends the lease, writes progress) every N sampled frames; 10 at ~6 fps ≈ 2 s,
+# far inside LEASE_SECONDS.
+HEARTBEAT_EVERY_FRAMES = int(os.getenv("HEARTBEAT_EVERY_FRAMES", "10"))
+# Jersey-colour samples for the team split: every N sampled frames, at most M per player.
+TEAM_SAMPLE_EVERY = int(os.getenv("TEAM_SAMPLE_EVERY", "5"))
+TEAM_MAX_SAMPLES = int(os.getenv("TEAM_MAX_SAMPLES", "20"))
+
 # ---- detection (adapters/onnx_detector.py, core/detection.py) ----
 # Pretrained YOLOX-S (Apache-2.0); the Docker image downloads it and checks its sha256.
 MODEL_PATH = os.getenv(
@@ -146,6 +154,9 @@ class Settings:
     max_frame_side: int = 1280
     encode_crf: int = 26
     encode_preset: str = "veryfast"
+    heartbeat_every_frames: int = 10
+    team_sample_every: int = 5
+    team_max_samples: int = 20
     model_path: str = ""
     detect_input_size: int = 640
     ball_conf_threshold: float = 0.15
@@ -233,6 +244,10 @@ def validate_video_settings(settings: Settings) -> None:
         raise RuntimeError("BALL_CONF_THRESHOLD and NMS_THRESHOLD must be in (0, 1]")
     if settings.detect_max_candidates < 1 or settings.ort_threads < 0:
         raise RuntimeError("DETECT_MAX_CANDIDATES must be >= 1 and ORT_THREADS >= 0")
+    if min(settings.heartbeat_every_frames, settings.team_sample_every) < 1:
+        raise RuntimeError("HEARTBEAT_EVERY_FRAMES and TEAM_SAMPLE_EVERY must be >= 1")
+    if settings.team_max_samples < 1:
+        raise RuntimeError("TEAM_MAX_SAMPLES must be >= 1")
 
 
 def validate_tracker_settings(settings: Settings) -> None:
@@ -288,6 +303,9 @@ def load_settings() -> Settings:
         max_frame_side=MAX_FRAME_SIDE,
         encode_crf=ENCODE_CRF,
         encode_preset=ENCODE_PRESET,
+        heartbeat_every_frames=HEARTBEAT_EVERY_FRAMES,
+        team_sample_every=TEAM_SAMPLE_EVERY,
+        team_max_samples=TEAM_MAX_SAMPLES,
         model_path=MODEL_PATH,
         detect_input_size=DETECT_INPUT_SIZE,
         ball_conf_threshold=BALL_CONF_THRESHOLD,

@@ -57,6 +57,12 @@ Setup: project rules, specialist agent personas, skills and workflows in `.agent
 - **Fix:** One detector/video section in `.env.example`, README rows for every new variable, `CONF_THRESHOLD` removed (players use `TRACKER_LOW_THRESH`, the ball `BALL_CONF_THRESHOLD`).
 - **Lesson:** When adding a setting, grep for the name in `.env.example` and README first; tests don't check docs.
 
+### 8. Two test files with the same name
+- **What it did:** In T-062 the agent created `tests/unit/test_process_job.py` and `tests/integration/test_process_job.py`. The test folders have no `__init__.py`, so pytest imports test modules by bare file name and the second one failed to collect ("import file mismatch").
+- **How I caught it:** Running both files together before committing.
+- **Fix:** Renamed the Postgres one to `test_process_job_pg.py` (the ticket's `-k process_job` still selects it); shared clip builders and the scripted detector moved to `tests/pipeline_helpers.py`.
+- **Lesson:** Check the repo's test-module conventions (existing names are unique across folders for this reason).
+
 ## How I verified AI-generated code
 - Automated unit test suite with deterministic JSON fixtures (pure logic, no model dependency).
 - Integration tests against migrated Postgres schema with multi-user isolation checks.
