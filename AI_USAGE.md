@@ -69,6 +69,30 @@ Setup: project rules, specialist agent personas, skills and workflows in `.agent
 - **Fix:** `ExternalServiceError` from the poll is logged and treated as an idle poll; compose `restart: unless-stopped` as a second safety net.
 - **Lesson:** For long-running loops, test the failure of every call in the loop, not just the main work.
 
+### 10. A commit silently missing a folder, and wrong advice about `.claude/`
+- **What it did:** (a) In T-080 the agent put the frontend's pure helpers in `frontend/src/lib/`. The repo's Python-template `.gitignore` ignores every `lib/` directory, so `git add` skipped it with only a hint, and the first T-080 commit imported a file that wasn't in the commit — CI would have failed on a clean checkout. (b) Earlier the agent told the owner to stop ignoring `.claude/`; checking `git ls-files` later showed the repo deliberately tracks `.agent/` and keeps `.claude/` local, so that advice (and the owner's local CI path edit it encouraged) would have broken CI.
+- **How I caught it:** (a) Reading `git add` output before pushing (the commit was still local); (b) `git ls-files .claude` / `.agent` while planning the CI change.
+- **Fix:** Renamed to `src/logic/` and amended the unpushed commit; CI change staged on top of the committed `ci.yml` only, leaving the owner's local edit out.
+- **Lesson:** After every commit, compare `git show --stat` with the files you meant to add; check what the repo actually tracks before giving advice about `.gitignore`.
+
+### 11. Bugs only a real browser showed
+- **What it did:** (a) The T-080 logout let a failed `POST /auth/logout` (5xx / network) escape, so the user clicked "Log out" and stayed on the page. (b) The first heatmap colours (pale yellow at 25 % opacity) turned olive-brown over the green pitch, and the canvas was taller than a laptop screen. Unit tests, lint and the build were all green for both.
+- **How I caught it:** An S8 walkthrough in Chrome against a throwaway preview server (real FastAPI app + built SPA over the in-memory repos, a job produced by the real pipeline). Its fake session store had no `delete`, which happened to reproduce a failing logout.
+- **Fix:** `logic/session.signOut` always clears local state (regression test); heatmap opacity starts at 0.55 and the canvas is capped at 760 px wide. Two false alarms were ruled out with evidence, not assumed: the extension's network panel showed `503` for video range requests while the server log had `206`, and a 14.8 s "redraw" was Chrome throttling a background tab (`document.hidden = true`).
+- **Lesson:** Green checks don't cover UX; drive the real thing, and verify surprising measurements against a second source before acting on them.
+
+### 12. Assertions that never ran
+- **What it did:** In T-097 the agent wrote heatmap colour tests like `expect(r).toBeGreaterThan(200) && expect(g).toBeGreaterThan(150)`. `expect()` returns `undefined`, so everything after the first `&&` was never evaluated — the "yellow" and "red" checks were half-skipped while the suite reported green.
+- **How I caught it:** ESLint (`no-unused-expressions`) and `tsc` (testing `void` for truthiness) failed the build even though Vitest passed.
+- **Fix:** one assertion per line; the previously skipped checks now run (and pass).
+- **Lesson:** Keep lint and typecheck on test files too — they catch tests that look stronger than they are.
+
+### 13. Visual bugs in the redesign found by the walkthrough
+- **What it did:** In S8b: a 4:3 clip made the heatmap taller than the screen so the heat was off-view; a CSS-order clash wrapped the team toggle; the job-ID chip collapsed; interpolated heat edges jumped to 35 % opacity and drew a box around each blob; the video time stamp sat on top of the first player's id label; "Possession 0 % / 0 % / 0 %" was shown when the ball was never seen.
+- **How I caught it:** The S8b Chrome walkthrough on the real pipeline (preview server + YOLOX), plus a frame extracted from the annotated MP4.
+- **Fix:** height cap from the clip's aspect, more specific selector, `flex: none` on the chip, alpha fades in from 0 (regression test), time stamp bottom-left, an honest "ball not detected" note instead of zeros.
+- **Lesson:** Look at real output (a frame, a screenshot) — not just at the code that produces it.
+
 ## How I verified AI-generated code
 - Automated unit test suite with deterministic JSON fixtures (pure logic, no model dependency).
 - Integration tests against migrated Postgres schema with multi-user isolation checks.

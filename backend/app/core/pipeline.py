@@ -7,20 +7,33 @@ import numpy as np
 
 from .models import PipelineParams
 
-# Progress bands shown to the user: fetching 0-5, analysing 5-95, saving 95-99.
-# 100 is only reached when the job row says "succeeded".
+# Worker stages in the order the UI's stepper shows them (T-087). "queued" is the job status
+# before any worker touches it; "fetching" only happens for YouTube links.
+STAGES = ("fetching", "analysing", "computing", "rendering", "saving")
+
+# Progress bands per stage. 100 is only reached when the job row says "succeeded".
 PROGRESS_FETCHING = 2
-PROGRESS_ANALYSE_START = 5
-PROGRESS_ANALYSE_END = 95
+PROGRESS_ANALYSE_START = 5  # pass 1: detect + track (the slow part)
+PROGRESS_ANALYSE_END = 70
+PROGRESS_COMPUTING = 72  # teams + metrics
+PROGRESS_RENDER_START = 75  # pass 2: decode again, draw by team, encode
+PROGRESS_RENDER_END = 95
 PROGRESS_SAVING = 97
 
 
-def progress_pct(done: int, expected: int) -> int:
-    """Analysis progress; capped, because ffprobe's duration is only an estimate."""
+def band_pct(done: int, expected: int, start: int, end: int) -> int:
+    """Progress inside one band; capped, because ffprobe's duration is only an estimate."""
     if expected <= 0:
-        return PROGRESS_ANALYSE_END
-    span = PROGRESS_ANALYSE_END - PROGRESS_ANALYSE_START
-    return min(PROGRESS_ANALYSE_END, PROGRESS_ANALYSE_START + span * done // expected)
+        return end
+    return min(end, start + (end - start) * done // expected)
+
+
+def progress_pct(done: int, expected: int) -> int:
+    return band_pct(done, expected, PROGRESS_ANALYSE_START, PROGRESS_ANALYSE_END)
+
+
+def render_pct(done: int, expected: int) -> int:
+    return band_pct(done, expected, PROGRESS_RENDER_START, PROGRESS_RENDER_END)
 
 
 def should_sample_team(frame_idx: int, every: int) -> bool:

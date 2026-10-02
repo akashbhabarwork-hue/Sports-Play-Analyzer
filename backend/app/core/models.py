@@ -33,6 +33,8 @@ class NewVideo:
     width: int | None = None
     height: int | None = None
     fps: float | None = None
+    sport: str = "football"  # T-085: validated by core.submit_rules
+    title: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,6 +51,9 @@ class Video:
     height: int | None
     fps: float | None
     created_at: datetime
+    sport: str = "football"
+    title: str | None = None
+    thumbnail_key: str | None = None  # set by the worker (T-086)
 
 
 @dataclass(frozen=True, slots=True)
@@ -68,6 +73,14 @@ class Job:
     started_at: datetime | None
     finished_at: datetime | None
     updated_at: datetime
+
+
+@dataclass(frozen=True, slots=True)
+class JobWithVideo:
+    """A job and its video, read together (one JOIN) for the job list and detail (T-086)."""
+
+    job: Job
+    video: Video
 
 
 @dataclass(frozen=True, slots=True)

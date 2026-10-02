@@ -5,7 +5,7 @@ Authorization rule (A3): every method that reads a user's videos, jobs or result
 `tests/unit/test_ports.py` enforces this. "Not found" and "not yours" both return None.
 """
 
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from datetime import datetime
 from typing import Any, Protocol
 from uuid import UUID
@@ -19,6 +19,7 @@ from .models import (
     Job,
     JobOutcome,
     JobResult,
+    JobWithVideo,
     MediaInfo,
     NewVideo,
     OAuthProfile,
@@ -75,6 +76,8 @@ class VideoRepo(Protocol):
         fps: float,
     ) -> None: ...
 
+    def set_thumbnail_for_worker(self, video_id: UUID, thumbnail_key: str) -> None: ...
+
 
 class JobRepo(Protocol):
     def create_with_video(
@@ -84,6 +87,10 @@ class JobRepo(Protocol):
     def get(self, user_id: UUID, job_id: UUID) -> Job | None: ...
 
     def list_for_user(self, user_id: UUID, limit: int = 50) -> list[Job]: ...
+
+    def get_with_video(self, user_id: UUID, job_id: UUID) -> JobWithVideo | None: ...
+
+    def list_with_videos(self, user_id: UUID, limit: int = 50) -> list[JobWithVideo]: ...
 
     def get_for_worker(self, job_id: UUID) -> Job | None: ...
 
@@ -177,9 +184,19 @@ class VideoEncoder(Protocol):
 
 class FrameAnnotator(Protocol):
     def draw(
-        self, frame_bgr: np.ndarray, tracks: Sequence[Track], ball: Box | None, t_s: float
+        self,
+        frame_bgr: np.ndarray,
+        tracks: Sequence[Track],
+        ball: Box | None,
+        t_s: float,
+        teams: Mapping[int, str],
     ) -> np.ndarray:
-        """Return a copy of the frame with player boxes + ids, the ball and a time stamp."""
+        """Return a copy of the frame with boxes coloured by team (public id → "A"/"B"/
+        "unknown"), ids, the ball, a time stamp and a legend of what is drawn."""
+        ...
+
+    def thumbnail_jpeg(self, frame_bgr: np.ndarray, max_width: int) -> bytes:
+        """A small JPEG of the frame for lists and the processing page (T-086)."""
         ...
 
 

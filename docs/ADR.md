@@ -24,7 +24,7 @@ probe → stream frames → detect/track/metrics → encode → persist in one t
 | Topic | Decision | Why | Trade-off |
 |---|---|---|---|
 | Model | YOLOX-S ONNX on ONNX Runtime CPU; official release, sha256-checked in the Dockerfile; per-class person/ball scores (D-025) | Apache-2.0 (Ultralytics is AGPL-3.0), no PyTorch in the image, ~160 ms/frame on a laptop | Ball is small/fast → low recall, reported as ball-visible %; referees/crowd count as "person" |
-| Worker pass | One streamed pass: decode → detect → track → draw → encode, one frame in memory (D-026) | Memory flat regardless of clip length | Boxes coloured by player id, not team (teams known only after the pass) |
+| Worker pass | Two streamed passes, one frame in memory: pass 1 detect/track/record, then teams + metrics, pass 2 decode again and draw boxes in team colours → encode; stages analysing → computing → rendering → saving (D-026, D-031) | Memory flat; team-coloured video + honest progress steps | Second decode ≈ 2 % of job time (measured) |
 | Tracker | ByteTrack-style pure Python (numpy + scipy Hungarian, D-021) | Fast, pure maths, unit-testable with fixtures, no PyTorch needed | IoU only: ids can swap when identical kits cross or at low SAMPLE_FPS; hidden > `TRACKER_MAX_AGE` (2 s) → new id |
 | Metrics | One pass over per-frame observations; feet point, jitter dead-band, possession with hysteresis (D-022) | Pure functions, each unit-tested with hand-built frames | Distances in pixels / frame diagonal, not metres (camera pans); possession = proximity, not touches |
 | Teams | Jersey colour (HSV cone, torso crop) + deterministic 2-means; `unknown` when kits are too similar (D-023) | No training data, pure numpy, testable on synthetic frames | Referees/goalkeepers join the nearest team; similar kits → `unknown` |
@@ -32,6 +32,7 @@ probe → stream frames → detect/track/metrics → encode → persist in one t
 | Sessions | Server-side `sessions` table, `__Host-sid` httpOnly Secure SameSite=Lax | Immediate revocation, immune to XSS token theft | DB query on authenticated requests (cached per-request) |
 | Storage | BlobStore protocol: local disk (dev) / S3-compatible Tigris or R2 (prod) | Single abstraction, zero cloud lock-in | Presigned URL expiration handling |
 | Read API & authz | Every read looks the job up with the session `user_id` first → 404 (never 403) for missing *or* foreign, then 409 if unfinished; video = 302 to ≤5-min presigned URL (S3) or Range streaming (local); `/jobs…` aliases + SPA under `/app/…` (D-028) | Other users can't even learn a job exists (A3); `<video>` can seek | Two URL prefixes to keep in sync (one router mounted twice) |
+| Frontend | React SPA: public `/` + `/login`, app under `/app/…`; identity only via `GET /api/me` (httpOnly cookie, nothing in web storage); 2 s polling only while a job is active, paused in hidden tabs; smooth canvas heatmaps over pitch/court by sport; only backend-provided numbers shown; pure logic unit-tested with Vitest (D-029, D-030) | Same-origin, no tokens in JS; idle tabs cost nothing | Polling, not push (SSE is BONUS T-B03) |
 | Host | Fly.io (web + worker process groups) + Neon Postgres | Free/cheap tier, process group separation in one image | Machine sleep / cold start latency |
 | SSRF | Host allowlist + DNS IP validation + manual redirect checks | Protects internal networks & cloud metadata endpoints | Residual: DNS rebinding during multi-step hops |
 | YouTube blocking | Graceful `YOUTUBE_BLOCKED` error + upload fallback | Datacenter IPs frequently challenged by YouTube anti-bot | User must upload file if cloud IP is blocked |
@@ -63,6 +64,7 @@ Source of truth: `backend/app/adapters/db_tables.py`; revision `0001`. UUID PKs,
 - Real-time video streaming (WebRTC) — unnecessary complexity for offline asynchronous tactical analysis.
 - Live model fine-tuning — out of scope; pretrained COCO models satisfy player/ball detection.
 - Deep appearance re-ID neural networks — too heavy for CPU worker constraints; ByteTrack + jersey color clustering satisfies requirement.
+- Over budget, by choice (D-030): after the working S8 UI the owner added a full UI redesign plus the backend data it needs (sport/title, thumbnails, team-coloured two-pass render). That pushed security hardening, deploy and live acceptance later than the ≈10 h plan.
 
 ## 8. With more time
 - Pitch-normalised distance via camera homography calibration (4 clicked pitch keypoints).

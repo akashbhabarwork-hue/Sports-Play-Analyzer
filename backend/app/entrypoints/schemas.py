@@ -21,6 +21,8 @@ class JobAccepted(BaseModel):
 
 class UrlSubmit(BaseModel):
     url: str = Field(min_length=1, max_length=2048)
+    sport: str | None = Field(default=None, max_length=32)  # football | basketball (default)
+    title: str | None = Field(default=None, max_length=1000)  # cleaned + capped at 120 later
 
 
 class JobError(BaseModel):
@@ -30,6 +32,14 @@ class JobError(BaseModel):
 
 class JobSummary(BaseModel):
     id: UUID
+    title: str | None  # coach's title; UI falls back to filename / URL
+    sport: str  # football | basketball
+    source_type: str  # upload | url
+    original_filename: str | None
+    source_url: str | None
+    duration_s: float | None  # known at submit for uploads, after fetching for URLs
+    size_bytes: int | None
+    thumbnail_url: str | None  # /api/jobs/{id}/thumbnail once the worker has saved one
     status: str  # queued | processing | succeeded | failed
     progress: int  # 0-100; 100 only once succeeded
     stage: str | None  # fetching | analysing | saving while processing
@@ -53,6 +63,14 @@ class JobDetail(BaseModel):
     """JobSummary's fields plus run details (spelled out: schemas don't inherit, rule 10)."""
 
     id: UUID
+    title: str | None
+    sport: str
+    source_type: str
+    original_filename: str | None
+    source_url: str | None
+    duration_s: float | None
+    size_bytes: int | None
+    thumbnail_url: str | None
     status: str
     progress: int
     stage: str | None
@@ -61,7 +79,7 @@ class JobDetail(BaseModel):
     finished_at: datetime | None
     started_at: datetime | None
     attempts: int
-    video: VideoInfo | None
+    video: VideoInfo | None  # kept for the S8 UI until the redesign (T-095/T-097) replaces it
 
 
 class Heatmap(BaseModel):

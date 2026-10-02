@@ -138,6 +138,28 @@ def test_video_source_rules(conn):
     )
 
 
+def test_video_sport_and_title_rules(conn):
+    """0002 (T-085): sport defaults to football and is limited; titles are capped at 120."""
+    user_id = insert_user(conn)
+    video_id = insert_video(conn, user_id)
+    row = conn.execute(
+        text("SELECT sport, title, thumbnail_key FROM videos WHERE id = :v"), {"v": video_id}
+    ).one()
+    assert tuple(row) == ("football", None, None)
+    assert_rejected(
+        conn,
+        "INSERT INTO videos (user_id, source_type, sport) VALUES (:u, 'upload', 'cricket')",
+        {"u": user_id},
+        "ck_videos_sport_valid",
+    )
+    assert_rejected(
+        conn,
+        "INSERT INTO videos (user_id, source_type, title) VALUES (:u, 'upload', :t)",
+        {"u": user_id, "t": "x" * 121},
+        "ck_videos_title_length",
+    )
+
+
 def test_unique_user_per_provider_sub(conn):
     insert_user(conn, "same")
     assert_rejected(

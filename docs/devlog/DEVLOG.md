@@ -288,3 +288,157 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** none.
 **Explain-it-in-review:** "Two browsers, Alice and Bob. Bob tries every URL for Alice's job, on both the /api and the short /jobs paths: always 404, the same answer as for a made-up id — even for a job that isn't finished, where Alice herself would get 409. I checked the test actually bites by removing the user filter from the job lookup and the list: it fails."
 **Next:** S7 complete → stage summary; then T-080 Login page + auth guard + layout (frontend)
+
+---
+
+## 2026-10-02 13:18 IST — T-080 Login page + auth guard + layout (agent: frontend)
+**What changed:** `src/types.ts` (mirrors backend schemas), `src/api.ts` (typed `api` client on the existing envelope-aware `apiFetch`, friendly 413/429 text), `src/auth.tsx` + `src/useAuth.ts` (session from `GET /api/me`, `RequireAuth`), `src/components/Layout.tsx`, `src/pages/LoginPage.tsx`, `src/logic/login.ts`, `src/App.tsx` routes under `/app/…`, new `index.css`/`App.css`, page title; Vitest 3.2.7 (`npm test`) with `src/api.test.ts`, `src/logic/login.test.ts`; CI frontend job runs `npm test`.
+**Why:** "OAuth 2.0 login"; logged-out users must land on login; A1 starts here.
+**Decisions:** D-029 (routes under `/app`, auth only via `/api/me` + httpOnly cookie, pure lib + Vitest, CI step — plan approved by the owner); F-008 (dev-only npm advisories).
+**Verification:** `npm run lint`, `npm run typecheck`, `npm test` (10 passed), `npm run build` ✓. Browser walkthrough deferred to the end of S8 (preview server over in-memory repos; real Google login needs Postgres → Docker pass).
+**AI mistakes caught:** test helper typed errors as `unknown` (strict TS caught it) → `failure()` helper; fast-refresh lint warning → context/hook moved to `useAuth.ts`; helpers first placed in `src/lib/`, which the root `.gitignore` (`lib/`) silently excluded from the commit → renamed to `src/logic/`, unpushed commit amended (AI_USAGE #10). Also corrected earlier advice: `.claude/` is *meant* to be untracked (the repo tracks `.agent/`), so the owner's local `ci.yml` path edit must not be committed — the CI change was staged on top of HEAD's file only.
+**Explain-it-in-review:** "The page never sees the session token — it's an httpOnly cookie. The app asks /api/me who you are; if that's a 401 you're sent to the login page, and logging out is a POST so another site can't trigger it."
+**Next:** T-081 Submit page (upload + URL)
+
+---
+
+## 2026-10-02 13:28 IST — T-081 Submit page (upload + URL) (agent: frontend)
+**What changed:** `src/pages/SubmitPage.tsx` (tabs, file input + link input, inline server errors, navigate on 202), `src/logic/precheck.ts` + tests, route `/app/submit`, form/tab styles.
+**Why:** both input paths from the brief; scenario A2 needs the server's "corrupt file" message shown cleanly.
+**Decisions:** pre-checks are UX only and never stricter than the server (unknown MIME types like `.mkv` are allowed through; the server sniffs bytes) — part of D-029.
+**Verification:** lint, typecheck, `npm test` (18 passed), build ✓. A2 click-through deferred to the S8 preview-server walkthrough.
+**AI mistakes caught:** none.
+**Explain-it-in-review:** "The browser checks size and length first so nobody waits for a 100 MB upload to be refused, but the server decides: if the file is corrupt, its exact message appears under the form."
+**Next:** T-082 Job list with live status
+
+---
+
+## 2026-10-02 13:36 IST — T-082 Job list with live status (agent: frontend)
+**What changed:** `src/pages/JobsPage.tsx`, `src/logic/poller.ts` + tests, `src/logic/jobs.ts` + tests, `src/hooks/usePolling.ts`, `src/components/StatusChip.tsx`, `src/components/ProgressBar.tsx` (`role="progressbar"` with aria values), table/chip/progress styles; follow-up F-009.
+**Why:** "live job status" in the brief; reviewers watch A1's job progress.
+**Decisions:** polling waits 2 s after each response (never overlapping requests on a slow network), keeps going after errors, pauses while the tab is hidden and refreshes immediately on return; enabled only while a job is active, so a finished list stops hitting the server (D-029).
+**Verification:** lint, typecheck, `npm test` (27 passed), build ✓.
+**AI mistakes caught:** none.
+**Explain-it-in-review:** "The list asks the server every two seconds, but only while something is still running, never twice at once, and not at all while the tab is in the background."
+**Next:** T-083 Job detail: video, stats, errors
+
+---
+
+## 2026-10-02 13:44 IST — T-083 Job detail: video, stats, errors (agent: frontend)
+**What changed:** `src/pages/JobDetailPage.tsx`, `src/pages/NotFoundPage.tsx`, `src/components/{ErrorBanner,StatsCards,VideoPlayer}.tsx`, `src/logic/results.ts` + tests (`errorHelp`, `summarize`), routes `/app/jobs/:jobId` and catch-all, styles.
+**Why:** A1 (annotated video plays, stats), A2 (readable failure), A3 ("Job not found" for another user's job).
+**Decisions:** the page shows the same "Job not found" for missing and foreign jobs because the API can't tell them apart (D-028); distance is shown in frame diagonals with a tooltip saying pixels aren't metres (D-022 limit); a polling error never replaces a job already on screen.
+**Verification:** lint, typecheck, `npm test` (32 passed), build ✓.
+**AI mistakes caught:** first version replaced the whole page with an error on any polling failure — fixed in self-review before commit.
+**Explain-it-in-review:** "If the job failed you get a plain headline, the server's message and the next step — for a YouTube block, a button to upload the file instead. If it isn't yours, you get exactly what you'd get for a job that doesn't exist."
+**Next:** T-084 Heatmap view + player selector
+
+---
+
+## 2026-10-02 13:37 IST — T-084 Heatmap view + player selector, and the S8 browser walkthrough (agent: frontend)
+**What changed:** `src/components/{HeatmapPanel,HeatmapCanvas,PlayerSelector}.tsx`, `src/logic/heatmap.ts` + tests, heatmap wired into the job detail page, styles. Separate fix commit: `src/logic/session.ts` + regression test, `auth.tsx` uses it (logout always signs out locally).
+**Why:** A1's last step ("one player's heatmap opens"); per-player and per-team heatmaps from the brief.
+**Decisions:** team heatmaps come straight from the stats JSON (no request → instant); a player's map is one request then cached; native `<select>` for keyboard/screen-reader support; distances shown in frame diagonals (D-022, D-029).
+**Verification:** lint, typecheck, `npm test` (43 passed), build ✓. **Browser walkthrough** (Chrome, throwaway preview server in the scratchpad — real FastAPI app + built SPA over `tests/api_fakes.py` repos, finished job produced by the real T-062 pipeline with a scripted 6-player detector; not committed): logged-out `/app` → `/app/login` ✓; `/login?error=oauth_failed` → `/app/login` with the friendly message ✓; jobs list chips/progress/failure text ✓, `/api/jobs` polled every 2 s while a job was processing (server log 13:31:35/37/39) ✓; detail video: duration 12 s, seek to 7 s, `readyState` 3, no error, boxes #1–#6 drawn ✓ (server log 206 for range requests); stats cards ✓; heatmap All/Team A/Team B/#players ✓, player path overlay ✓, switch timings 41–125 ms (visible tab) ✓; `YOUTUBE_BLOCKED` banner + "Upload the file instead" ✓; **A2** header-only MP4 → server 422 → "We couldn't read this video — it may be corrupted…" under the form ✓; **A3** Bob on Alice's job → "Job not found", empty list ✓; URL submit → navigates to the new queued job ✓; logout with a failing server call → `/app/login` ✓ (after the fix). No console errors.
+**AI mistakes caught:** logout didn't survive a failing request; muddy heatmap colours and an over-tall canvas; my preview script first forgot `static_dir` (SPA not served). Two false alarms disproved with server logs / `document.hidden` (AI_USAGE #11).
+**Explain-it-in-review:** "The heatmap is a canvas: a neutral pitch, then each grid cell coloured by how much time was spent there. Team maps are already in the stats, so switching is instant; a player's map is fetched once and cached — under 130 ms in my test."
+**Next:** S8 complete → stage summary; then S9 T-090 Rate limiting + active-job cap (auth-security)
+
+---
+
+## 2026-10-02 14:03 IST — T-085 Sport + title on submissions (agents: database + backend-api)
+**What changed:** migration `0002_video_sport_title_thumbnail` (expand-only: `videos.sport` NOT NULL default 'football' + `ck_videos_sport_valid`, `videos.title` + `ck_videos_title_length` ≤120, `videos.thumbnail_key`), `db_tables.py` mirror, `core/submit_rules.py` (`clean_title`, `check_sport`), `ValidationError` + `InvalidSportError`, `NewVideo`/`Video` fields, repo insert, `submit_upload_job`/`submit_url_job` keyword args, upload `Form` fields + `UrlSubmit.sport/title`; tests `test_submit_rules.py`, `test_submit_sport_title.py`, migration CHECK test; S8b tickets added (D-030).
+**Why:** owner's UI brief needs a sport (pitch vs court outline) and a human title per analysis; real columns instead of faked UI data.
+**Decisions:** D-030 (scope + budget). Expand-only migration so rollback-by-image stays safe; sport defaults to football so the brief's curl examples and old clients keep working; cheap field checks before ffprobe.
+**Verification:** 18 new local tests; full unit suite 506 passed, 1 failed (pre-existing Windows-only chmod); ruff, format, design checker ✓. **Not run locally:** migration up/down/up + CHECK tests (CI first run).
+**AI mistakes caught:** title test expected control characters to be deleted, code replaces them with a space (safer — no glued words) → test expectation fixed; shared test container lacked a prober → upload test crashed before validation → fixed in the fakes.
+**Explain-it-in-review:** "Sport and title are just two more video columns, added with a migration that only adds — the old app version keeps working against the new schema, which keeps rollback safe. Both are cleaned and checked in pure functions before we even look at the file."
+**Next:** T-086 Job read model with video info + thumbnail
+
+---
+
+## 2026-10-02 14:09 IST — T-086 Job read model with video info + thumbnail (agents: backend-api + cv-pipeline)
+**What changed:** `JobWithVideo` model; `JobRepo.get_with_video` / `list_with_videos` (labelled-column JOIN, `user_id` on both tables); `VideoRepo.set_thumbnail_for_worker`; `FrameAnnotator.thumbnail_jpeg` (OpenCV resize ≤320 px + JPEG q80); `core/blob_keys.thumbnail_key`; worker saves frame 0 in `services/process.py`; `read_job.get_job` now returns `JobWithVideo`, new `get_thumbnail`; response schemas carry title/sport/source/duration/size/`thumbnail_url`; `GET /api/jobs/{id}/thumbnail` (+ alias) via a small `blob_response`; tests extended (read API, A3 matrix, process_job thumbnail, repo JOIN scoping, Postgres thumbnail round-trip).
+**Why:** the redesigned list/processing pages show title, sport, duration, size and a thumbnail; without this the UI would have to fake them (D-030). Closes F-009.
+**Decisions:** one JOIN instead of N+1 lookups; repeat the `user_id` filter on the joined table (defence in depth); the thumbnail is readable as soon as the worker has decoded the first frame (any status), ownership checked first like everything else.
+**Verification:** touched-file tests 74 passed locally; full unit suite 515 passed, 1 failed (pre-existing Windows-only chmod); ruff, format, design checker ✓; 106 Postgres tests collect. **Not run locally:** JOIN/scoping + thumbnail SQL tests (CI).
+**AI mistakes caught:** none.
+**Explain-it-in-review:** "The job list is one query that joins each job with its video, filtered by your user id on both sides. The worker saves the first frame as a small JPEG; it's served through the same ownership check as the video, so another user gets 404 for it too."
+**Next:** T-087 Two-pass render: team-coloured boxes + honest stages `[review-plan]` (covered by the approved S8b plan)
+
+---
+
+## 2026-10-02 14:25 IST — T-087 Two-pass render: team-coloured boxes + honest stages (agent: cv-pipeline)
+**What changed:** `services/process.py` split into `_analyse` (pass 1: detect/track/record + thumbnail + jersey samples) and `_rendered_frames` (pass 2: decode again, draw recorded boxes by team, stream to the encoder); new `computing` and `rendering` heartbeats; `core/pipeline.py` stage list + bands (`band_pct`, `render_pct`); `adapters/opencv_annotator.py` team colours (brief's hex in BGR), id label contrast, legend; `FrameAnnotator.draw(..., teams)` port; tests `test_opencv_annotator.py`, new process_job/pipeline tests.
+**Why:** the brief's video legend (Team A / Team B / Ball) and processing stepper must be true, not decorative (D-030).
+**Decisions:** D-031 (decode twice instead of buffering frames; deterministic decoder aligns pass 2 with pass 1).
+**Verification:** 29 local tests in touched files; real-detector timing on a 12 s clip: analysing 10.34 s, computing 0.09 s, rendering 0.23 s, saving 0.02 s.
+**AI mistakes caught:** none.
+**Explain-it-in-review:** "We can only know the teams after watching the whole clip, so we watch it twice: first pass finds and tracks players (the expensive part), then we split teams, then a second, cheap pass redraws the boxes in team colours. Measured, the second pass is about 2 % of the time."
+**Next:** T-088 Design system + app shell (frontend)
+
+---
+
+## 2026-10-02 14:30 IST — T-088 Design system + app shell (agent: frontend)
+**What changed:** `frontend/src/styles/tokens.css`, rewritten `index.css`, `components/{icons,Logo,AppShell,UserMenu}.tsx`, `components/shell.css`, `pages/SettingsPage.tsx`, `logic/user.ts` + test, routes in `App.tsx` (`/login`, `/app/new`, `/app/settings`, redirects from old paths), Inter font links; old `Layout.tsx` removed; temporary `.button` alias in `App.css` for not-yet-redesigned pages.
+**Why:** the owner's UI brief (D-030): light app shell, indigo primary, sidebar collapsing under 900 px, user menu, dark mode via CSS variables.
+**Decisions:** all colours are tokens so dark mode is one override block; Google's G mark used only on the Google sign-in button (their branding rule); Inter from Google Fonts (CSP allow-list in T-091).
+**Verification:** lint, typecheck, `npm test` (46 passed), build ✓. Visual check in the S8b walkthrough (end of T-097).
+**AI mistakes caught:** one batch edit ran from the repo root instead of `frontend/` and failed without changing anything — re-run from the right directory.
+**Explain-it-in-review:** "Every colour is a CSS variable, so dark mode is one block of overrides. On small screens the sidebar becomes a drawer you open from the top bar; Escape or a tap outside closes it."
+**Next:** T-089 Landing + sign-in pages
+
+---
+
+## 2026-10-02 14:32 IST — T-089 Landing + sign-in pages (agent: frontend)
+**What changed:** `frontend/src/pages/LandingPage.tsx`, rewritten `pages/LoginPage.tsx`, `components/HeroArt.tsx`, `pages/public.css`, `/` route now the landing page.
+**Why:** owner's brief screens 1–2 (public landing + sign-in).
+**Decisions:** hero art is an original SVG (no crests, players or footage); signed-in visitors skip the landing; sign-in copy says exactly what we read from Google (name, email).
+**Verification:** lint, typecheck, `npm test` (46), build ✓; visual check in the S8b walkthrough.
+**AI mistakes caught:** none.
+**Explain-it-in-review:** "The landing and sign-in pages are static; the only action is a full-page link to /auth/login, because the OAuth flow runs on the server."
+**Next:** T-094 New analysis redesign
+
+---
+
+## 2026-10-02 14:34 IST — T-094 New analysis redesign (agent: frontend)
+**What changed:** `frontend/src/pages/NewAnalysisPage.tsx` + `new-analysis.css` (replaces `SubmitPage`), `src/media.ts` (local duration + thumbnail), `logic/format.ts` + tests, `types.ts` (sport, stage list, job video fields), `api.ts` sport/title on both submissions + tests.
+**Why:** brief screen 4; sport/title are real fields since T-085.
+**Decisions:** drop zone is a label around a hidden file input (keyboard and screen readers keep the native control); thumbnail and duration are read locally and never uploaded; pre-checks stay UX-only.
+**Verification:** lint, typecheck, `npm test` (53), build ✓; drag-drop + thumbnail checked in the S8b walkthrough.
+**AI mistakes caught:** none.
+**Explain-it-in-review:** "Dropping a file reads its length and a preview frame in the browser, so you see mistakes before uploading 100 MB; the server still re-checks everything."
+**Next:** T-095 My videos redesign
+
+---
+
+## 2026-10-02 14:37 IST — T-095 My videos redesign (agent: frontend)
+**What changed:** `frontend/src/pages/MyVideosPage.tsx` + `videos.css` (replaces `JobsPage`), `components/{StatusChip,RowMenu}.tsx` + `status.css`, `logic/videos.ts` + tests, status label "Completed".
+**Why:** brief screen 5; the list can show real titles, durations, sports and thumbnails since T-086.
+**Decisions:** counts are computed client-side from the one list request; queued counts as Processing; Resubmit never invents a file — uploads go back to New analysis, links are re-posted.
+**Verification:** lint, typecheck, `npm test` (59), build ✓; walkthrough at the end of S8b.
+**AI mistakes caught:** none.
+**Explain-it-in-review:** "The list is one request; filters and counts are just grouping on the client. It refreshes every two seconds only while something is still running."
+**Next:** T-096 Processing view (stepper)
+
+---
+
+## 2026-10-02 14:39 IST — T-096 Processing view (stepper) (agent: frontend)
+**What changed:** `frontend/src/components/ProcessingView.tsx` + `processing.css`, `logic/stepper.ts` + tests, `logic/jobs.ts` stage labels from the brief, `JobDetailPage` routes non-succeeded jobs to the processing view; `ErrorBanner`/`ProgressBar` removed.
+**Why:** brief screen 6; the steps are real worker stages since T-087 (D-031).
+**Decisions:** step states are derived only from `status` + `stage` (never guessed from time); failed jobs mark the failing step when the backend kept the stage.
+**Verification:** lint, typecheck, `npm test` (66), build ✓.
+**AI mistakes caught:** none.
+**Explain-it-in-review:** "The stepper is a pure function of the job's status and stage, so it shows exactly what the worker reports — Fetching only appears for YouTube links."
+**Next:** T-097 Results tabs + smooth heatmaps
+
+---
+
+## 2026-10-02 14:54 IST — T-097 Results tabs + smooth heatmaps, and the S8b walkthrough (agent: frontend)
+**What changed:** `frontend/src/components/{ResultsView,SmoothHeatmap,PlayerStatsTable}.tsx` + `results.css`, `logic/{insights,smoothHeatmap}.ts` + tests, `JobDetailPage` → Processing or Results; removed `StatsCards`, `HeatmapPanel`, `HeatmapCanvas`, `PlayerSelector`, `logic/heatmap.ts`, `App.css`; polish: processing chip, toggle, heat fade-in, tab scrollbar; backend fix commit moves the video time stamp bottom-left.
+**Why:** brief screen 7 (results tabs, legend, key metrics, smooth heatmaps, pitch vs court by sport).
+**Decisions:** every number on the page comes from the stats JSON or the player row (no derived metrics); legend/toggles list only teams that exist; with no ball detected the possession card says so instead of showing zeros; heat rendered small and scaled by the browser for fast switching.
+**Verification:** lint, typecheck, `npm test` (72), build ✓. **Browser walkthrough** (scratchpad preview server, real YOLOX-S + two-pass pipeline, 8 s panning clip of `tests/fixtures/people.jpg`): processing page live (thumbnail, stepper, 53 %); results header/tabs/legend/metrics/footnote; annotated frame extracted: orange-kit player in Team A blue, grey-kit players in Team B red, legend top-right; team + player heatmaps with path; My videos; A2 corrupt upload → server message; A3 Bob → Job not found; landing; three 390 px iframes (no horizontal overflow, cards, menu button). Background-tab media/polling pauses observed and confirmed as Chrome throttling (`document.hidden`), not app bugs.
+**AI mistakes caught:** chained `&&` assertions silently skipped (lint + tsc caught it, AI_USAGE #12); six visual issues found and fixed in the walkthrough (AI_USAGE #13).
+**Explain-it-in-review:** "The results page only shows what the backend computed: the legend lists teams that exist, and if the ball was never seen it says so instead of a 0 % split. Heatmaps are the backend's grid, smoothed in the browser and drawn over a pitch or court depending on the sport the coach picked."
+**Next:** S8b stage summary; then S9 T-090 Rate limiting + active-job cap

@@ -35,5 +35,9 @@ def annotated_key(job_id: UUID) -> str:
     return f"jobs/{job_id}/annotated.mp4"
 
 
+def thumbnail_key(video_id: UUID) -> str:
+    return f"videos/{video_id}/thumbnail.jpg"
+
+
 def clamp_presign_ttl(ttl_s: int) -> int:
     return max(1, min(ttl_s, PRESIGNED_URL_MAX_TTL_S))

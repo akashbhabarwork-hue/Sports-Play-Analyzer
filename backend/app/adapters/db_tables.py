@@ -33,6 +33,7 @@ NAMING_CONVENTION = {
 metadata = MetaData(naming_convention=NAMING_CONVENTION)
 
 JOB_STATUSES = ("queued", "processing", "succeeded", "failed")
+SPORTS = ("football", "basketball")  # same tuple as core/submit_rules.SPORTS (test_submit_rules)
 TEAMS = ("A", "B", "unknown")
 
 
@@ -100,8 +101,14 @@ videos = Table(
     Column("height", Integer),
     Column("fps", REAL),
     _created_at(),
+    # 0002 (T-085): what the coach told us + the worker's first-frame thumbnail.
+    Column("sport", Text, nullable=False, server_default=text("'football'")),
+    Column("title", Text),
+    Column("thumbnail_key", Text),
     CheckConstraint(_in_list("source_type", ("upload", "url")), name="source_type_valid"),
     CheckConstraint("(source_type = 'url') = (source_url IS NOT NULL)", name="url_matches_source"),
+    CheckConstraint(_in_list("sport", SPORTS), name="sport_valid"),
+    CheckConstraint("char_length(title) <= 120", name="title_length"),
 )
 
 jobs = Table(

@@ -284,45 +284,103 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 
 ## S8 · Frontend (1 h 10 m)
 
-### [ ] T-080 · Login page + auth guard + layout — `MUST` `10m`
+### [x] T-080 · Login page + auth guard + layout — `MUST` `10m`
 - **Agent:** frontend
 - **Depends on:** T-031, T-011
 - **Scope:** Login page, `/api/me` guard, header with user + logout.
 - **Acceptance:** logged-out user redirected to login; logout returns to login.
 - **Verify:** manual + `npm run build`
-- **Done notes:** _
+- **Done notes:** S8 plan approved (Vitest + CI step). Routes under `/app/…` (`/`→`/app`, `/login`→`/app/login`); `AuthProvider` (GET /api/me), `RequireAuth` → `/app/login`, `Layout` header (Jobs, New analysis, user, Log out = POST /auth/logout → login); `LoginPage` ("Continue with Google" → `/auth/login`, known `?error=` codes only); typed `api` client + `types.ts`; app styles with light/dark tokens; Vitest 3.2.7 + `npm test` in CI. lint, typecheck, 10 tests, build ✓. Browser walkthrough with the S8 preview server after T-084. See D-029.
 
-### [ ] T-081 · Submit page (upload + URL) — `MUST` `15m`
+### [x] T-081 · Submit page (upload + URL) — `MUST` `15m`
 - **Agent:** frontend
 - **Depends on:** T-080, T-041, T-042
 - **Scope:** tabs, client pre-checks, server error messages inline, navigate to job on 202.
 - **Acceptance:** corrupt file shows server message (A2); URL submit navigates instantly.
 - **Verify:** manual A2 run locally
-- **Done notes:** _
+- **Done notes:** `/app/submit` with Upload | YouTube link tabs (`?tab=url`), pure `logic/precheck.ts` (size ≤100 MB, empty, non-video type, duration ≤60 s via detached `<video>` metadata, link shape — UX only, server is authority), server `ApiError.message` shown inline in `role="alert"` (A2), navigate to `/app/jobs/:id` on 202. 8 new tests (18 total). A2 browser run with the preview server after T-084.
 
-### [ ] T-082 · Job list with live status — `MUST` `10m`
+### [x] T-082 · Job list with live status — `MUST` `10m`
 - **Agent:** frontend
 - **Depends on:** T-070, T-080
 - **Scope:** table, status chips, progress bars, 2 s polling only while active, pause when tab hidden.
 - **Acceptance:** progress moves live during a real job; polling stops when all jobs finished.
 - **Verify:** manual + network tab
-- **Done notes:** _
+- **Done notes:** `/app` jobs table (id link, submitted, status chip, progress bar + stage label, failure message), empty state. Polling = pure `logic/poller.ts` (wait 2 s *after* each response — no overlap; failed request retried next tick; paused while `document.hidden`, immediate refresh on return) wrapped by `hooks/usePolling.ts`, enabled only while any job is queued/processing. 9 new tests (27 total). Network-tab check with the preview server after T-084; live progress during a real job → Docker pass. List rows show a short id (the list API has no filename — F-009).
 
-### [ ] T-083 · Job detail: video, stats, errors — `MUST` `15m`
+### [x] T-083 · Job detail: video, stats, errors — `MUST` `15m`
 - **Agent:** frontend
 - **Depends on:** T-082
 - **Scope:** video player, stats cards, error banner incl. "Upload instead" for `YOUTUBE_BLOCKED`, 404 page.
 - **Acceptance:** A1 video plays + seeks; A3 shows "Job not found".
 - **Verify:** manual
-- **Done notes:** _
+- **Done notes:** `/app/jobs/:jobId`: header (filename/URL, submitted, status chip); active → progress + stage, polls every 2 s until done (a polling blip keeps the job on screen); failed → `ErrorBanner` (headline per code from `logic/results.ts`, server message, code, next-step button — "Upload the file instead" for `YOUTUBE_BLOCKED`/`DOWNLOAD_FAILED`); succeeded → `<video controls playsInline src=/api/jobs/{id}/video>` + 4 stats cards (players tracked, ball visible %, top possession, total distance in frame diagonals); API 404 → "Job not found" (A3); unknown routes → Not found. 5 new tests (32 total). Play/seek + A3 view in the S8 preview-server walkthrough.
 
-### [ ] T-084 · Heatmap view + player selector — `MUST` `20m`
+### [x] T-084 · Heatmap view + player selector — `MUST` `20m`
 - **Agent:** frontend
 - **Depends on:** T-083
 - **Scope:** canvas heatmap, pitch outline, legend, selector (All / Team A / Team B / #ids), optional track overlay.
 - **Acceptance:** switching players redraws within 200 ms; keyboard accessible select.
 - **Verify:** manual A1 final step
-- **Done notes:** _
+- **Done notes:** `HeatmapPanel` (team maps from stats = instant; player map fetched once then cached), `HeatmapCanvas` (DPR-scaled, ResizeObserver, neutral pitch outline, yellow→red ramp, legend, optional path overlay, `role="img"` label, max 760 px wide), native `<select>` `PlayerSelector` (All / Team A (n) / Team B (n) / `#id · team · distance`), pure `logic/heatmap.ts` (cell geometry, colour ramp, track points, options, selection parsing). Browser (preview server, visible tab): switches redrew in 41–125 ms incl. first player fetch 42 ms, cached 41 ms. 11 new tests (43 total incl. logout regression).
+
+## S8b · UI redesign (owner's brief, added 2026-10-02 — see D-030)
+
+Scope added by the owner after S8: full visual/UX brief. Backend first so the UI never fakes data. Pages stay under `/app/…` (public `/` landing, `/login`).
+
+### [x] T-085 · Sport + title on submissions — `MUST` `20m` `[review-plan]`
+- **Agent:** database + backend-api
+- **Depends on:** T-041, T-042
+- **Scope:** Alembic 0002 (`videos.sport` NOT NULL default football + CHECK, `videos.title` ≤120 CHECK, `videos.thumbnail_key`), `core/submit_rules.py`, upload Form fields + URL JSON fields.
+- **Acceptance:** sport/title stored from both endpoints; invalid sport → 422 `INVALID_SPORT`; title >120 → 422; migration up/down/up + CHECKs.
+- **Verify:** `pytest -q -k "submit_rules or sport_title"`; CI `-m integration -k "migration or sport"`
+- **Done notes:** Plan approved. Migration 0002 expand-only with working downgrade; `db_tables.py` mirrors it (+ `SPORTS` tuple kept equal to `core.submit_rules.SPORTS` by a test). `clean_title` (control chars → space, collapse, ≤120, empty → None), `check_sport` (case-insensitive, default football). New `ValidationError` (422) and `InvalidSportError` (422). Cheap checks run before ffprobe. 18 local tests; migration/CHECK tests CI-only.
+
+### [x] T-086 · Job read model with video info + thumbnail — `MUST` `25m`
+- **Agent:** backend-api + cv-pipeline
+- **Depends on:** T-085
+- **Scope:** list/detail return `{id, title, sport, source_type, status, progress, stage, duration_s, size_bytes, thumbnail_url, error, created_at, …}` (job JOIN video, user-scoped); worker saves first-frame JPEG thumbnail; ownership-checked `GET /api/jobs/{id}/thumbnail` (+ alias). Closes F-009.
+- **Acceptance:** shapes match the brief's contract; foreign thumbnail → 404; A3 matrix includes `/thumbnail`.
+- **Verify:** `pytest -q -k "read_api or thumbnail or user_b_cannot"`
+- **Done notes:** `JobRepo.get_with_video` / `list_with_videos` (one JOIN, both tables filtered on `user_id`) → `JobWithVideo`; list/detail items now carry `title, sport, source_type, original_filename, source_url, duration_s, size_bytes, thumbnail_url` (detail keeps the nested `video` for the S8 UI until T-095/T-097). Worker saves frame 0 as a ≤320 px JPEG at `videos/{video_id}/thumbnail.jpg` (deterministic key) + `set_thumbnail_for_worker`. `GET /api/jobs/{id}/thumbnail` (+ alias): ownership-first 404, presigned 302 on S3 or streamed `image/jpeg` with `Cache-Control: private, max-age=3600`. A3 matrix (unit + CI) includes `/thumbnail`. Local 74 tests in the touched files; Postgres JOIN/scoping + thumbnail round-trip CI-only. Closes F-009.
+
+### [x] T-087 · Two-pass render: team-coloured boxes + honest stages — `MUST` `30m` `[review-plan]`
+- **Agent:** cv-pipeline
+- **Depends on:** T-062
+- **Scope:** pass 1 detect/track/record (`analysing`), teams+metrics (`computing`), pass 2 decode+draw by team+encode (`rendering`), `saving`; legend in HUD. Revises D-026.
+- **Acceptance:** boxes coloured by team in the output (pixel check); stage sequence; lease lost in pass 2 writes nothing.
+- **Verify:** `pytest -q -k process_job`
+- **Done notes:** Plan approved (S8b). `_analyse` (pass 1) + `_rendered_frames` (pass 2) in `services/process.py`; stages analysing → computing → rendering → saving with bands in `core/pipeline` (`STAGES`, `render_pct`); `FrameAnnotator.draw(..., teams)` colours boxes A #2563EB / B #E11D48 / unknown grey, white/black id labels, legend of teams present + ball. Tests: band order, annotator pixel colours (BGR of the brief's hex), stepper order, every pass-2 frame drawn with the same split as the stats, lease lost during rendering writes nothing — 29 local. Measured with real YOLOX: rendering 0.23 s vs analysing 10.34 s (≈2 %). See D-031.
+
+### [x] T-088 · Design system + app shell — `MUST` `30m`
+- **Agent:** frontend · **Depends on:** T-084
+- **Scope:** tokens (brief palette, light/dark), Inter, SVG icons, original logo, sidebar → top bar + drawer <900 px, user menu, Settings page.
+- **Done notes:** `styles/tokens.css` (brief palette, 12 px radius, shadows, light + `prefers-color-scheme` dark, focus ring), new `index.css` base (buttons, inputs, cards), Inter via Google Fonts (**T-091: CSP must allow fonts.googleapis.com / fonts.gstatic.com**), inline SVG icon set, original `LogoMark`, `AppShell` (sidebar ≥900 px; top bar + drawer with backdrop/Esc <900 px), `UserMenu` (initials avatar, name, email, Settings, Log out; Esc/outside click), `SettingsPage` (account, privacy note, logout). Routes: `/login` (old `/app/login` and `/app/submit` redirect), `/app/new`, `/app/settings`. 3 new tests (46).
+
+### [x] T-089 · Landing + sign-in pages — `MUST` `25m`
+- **Agent:** frontend · **Depends on:** T-088
+- **Scope:** public `/` dark hero + feature strip (original art only), `/login` card with reassurances.
+- **Done notes:** `LandingPage` (`/`, signed-in visitors → `/app`): navy gradient hero, nav (Features, How it works, Sign in), Football/Basketball pills, headline/subline per brief, "Get started with Google" → `/auth/login`, original `HeroArt` SVG (pitch, player boxes with trails in team colours, heat glow, ball), 4-item feature strip, 3-step "How it works", footer. `LoginPage` (`/login`): card on faint CSS pitch lines, logo, "Sign in to continue", Google button (G mark per Google branding), known `?error=` message, 3 reassurances. Shared `pages/public.css`. lint/typecheck/46 tests/build ✓.
+
+### [x] T-094 · New analysis redesign — `MUST` `30m`
+- **Agent:** frontend · **Depends on:** T-085, T-088
+- **Scope:** segmented tabs, drag-drop, file row with first-frame thumbnail, sport select, optional title, tips card, inline server errors.
+- **Done notes:** `/app/new` (`NewAnalysisPage`, old `SubmitPage` removed): segmented tablist (arrow keys switch), drag-and-drop zone (a `<label>` around a visually hidden file input → keyboard/click work too), file row with early-frame thumbnail + size + duration via `media.readClipMeta` (local only, 5 s timeout, revokes object URL), remove ×, sport radio pills (Football/Basketball), optional title (≤120), full-width "Start analysis →" with spinner, server `error.message` inline (A2/413/429), Tips card; navigates to `/app/jobs/:id` on 202. `api.submitUrl/uploadFile(…, {sport, title})`; pure `logic/format.ts`. 7 new tests (53).
+
+### [x] T-095 · My videos redesign — `MUST` `30m`
+- **Agent:** frontend · **Depends on:** T-086, T-088
+- **Scope:** filter chips with counts, table/cards with thumbnail, sport, status + progress, actions (View results / Resubmit / copy id), polling, empty state.
+- **Done notes:** `/app` = `MyVideosPage` (old `JobsPage` removed): header + New analysis, filter chips All/Processing/Completed/Failed with client-side counts (`aria-pressed`), table (thumbnail from `thumbnail_url` or placeholder, title via `jobTitle` fallback chain, duration, sport, status chip + inline progress bar/% for processing + failure message, local created time), actions (View results / View progress / Resubmit — URLs re-POST same link+sport+title, uploads → New analysis), `RowMenu` ⋮ (Open, Copy job ID with live-region notice), rows become cards < 700 px, empty-state illustration + CTA, 2 s polling only while active. New `StatusChip` (Queued/Processing/Completed/Failed per brief colours). Pure `logic/videos.ts`. 6 new tests (59).
+
+### [x] T-096 · Processing view (stepper) — `MUST` `25m`
+- **Agent:** frontend · **Depends on:** T-087, T-088
+- **Scope:** stage stepper (queued → fetching (URL) → analysing → computing → rendering → saving), current-step card, source card, failure card, auto-switch to results.
+- **Done notes:** `ProcessingView` (queued/processing/failed jobs on `/app/jobs/:id`): back link, title + subtitle, job-ID chip with copy, source card (worker thumbnail, title/URL, duration, size, status), current-step card with progress bar, vertical stepper from pure `logic/stepper.ts` (done = green check, current = spinner + `aria-current="step"`, todo = grey, failed = red; "Fetching video" only for URL jobs; no stage yet → first worker step current), original abstract runner illustration, failure card (server message, headline, monospace code, next-step button e.g. YOUTUBE_BLOCKED → "Upload the file instead" → `/app/new`). Page switches to results when polling sees `succeeded`. Stage labels per brief. Old `ErrorBanner`/`ProgressBar` removed. 7 new tests (66).
+
+### [x] T-097 · Results tabs + smooth heatmaps — `MUST` `45m`
+- **Agent:** frontend · **Depends on:** T-086, T-087, T-088
+- **Scope:** Overview (video + team legend, key metrics, settings footnote), Player stats (sortable), Team heatmaps, Player heatmaps (bilinear blue→green→yellow→red, pitch/court by sport, path toggle); responsive + dark pass; browser walkthrough; S8b summary.
+- **Done notes:** `ResultsView` (header with Completed chip, Download annotated video, Copy link; tablist with arrow keys, tab + player in the URL): Overview (video, legend only for teams actually present + ball, key metrics — players tracked, ball visible %, possession split A/B/unassigned or an honest "ball not detected" note, distance per team with the brief's tooltip — settings footnote from `stats.config`), `PlayerStatsTable` (sortable, `aria-sort`, row → player heatmap), Team heatmaps (segmented toggle of present teams + All), Player heatmaps (select, path toggle with start/end, summary). `SmoothHeatmap`: pure `logic/smoothHeatmap.ts` (bilinear sample, blue→green→yellow→red ramp fading in from 0, pitch/court shapes by sport) rendered at 320 px and scaled smoothly; height ≤ ~62 vh. `logic/insights.ts` (key metrics, teams present, settings note, sort). Old S8 results components + `App.css` removed. 72 tests. **Walkthrough** (preview server, real YOLOX on a panning clip of the people fixture): processing stepper live, results with team-coloured boxes (orange kit = Team A blue, grey kits = Team B red — frame inspected), all tabs, My videos, A2 corrupt upload message, A3 "Job not found" for Bob, landing, 390 px phone layouts (no horizontal overflow, cards, drawer button). Fixes found there: heatmap height, toggle wrap, job-ID chip, heat edge box, time-stamp position (backend fix commit), no-ball possession note, tab scrollbar.
 
 ## S9 · Security hardening (25 m)
 
@@ -437,3 +495,5 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - [ ] **F-005** (devops, before T-100) Finish T-014: Fly app (web+worker), Neon, bucket, first deploy, `/health` live; re-run the YouTube spike from the prod worker (`fly ssh console`) and update D-010. Pick the mitigation (none / cookies / proxy) for A1.
 - [x] **F-004** (T-020) Remove the "exit 5 = ok" allowance from the CI integration step once integration tests exist.
 - [ ] **F-007** (backend-api) Snapshot the full pipeline config into `jobs.config` at submit time (today only `max_video_seconds`; `stats.config` already records the effective values per result — D-026).
+- [x] **F-009** (backend-api + frontend, done in T-086) Include the video's filename / URL in `GET /api/jobs` rows (join `videos`, user-scoped) so the jobs table can show "match.mp4" instead of a short id.
+- [ ] **F-008** (frontend, with F-002) Upgrade Vite 5 → current and Vitest 3 → matching major together: `npm audit` reports 1 high + 3 moderate advisories, all in dev-server/test tooling (`npm audit --omit=dev` = 0). Also pin the remaining `^` ranges in `package.json`.

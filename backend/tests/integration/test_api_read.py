@@ -11,6 +11,7 @@ pytestmark = pytest.mark.integration
 
 GRID = {"w": 2, "h": 1, "counts": [3, 1], "max": 3}
 VIDEO_BYTES = bytes(range(256)) * 40
+THUMB_BYTES = b"\xff\xd8\xff\xe0fake-jpeg\xff\xd9"
 WORKER = "w-read"
 
 
@@ -43,7 +44,24 @@ def seed_succeeded_job(container, user_id):
     }
     track = PlayerTrack(None, 1, "A", 10, 50.0, 0.25, 4, GRID, [[0.0, 0.1, 0.9]])
     assert container.queue.finish(job.id, WORKER, JobOutcome(stats, key, (track,)))
+    thumb = f"videos/{job.video_id}/thumbnail.jpg"  # what the worker saves from frame 0
+    with tempfile.TemporaryDirectory() as tmp:
+        src = os.path.join(tmp, "t.jpg")
+        with open(src, "wb") as f:
+            f.write(THUMB_BYTES)
+        container.blobs.put_file(thumb, src, "image/jpeg")
+    container.videos.set_thumbnail_for_worker(job.video_id, thumb)
     return job
+
+
+def test_api_read_list_and_thumbnail_from_postgres(client, login_as, container):
+    alice = login_as(client, "alice")
+    job = seed_succeeded_job(container, alice.id)
+    (item,) = client.get("/api/jobs").json()["jobs"]
+    assert item["sport"] == "football" and item["source_type"] == "upload"
+    assert item["thumbnail_url"] == f"/api/jobs/{job.id}/thumbnail"
+    r = client.get(item["thumbnail_url"])
+    assert r.status_code == 200 and r.content == THUMB_BYTES
 
 
 def test_api_read_succeeded_job_end_to_end(client, login_as, container):

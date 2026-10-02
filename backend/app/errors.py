@@ -22,6 +22,18 @@ class CsrfRejectedError(AppError):
     code = "CSRF_REJECTED"
 
 
+class ValidationError(AppError):
+    """A request field failed a business rule (message names the field and the limit)."""
+
+    status_code = 422
+    code = "VALIDATION_ERROR"
+
+
+class InvalidSportError(AppError):
+    status_code = 422
+    code = "INVALID_SPORT"
+
+
 class NotFoundError(AppError):
     """Missing OR owned by someone else: the two are deliberately indistinguishable (A3)."""
 

@@ -71,6 +71,9 @@ class FakeVideos:
         self.video = Video(VIDEO_ID, USER_ID, "url", self.video.source_url, None, key, size,
                            duration_s, width, height, fps, NOW)  # fmt: skip
 
+    def set_thumbnail_for_worker(self, video_id, key):
+        self.video = replace(self.video, thumbnail_key=key)
+
 
 class FailingBlobs(LocalBlobStore):
     """Disk store whose upload of the annotated video fails (storage outage)."""
@@ -146,6 +149,69 @@ def test_job_succeeds_with_stats_tracks_and_playable_video(tmp_path, tiny_clip):
         2, abs=0.3
     )
     assert h.queue.failed is None
+
+
+def test_stages_follow_the_stepper_order_with_two_passes(tmp_path, tiny_clip):
+    h = Harness(tmp_path, tiny_clip)
+    assert h.run() == "succeeded"
+
+    stages = [s for _, s in h.queue.beats]
+    order = [s for i, s in enumerate(stages) if i == 0 or s != stages[i - 1]]  # de-duplicate runs
+    assert order == ["fetching", "analysing", "computing", "rendering", "saving"]
+    progress = [p for p, _ in h.queue.beats]
+    assert progress == sorted(progress) and max(progress) < 100
+
+
+class SpyAnnotator:
+    """Wraps the real annotator and records the team map pass 2 hands it."""
+
+    def __init__(self, real):
+        self.real, self.teams_seen = real, []
+
+    def thumbnail_jpeg(self, frame, max_width):
+        return self.real.thumbnail_jpeg(frame, max_width)
+
+    def draw(self, frame, tracks, ball, t_s, teams):
+        self.teams_seen.append(dict(teams))
+        return self.real.draw(frame, tracks, ball, t_s, teams)
+
+
+def test_rendering_pass_draws_every_frame_with_the_final_team_split(tmp_path, tiny_clip):
+    h = Harness(tmp_path, tiny_clip)
+    spy = SpyAnnotator(h.ports.annotator)
+    h.ports = replace(h.ports, annotator=spy)
+
+    assert h.run() == "succeeded"
+
+    stats_teams = {p["player_id"]: p["team"] for p in h.queue.finished.stats["players"]}
+    assert len(spy.teams_seen) == 10  # one draw per sampled frame, all in pass 2
+    assert all(seen == stats_teams for seen in spy.teams_seen)  # same split as the stats
+
+
+def test_lost_lease_during_rendering_writes_nothing(tmp_path, tiny_clip):
+    # beats: fetching 1 + analysing 4 (frames 0,3,6,9) + computing 1 = 6; the 7th is rendering
+    h = Harness(tmp_path, tiny_clip, queue=FakeQueue(lose_lease_after_beats=6))
+
+    assert h.run() == "lease_lost"
+
+    assert h.queue.beats[-1][1] == "rendering"
+    assert h.queue.finished is None and h.queue.failed is None
+    with pytest.raises(BlobNotFoundError):
+        h.blobs.size(f"jobs/{JOB_ID}/annotated.mp4")
+
+
+def test_first_frame_thumbnail_is_saved_as_a_small_jpeg(tmp_path, tiny_clip):
+    h = Harness(tmp_path, tiny_clip)
+    h.run()
+
+    key = h.videos.video.thumbnail_key
+    assert key == f"videos/{VIDEO_ID}/thumbnail.jpg"
+    out = tmp_path / "thumb.jpg"
+    h.blobs.get_to_path(key, str(out))
+    data = out.read_bytes()
+    assert data[:3] == b"\xff\xd8\xff"  # JPEG magic
+    probe = FfprobeVideoProber().probe(str(out))  # ffprobe reads JPEGs as a 1-frame image
+    assert probe.width == 160  # the clip is 160 px wide, under the 320 px cap
 
 
 def test_progress_goes_fetching_analysing_saving_and_only_rises(tmp_path, tiny_clip):

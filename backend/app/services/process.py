@@ -1,8 +1,12 @@
-"""Process one claimed job end to end: the worker's main use case (T-062, D-026).
+"""Process one claimed job end to end: the worker's main use case (T-062, D-026, T-087).
 
-fetch (URL) → download blob → probe → [decode → detect → track → sample colours → draw]
-per frame, streamed into the encoder → teams + metrics → upload annotated.mp4 → finish.
+fetch (URL) → download blob → probe →
+  pass 1 "analysing": [decode → detect → track → record → sample jersey colours] per frame →
+  "computing": teams + metrics →
+  pass 2 "rendering": [decode again → draw boxes in team colours] streamed into the encoder →
+  "saving": upload annotated.mp4 → finish.
 Only one decoded frame is in memory at a time; observations are small per-frame metadata.
+Pass 2 repeats only decoding and drawing (no detection), so it is cheap next to pass 1.
 
 Failures:
 - Problems with the input (corrupt, too long, YouTube blocked, undecodable, model unusable)
@@ -16,13 +20,14 @@ Failures:
 import logging
 import os
 import tempfile
-from collections.abc import Iterator
+from collections.abc import Iterator, Mapping
 from dataclasses import dataclass
 from typing import Any
+from uuid import UUID
 
 import numpy as np
 
-from ..core.blob_keys import annotated_key
+from ..core.blob_keys import annotated_key, thumbnail_key
 from ..core.metrics import build_stats
 from ..core.models import (
     FrameObservation,
@@ -35,11 +40,13 @@ from ..core.models import (
     TrackerState,
 )
 from ..core.pipeline import (
+    PROGRESS_COMPUTING,
     PROGRESS_FETCHING,
     PROGRESS_SAVING,
     add_team_sample,
     pipeline_config,
     progress_pct,
+    render_pct,
     should_sample_team,
 )
 from ..core.ports import (
@@ -85,6 +92,7 @@ FINAL_ERRORS = (
     ModelError,
 )
 LEASE_LOST_MESSAGE = "This job is now owned by another worker."
+THUMBNAIL_MAX_WIDTH = 320
 
 
 @dataclass(frozen=True, slots=True)
@@ -162,13 +170,10 @@ def _run(job: Job, ports: PipelinePorts, cfg: ProcessConfig, worker_id: str) -> 
         size = output_size(probe.width, probe.height, probe.rotation, p.max_frame_side)
         expected = expected_frames(probe.duration_s, p.max_seconds, p.sample_fps)
 
-        observations: list[FrameObservation] = []
-        samples: dict[int, list[np.ndarray]] = {}
-        frames = _annotated_frames(
-            job, ports, cfg, worker_id, src, size, expected, observations, samples
-        )
-        ports.encoder.encode(frames, out, size, p.sample_fps)
+        # Pass 1: the slow part (detection). Only metadata is kept, never pixels.
+        observations, samples = _analyse(job, ports, cfg, worker_id, src, size, expected)
 
+        _beat(ports, job, worker_id, cfg, PROGRESS_COMPUTING, "computing")
         teams = assign_teams(samples, p.team_min_separation)
         result = build_stats(job.id, observations, size.width, size.height, cfg.metrics, teams)
         stats = {
@@ -183,6 +188,11 @@ def _run(job: Job, ports: PipelinePorts, cfg: ProcessConfig, worker_id: str) -> 
             "config": pipeline_config(p, cfg.extra_config),
         }
 
+        # Pass 2: decode again and draw the recorded boxes in team colours, straight into the
+        # encoder. No detection here, so it costs a small fraction of pass 1 (T-087).
+        frames = _rendered_frames(job, ports, cfg, worker_id, src, size, observations, teams)
+        ports.encoder.encode(frames, out, size, p.sample_fps)
+
         _beat(ports, job, worker_id, cfg, PROGRESS_SAVING, "saving")
         blob_key = annotated_key(job.id)  # deterministic: a retry overwrites, never duplicates
         ports.blobs.put_file(blob_key, out, "video/mp4")
@@ -192,7 +202,18 @@ def _run(job: Job, ports: PipelinePorts, cfg: ProcessConfig, worker_id: str) -> 
         raise LeaseLostError(LEASE_LOST_MESSAGE)
 
 
-def _annotated_frames(
+def _save_thumbnail(ports: PipelinePorts, video_id: UUID, frame: np.ndarray, tmp: str) -> None:
+    """First decoded frame → small JPEG for lists/processing page. Deterministic key, so a
+    retry overwrites it (T-086)."""
+    path = os.path.join(tmp, "thumbnail.jpg")
+    with open(path, "wb") as f:
+        f.write(ports.annotator.thumbnail_jpeg(frame, THUMBNAIL_MAX_WIDTH))
+    key = thumbnail_key(video_id)
+    ports.blobs.put_file(key, path, "image/jpeg")
+    ports.videos.set_thumbnail_for_worker(video_id, key)
+
+
+def _analyse(
     job: Job,
     ports: PipelinePorts,
     cfg: ProcessConfig,
@@ -200,18 +221,20 @@ def _annotated_frames(
     src: str,
     size: FrameSize,
     expected: int,
-    observations: list[FrameObservation],
-    samples: dict[int, list[np.ndarray]],
-) -> Iterator[np.ndarray]:
-    """Decode → detect → track → record → draw, one frame at a time, for the encoder.
+) -> tuple[list[FrameObservation], dict[int, list[np.ndarray]]]:
+    """Pass 1: decode → detect → track → record, one frame at a time.
 
-    Appends to `observations` and `samples` as it goes (both small: metadata, not pixels).
+    Returns per-frame observations and jersey-colour samples (small metadata, not pixels).
     """
     p = cfg.pipeline
     state = TrackerState()
+    observations: list[FrameObservation] = []
+    samples: dict[int, list[np.ndarray]] = {}
     for idx, frame in enumerate(ports.frames.frames(src, size, p.sample_fps, p.max_seconds)):
         if idx % p.heartbeat_every_frames == 0:
             _beat(ports, job, worker_id, cfg, progress_pct(idx, expected), "analysing")
+        if idx == 0:
+            _save_thumbnail(ports, job.video_id, frame, os.path.dirname(src))
         dets = ports.detector.detect(frame)
         players = player_detections(dets, size.width, size.height, cfg.tracker)
         ball = pick_ball(dets)
@@ -226,5 +249,30 @@ def _annotated_frames(
                 pixels = torso_pixels(rgb, track.box)
                 feature = colour_feature(pixels) if pixels is not None else None
                 add_team_sample(samples, track.public_id, feature, p.team_max_samples)
+    return observations, samples
 
-        yield ports.annotator.draw(frame, tracks, ball_box, t_s)
+
+def _rendered_frames(
+    job: Job,
+    ports: PipelinePorts,
+    cfg: ProcessConfig,
+    worker_id: str,
+    src: str,
+    size: FrameSize,
+    observations: list[FrameObservation],
+    teams: Mapping[int, str],
+) -> Iterator[np.ndarray]:
+    """Pass 2: decode the same frames again and draw what pass 1 recorded, in team colours.
+
+    The decoder is deterministic, so frame idx here is frame idx in pass 1; a frame beyond the
+    recorded ones (should not happen) is drawn without boxes rather than failing the job.
+    """
+    p = cfg.pipeline
+    total = len(observations)
+    for idx, frame in enumerate(ports.frames.frames(src, size, p.sample_fps, p.max_seconds)):
+        if idx % p.heartbeat_every_frames == 0:
+            _beat(ports, job, worker_id, cfg, render_pct(idx, total), "rendering")
+        obs = observations[idx] if idx < total else None
+        tracks = obs.tracks if obs else ()
+        ball = obs.ball if obs else None
+        yield ports.annotator.draw(frame, tracks, ball, idx / p.sample_fps, teams)

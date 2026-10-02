@@ -9,19 +9,13 @@ from typing import Any
 from uuid import UUID
 
 from ..core.blob_keys import PRESIGNED_URL_MAX_TTL_S
-from ..core.models import Job, JobResult, PlayerTrack, Video
-from ..core.ports import BlobStore, JobRepo, ResultRepo, VideoRepo
+from ..core.models import Job, JobResult, JobWithVideo, PlayerTrack
+from ..core.ports import BlobStore, JobRepo, ResultRepo
 from ..errors import JobNotReadyError, NotFoundError
 
 JOB_LIST_LIMIT = 50
 NOT_FOUND_MESSAGE = "Job not found"
 SUCCEEDED = "succeeded"
-
-
-@dataclass(frozen=True, slots=True)
-class JobView:
-    job: Job
-    video: Video | None
 
 
 @dataclass(frozen=True, slots=True)
@@ -39,8 +33,8 @@ class VideoAccess:
     size: int = 0
 
 
-def list_jobs(jobs: JobRepo, user_id: UUID) -> list[Job]:
-    return jobs.list_for_user(user_id, JOB_LIST_LIMIT)
+def list_jobs(jobs: JobRepo, user_id: UUID) -> list[JobWithVideo]:
+    return jobs.list_with_videos(user_id, JOB_LIST_LIMIT)
 
 
 def _own_job(jobs: JobRepo, user_id: UUID, job_id: UUID) -> Job:
@@ -50,9 +44,22 @@ def _own_job(jobs: JobRepo, user_id: UUID, job_id: UUID) -> Job:
     return job
 
 
-def get_job(jobs: JobRepo, videos: VideoRepo, user_id: UUID, job_id: UUID) -> JobView:
-    job = _own_job(jobs, user_id, job_id)
-    return JobView(job=job, video=videos.get(user_id, job.video_id))
+def get_job(jobs: JobRepo, user_id: UUID, job_id: UUID) -> JobWithVideo:
+    found = jobs.get_with_video(user_id, job_id)
+    if found is None:
+        raise NotFoundError(NOT_FOUND_MESSAGE)
+    return found
+
+
+def get_thumbnail(jobs: JobRepo, blobs: BlobStore, user_id: UUID, job_id: UUID) -> VideoAccess:
+    """First-frame JPEG; exists once the worker has decoded a frame (any status after that)."""
+    key = get_job(jobs, user_id, job_id).video.thumbnail_key
+    if key is None:
+        raise NotFoundError("No thumbnail yet")
+    url = blobs.presigned_get_url(key, PRESIGNED_URL_MAX_TTL_S)
+    if url is not None:
+        return VideoAccess(url=url)
+    return VideoAccess(key=key, size=blobs.size(key))
 
 
 def _result(jobs: JobRepo, results: ResultRepo, user_id: UUID, job_id: UUID) -> JobResult:
