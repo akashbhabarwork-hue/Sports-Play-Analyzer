@@ -28,7 +28,6 @@ from ..errors import (
     NotFoundError,
     OAuthLoginError,
     RangeNotSatisfiableError,
-    ServiceUnavailableError,
     UnauthorizedError,
     ValidationError,
 )
@@ -72,7 +71,14 @@ UPLOAD_PATHS = frozenset({"/api/jobs/upload", "/jobs/upload"})  # canonical + D-
 
 OAUTH_TX_COOKIE = "oauth_tx"
 OAUTH_TX_MAX_AGE = 600  # state/nonce/PKCE verifier only live for the login round trip
+# /auth/login and /auth/callback are full-page browser navigations, not API calls: every
+# outcome is a redirect, failures land on the login page with a code it turns into text.
 LOGIN_FAILED_URL = "/login?error=oauth_failed"
+LOGIN_CANCELLED_URL = "/login?error=cancelled"
+LOGIN_UNAVAILABLE_URL = "/login?error=login_unavailable"
+LOGIN_SERVER_ERROR_URL = "/login?error=server_error"
+AFTER_LOGIN_URL = "/app"
+OAUTH_SETTINGS = "GOOGLE_CLIENT_ID, GOOGLE_CLIENT_SECRET, SESSION_SECRET"
 
 
 def error_response(exc: AppError) -> JSONResponse:
@@ -289,33 +295,46 @@ def register_auth_routes(app: FastAPI, container: Container) -> None:
 
     # The two OAuth routes are async because Authlib's Starlette client is async (D-015).
     # They stay thin: Authlib call, then the sync service via run_in_threadpool.
+    if container.oauth is None:  # say once, at startup, what the operator must set
+        access_logger.warning("google login disabled", extra={"missing_any_of": OAUTH_SETTINGS})
+
+    def login_unavailable() -> RedirectResponse:
+        access_logger.warning("google login requested but not configured")
+        return RedirectResponse(LOGIN_UNAVAILABLE_URL, status_code=303)
+
     @app.get("/auth/login", include_in_schema=False)
     async def auth_login(request: Request):
         if container.oauth is None:
-            raise ServiceUnavailableError("Google login is not configured on this server")
+            return login_unavailable()
         return await container.oauth.authorize_redirect(request, settings.oauth_redirect_uri)
 
     @app.get("/auth/callback", include_in_schema=False)
     async def auth_callback(request: Request):
         if container.oauth is None:
-            raise ServiceUnavailableError("Google login is not configured on this server")
+            return login_unavailable()
         try:
+            if request.query_params.get("error") == "access_denied":  # user pressed Cancel
+                return RedirectResponse(LOGIN_CANCELLED_URL, status_code=303)
             profile = await container.oauth.fetch_profile(request)
         except OAuthLoginError:
             return RedirectResponse(LOGIN_FAILED_URL, status_code=303)
         finally:
             request.session.clear()  # the OAuth transaction is single-use
 
-        _, token = await run_in_threadpool(
-            login_user,
-            container.users,
-            container.sessions,
-            profile,
-            datetime.now(UTC),
-            settings.session_ttl_days,
-            request.cookies.get(settings.session_cookie_name),
-        )
-        response = RedirectResponse("/", status_code=303)
+        try:
+            _, token = await run_in_threadpool(
+                login_user,
+                container.users,
+                container.sessions,
+                profile,
+                datetime.now(UTC),
+                settings.session_ttl_days,
+                request.cookies.get(settings.session_cookie_name),
+            )
+        except Exception:  # e.g. database down: a readable page, details only in the log
+            access_logger.exception("login could not be completed")
+            return RedirectResponse(LOGIN_SERVER_ERROR_URL, status_code=303)
+        response = RedirectResponse(AFTER_LOGIN_URL, status_code=303)
         set_session_cookie(response, settings, token)
         return response
 

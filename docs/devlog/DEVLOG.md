@@ -482,3 +482,12 @@ Stage summaries live in `docs/devlog/stages/`.
 **Verification:** test collects with the override; ruff clean. Postgres run = CI re-run on the PR.
 **AI mistakes caught:** integration tests not checked against the new cap (AI_USAGE #15).
 **Next:** CI green on S9 PR → merge → S10.
+---
+
+## 2026-10-02 16:24 IST — Fix: login errors shown as raw JSON (agent: auth-security)
+**What changed:** `entrypoints/api.py` — `/auth/login` and `/auth/callback` never return JSON: not configured → 303 `/login?error=login_unavailable` (+ startup warning naming the missing settings), Google "Cancel" (`error=access_denied`) → `cancelled`, provider failure → `oauth_failed` (unchanged), failure while creating the user/session → `server_error` (logged with traceback, no cookie); success now goes straight to `/app`. `frontend/src/logic/login.ts` messages for the new codes (+ test). README: one-time Google Cloud setup.
+**Why:** owner saw `{"error":{"code":"SERVICE_UNAVAILABLE",…}}` after clicking "Continue with Google" (server had no Google credentials).
+**Similar issues checked:** every browser navigation (`href`/`location`) in the SPA — only `/auth/login` (fixed) and the "Download annotated video" link (`<a download>` to `/api/jobs/{id}/video`; only shown for a finished job of the logged-in user, and a failed download shows in the browser's download bar, not as a page). All other errors go through `fetch` → envelope → shown as text.
+**Verification:** unit 563 passed (+ known Windows-only failure); integration 107 collect (CI); ruff, format, design ✓; frontend lint/typecheck/73 tests/build ✓; browser on the preview server (no Google config): "Continue with Google" → login page with "Google sign-in is not available…" message.
+**AI mistakes caught:** AI_USAGE #16.
+**Next:** owner sets up the Google OAuth client + `.env` → Docker pass → deploy (Render).
