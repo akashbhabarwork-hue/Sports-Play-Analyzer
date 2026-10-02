@@ -154,3 +154,13 @@ Chosen: `core/tracking.py` — constant-velocity prediction (EMA 0.5 of the cent
 Defaults: `TRACKER_MAX_AGE` 30 → **10** sampled frames (2 s at 5 fps). 30 would be 6 s at our sample rate, long enough for a constant-velocity prediction to drift onto another player. `TRACKER_HIGH_THRESH` 0.5 / `TRACKER_LOW_THRESH` 0.1 (ByteTrack defaults). The detector (T-061) must therefore pass boxes down to `TRACKER_LOW_THRESH`, not drop them at `CONF_THRESHOLD`.
 Dependencies: `numpy==2.4.6` (also needed by the ONNX detector) and `scipy==1.17.1` (well-tested assignment solver instead of a hand-written one; ~35 MB in the image).
 Limits (ADR): IoU-only association can swap ids when identical kits cross or players move fast at low SAMPLE_FPS; a player hidden longer than max age comes back with a new id. With more time: Kalman filter + appearance embedding (BoT-SORT).
+
+### D-022 Metrics computed in one pass from per-frame observations (2026-10-02, T-051)
+Context: brief §6 metrics; "Unit tests for… metric maths"; skill `sports-metrics` suggested a frozen accumulator rebuilt every frame.
+Chosen: the worker appends one `FrameObservation(frame_idx, t_s, confirmed tracks, ball)` per sampled frame (≤ 300 × ≤ 30 small objects) and `core/metrics.build_stats` computes everything at the end. Simpler than threading an immutable state through the loop, equally pure, and each metric is a plain function with its own tests.
+Definitions (deviations from the skill in **bold**):
+- Distance on the feet point; **measured from the last counted position**, which only moves once the player has gone ≥ `JITTER_PX` — dropping every short step (the skill's wording) would erase a slow walker's distance entirely; a gap of more than `max_gap_frames` (= `TRACKER_MAX_AGE`) missing frames is not bridged. `distance_rel` = px / frame diagonal.
+- Heatmap 32×18, row-major `counts` + `max`; edge (1.0) and slightly-outside points clamped into the grid. Per player, per team, and `all`.
+- Possession: nearest feet within `POSSESSION_DIST_RATIO` × box height; the owner changes only after `POSSESSION_MIN_FRAMES` consecutive frames for the same candidate — **"loose ball" is a candidate too**, so a 1–2 frame pass stays with the passer instead of resetting; owner kept through ≤ 2 unseen-ball frames, reset after; % of ball-visible frames, plus `unassigned_pct` and team totals.
+- Stats JSON as in the skill contract **plus `heatmaps: {all, A, B}`** so `GET …/heatmap?team=` reads one row; `video` and `config` are added by the service (T-062). `build_stats` also returns the `player_tracks` rows (track `[t_s, nx, ny]`, heatmap).
+Limits (ADR): pixel distances depend on camera pan/zoom — compare players within a clip, not across clips; possession is proximity, not touches.
