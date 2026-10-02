@@ -357,10 +357,10 @@ Scope added by the owner after S8: full visual/UX brief. Backend first so the UI
 - **Scope:** tokens (brief palette, light/dark), Inter, SVG icons, original logo, sidebar → top bar + drawer <900 px, user menu, Settings page.
 - **Done notes:** `styles/tokens.css` (brief palette, 12 px radius, shadows, light + `prefers-color-scheme` dark, focus ring), new `index.css` base (buttons, inputs, cards), Inter via Google Fonts (**T-091: CSP must allow fonts.googleapis.com / fonts.gstatic.com**), inline SVG icon set, original `LogoMark`, `AppShell` (sidebar ≥900 px; top bar + drawer with backdrop/Esc <900 px), `UserMenu` (initials avatar, name, email, Settings, Log out; Esc/outside click), `SettingsPage` (account, privacy note, logout). Routes: `/login` (old `/app/login` and `/app/submit` redirect), `/app/new`, `/app/settings`. 3 new tests (46).
 
-### [ ] T-089 · Landing + sign-in pages — `MUST` `25m`
+### [x] T-089 · Landing + sign-in pages — `MUST` `25m`
 - **Agent:** frontend · **Depends on:** T-088
 - **Scope:** public `/` dark hero + feature strip (original art only), `/login` card with reassurances.
-- **Done notes:** _
+- **Done notes:** `LandingPage` (`/`, signed-in visitors → `/app`): navy gradient hero, nav (Features, How it works, Sign in), Football/Basketball pills, headline/subline per brief, "Get started with Google" → `/auth/login`, original `HeroArt` SVG (pitch, player boxes with trails in team colours, heat glow, ball), 4-item feature strip, 3-step "How it works", footer. `LoginPage` (`/login`): card on faint CSS pitch lines, logo, "Sign in to continue", Google button (G mark per Google branding), known `?error=` message, 3 reassurances. Shared `pages/public.css`. lint/typecheck/46 tests/build ✓.
 
 ### [ ] T-094 · New analysis redesign — `MUST` `30m`
 - **Agent:** frontend · **Depends on:** T-085, T-088

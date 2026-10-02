@@ -3,6 +3,7 @@ import { AuthProvider, RequireAuth } from './auth'
 import { AppShell } from './components/AppShell'
 import { JobDetailPage } from './pages/JobDetailPage'
 import { JobsPage } from './pages/JobsPage'
+import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { SettingsPage } from './pages/SettingsPage'
@@ -21,7 +22,7 @@ function App() {
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route path="/" element={<Navigate to="/app" replace />} />
+          <Route path="/" element={<LandingPage />} />
           <Route path="/login" element={<LoginPage />} />
           <Route path="/app/login" element={<RedirectKeepingQuery to="/login" />} />
           <Route path="/app/submit" element={<RedirectKeepingQuery to="/app/new" />} />

@@ -387,3 +387,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** one batch edit ran from the repo root instead of `frontend/` and failed without changing anything — re-run from the right directory.
 **Explain-it-in-review:** "Every colour is a CSS variable, so dark mode is one block of overrides. On small screens the sidebar becomes a drawer you open from the top bar; Escape or a tap outside closes it."
 **Next:** T-089 Landing + sign-in pages
+
+---
+
+## 2026-10-02 14:32 IST — T-089 Landing + sign-in pages (agent: frontend)
+**What changed:** `frontend/src/pages/LandingPage.tsx`, rewritten `pages/LoginPage.tsx`, `components/HeroArt.tsx`, `pages/public.css`, `/` route now the landing page.
+**Why:** owner's brief screens 1–2 (public landing + sign-in).
+**Decisions:** hero art is an original SVG (no crests, players or footage); signed-in visitors skip the landing; sign-in copy says exactly what we read from Google (name, email).
+**Verification:** lint, typecheck, `npm test` (46), build ✓; visual check in the S8b walkthrough.
+**AI mistakes caught:** none.
+**Explain-it-in-review:** "The landing and sign-in pages are static; the only action is a full-page link to /auth/login, because the OAuth flow runs on the server."
+**Next:** T-094 New analysis redesign
