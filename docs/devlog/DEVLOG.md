@@ -500,3 +500,12 @@ Stage summaries live in `docs/devlog/stages/`.
 **Verification:** `/health` → `{"status":"ok","db":"ok","version":"348b9fa"}`; GET / 200 with CSP, X-Frame-Options DENY, HSTS; `/auth/login` → Google with the run.app callback; worker log "worker started". Not yet: Google sign-in on prod (redirect URI to add), a full job (storage path), CD run on main.
 **AI mistakes caught:** AI_USAGE #17 (mislabeled action SHA), #18 (CR in DB password; port 8080 vs 8000). Also found and revoked: a GitHub token embedded in the local git remote URL → remote switched to SSH with a dedicated key.
 **Next:** owner adds prod redirect URI → sign-in + full job on prod → T-102.
+
+---
+
+## 2026-10-02 14:12 IST — Fix: live Google login invalid_client; secret hygiene (agent: auth-security)
+**What changed:** `backend/app/config.py` reads every setting through `env()` (strips surrounding whitespace); `tests/unit/test_config_env.py` (3 tests). Ops (no repo files): clean versions of `google-client-id`, `google-client-secret`, `session-secret` (old ones disabled); DB password rotated after a stray local file held it; web rev 00004 + worker rev 00003 restarted. Merge conflict dev→main resolved with `git merge -s ours` on `chore/sync-main-into-dev` (tree identical to dev).
+**Why:** live sign-in failed with Google `Error 401: invalid_client`; the stored client ID ended in \r\n.
+**Verification:** all 7 secrets have 0 CR/LF bytes; live `client_id` clean; `/health` ok with the rotated password; worker started. Tests: 3 new pass (2 fail without the strip); unit 566 passed (+ known Windows-only failure); ruff, format, design ✓.
+**AI mistakes caught:** AI_USAGE #19.
+**Next:** owner signs in on prod + runs a job; merge dev→main (first CD run); T-102.
