@@ -474,3 +474,11 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** none in this ticket (the T-091 test string that could have tripped gitleaks was changed before committing).
 **Explain-it-in-review:** "Every push scans the whole git history with gitleaks, a pinned version whose checksum we verify, so even a secret deleted later fails the build. Findings are redacted in the log."
 **Next:** S9 stage summary, then S10 deploy (T-014 / T-100)
+---
+
+## 2026-10-02 16:07 IST — T-090 follow-up: CI integration failure (agent: qa)
+**What changed:** `tests/integration/test_url_submit.py` — the latency test lifts `max_active_jobs_per_user` to 10 via fixture override.
+**Why:** CI on the S9 PR: the test's 6 queued submits hit the new 3-active-job cap → 429.
+**Verification:** test collects with the override; ruff clean. Postgres run = CI re-run on the PR.
+**AI mistakes caught:** integration tests not checked against the new cap (AI_USAGE #15).
+**Next:** CI green on S9 PR → merge → S10.

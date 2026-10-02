@@ -1,8 +1,11 @@
 import statistics
 import time
+from dataclasses import replace
 
 import pytest
 from sqlalchemy import text
+
+from tests.integration.conftest import make_settings
 
 pytestmark = pytest.mark.integration
 
@@ -62,6 +65,9 @@ def test_url_submit_requires_login_and_csrf(client, login_as, csrf_headers):
     assert client.post(URL, json=body).status_code == 403
 
 
+# Six submits by one user with no worker running: lift the active-job cap (T-090, default 3)
+# so this test measures latency only. The cap itself is covered by test_rate_limit_api.py.
+@pytest.mark.parametrize("settings", [replace(make_settings(), max_active_jobs_per_user=10)])
 def test_url_submit_answers_within_100ms(client, login_as, csrf_headers):
     login_as(client, "ann")
     body = {"url": f"https://www.youtube.com/watch?v={ID}"}
