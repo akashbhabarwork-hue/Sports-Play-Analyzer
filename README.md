@@ -39,8 +39,17 @@ Edit `URL` at the top of `backend/scripts/fetch_check.py`, then `cd backend && p
 It runs the production fetch path (yt-dlp metadata → SSRF-guarded download → ffprobe) without a database.
 
 ## Deploy
-Merging to `main` runs `.github/workflows/cd.yml`: build → GHCR → migrate → deploy → `/health` smoke.
-Rollback: Actions → Rollback → enter previous sha. First-time setup: see [docs/ADR.md](docs/ADR.md) §6.
+Google Cloud, `asia-south1` (D-035). Merging to `main` runs `.github/workflows/cd.yml`:
+build → Artifact Registry → Alembic migration (Cloud Run job) → Cloud Run service (web) +
+Cloud Run worker pool (worker) → `/health` smoke test that checks the deployed git sha.
+GitHub signs in to Google with Workload Identity Federation (no stored key); every secret
+lives in Secret Manager. Rollback: Actions → Rollback → enter a previous commit sha (redeploys
+that image, never runs migrations). First-time setup: see [docs/ADR.md](docs/ADR.md) §6.
+
+**Storage note:** the `S3_*` settings name the storage *protocol*, not AWS. In production they
+point at **Google Cloud Storage** (`S3_ENDPOINT_URL=https://storage.googleapis.com`,
+`S3_REGION=auto`, HMAC keys from our Google project) through Cloud Storage's S3-compatible
+XML API. No AWS account is involved.
 
 ## Configuration
 | Variable | Default | Meaning |
@@ -56,7 +65,7 @@ Rollback: Actions → Rollback → enter previous sha. First-time setup: see [do
 | `CORS_ORIGINS` | `""` | CORS stays off (same-origin SPA) unless exact origins are listed; `*` is refused |
 | `CSP_MEDIA_ORIGINS` | `""` | Extra origins for video/thumbnails in the CSP (e.g. a CDN); the `S3_ENDPOINT_URL` origin is always allowed |
 | `LEASE_SECONDS` | `60` | Worker lease on a claimed job, extended by heartbeats |
-| `BLOB_BACKEND` | `local` | `local` (directory) or `s3` (Tigris/R2/AWS); production requires `s3` |
+| `BLOB_BACKEND` | `local` | `local` (directory) or `s3` (any S3-compatible store; prod = Google Cloud Storage); production requires `s3` |
 | `BLOB_LOCAL_DIR` | `<repo>/blobs` | Directory for `local` (Docker: `/app/blobs`) |
 | `S3_ENDPOINT_URL` / `S3_BUCKET` / `S3_REGION` | `""` | S3-compatible storage; empty endpoint = AWS |
 | `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | `""` | Storage credentials (required for `s3`) |

@@ -111,6 +111,12 @@ Setup: project rules, specialist agent personas, skills and workflows in `.agent
 - **Fix:** every `/auth/*` outcome is now a redirect to `/login?error=<code>` (`login_unavailable`, `cancelled`, `oauth_failed`, `server_error`), which the login page turns into one readable sentence. The missing settings are logged once at startup, and the README has the Google Cloud setup steps.
 - **Lesson:** Decide per route who reads the response: `fetch` gets JSON, a browser tab gets a page or a redirect.
 
+### 17. A pinned action SHA written from memory, with the wrong version label
+- **What it did:** While drafting `cd.yml` the agent wrote `google-github-actions/setup-gcloud@6189d56e… # v3.0.1` without resolving it first. The SHA was real but belongs to **v2.1.2** — the comment would have told reviewers we ran v3 while CI actually ran an old major.
+- **How I caught it:** Rule 16 ("never invent SHAs; resolve with `git ls-remote`"); the agent re-checked every new pin against `git ls-remote --tags` before asking for plan approval.
+- **Fix:** `aa5489c8…` (v3.0.1); `auth@7c6bc770…` (v3.0.0) re-verified the same way; the other pins are reused from the CI-proven `ci.yml`.
+- **Lesson:** Resolve a pin from the source before writing it, not after — a wrong SHA can look plausible.
+
 ## How I verified AI-generated code
 - Automated unit test suite with deterministic JSON fixtures (pure logic, no model dependency).
 - Integration tests against migrated Postgres schema with multi-user isolation checks.
