@@ -39,7 +39,7 @@ def sid_cookie_header(response, name: str) -> str:
 def test_callback_creates_user_and_hashed_session_with_secure_cookie(engine, client):
     response = login(client)
 
-    assert response.status_code == 303 and response.headers["location"] == "/"
+    assert response.status_code == 303 and response.headers["location"] == "/app"
     header = sid_cookie_header(response, "__Host-sid").lower()
     for flag in ("httponly", "secure", "samesite=lax", "path=/", "max-age=604800"):
         assert flag in header

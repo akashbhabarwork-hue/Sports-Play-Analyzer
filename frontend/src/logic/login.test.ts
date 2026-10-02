@@ -6,6 +6,12 @@ describe('loginErrorMessage', () => {
     expect(loginErrorMessage('?error=oauth_failed')).toMatch(/Google sign-in did not complete/)
   })
 
+  it('explains every code the backend redirects with', () => {
+    expect(loginErrorMessage('?error=cancelled')).toMatch(/cancelled/)
+    expect(loginErrorMessage('?error=login_unavailable')).toMatch(/not available/)
+    expect(loginErrorMessage('?error=server_error')).toMatch(/could not finish/)
+  })
+
   it('says nothing without an error', () => {
     expect(loginErrorMessage('')).toBeNull()
   })

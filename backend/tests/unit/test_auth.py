@@ -6,6 +6,7 @@ from fastapi.testclient import TestClient
 
 from app.adapters.oauth_google import GoogleOAuthClient
 from app.config import Settings, validate_settings
+from app.core.models import OAuthProfile
 from app.core.sessions import hash_token
 from app.entrypoints.api import create_app
 from app.wiring import Container
@@ -81,13 +82,46 @@ def test_auth_login_redirects_to_google_with_pkce_s256():
     assert "httponly" in oauth_cookie.lower() and "samesite=lax" in oauth_cookie.lower()
 
 
-def test_auth_login_not_configured_is_a_clean_503():
+@pytest.mark.parametrize("path", ["/auth/login", "/auth/callback?code=c&state=s"])
+def test_auth_not_configured_redirects_to_login_page_not_json(path):
+    # Regression: a browser navigation used to get a raw 503 JSON body.
     client = client_for(make_settings(google_client_id=""), None)
 
-    response = client.get("/auth/login", follow_redirects=False)
+    response = client.get(path, follow_redirects=False)
 
-    assert response.status_code == 503
-    assert response.json()["error"]["code"] == "SERVICE_UNAVAILABLE"
+    assert response.status_code == 303
+    assert response.headers["location"] == "/login?error=login_unavailable"
+
+
+class FakeGoogle:
+    async def fetch_profile(self, request):
+        return OAuthProfile("google", "g-1", "a@example.com", "Ann", None)
+
+
+class BrokenUsers:
+    def upsert_from_oauth(self, *args, **kwargs):
+        raise RuntimeError("database is down")
+
+
+def test_auth_callback_user_cancel_redirects_with_cancelled():
+    client = client_for(make_settings(), FakeGoogle())
+
+    response = client.get("/auth/callback?error=access_denied&state=s", follow_redirects=False)
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/login?error=cancelled"
+
+
+def test_auth_callback_server_failure_redirects_without_json_or_cookie():
+    container = Container(**{**NO_REPOS, "users": BrokenUsers()}, settings=make_settings(),
+                          health_check=OkHealth(), oauth=FakeGoogle())  # fmt: skip
+    client = TestClient(create_app(container), base_url="https://testserver")
+
+    response = client.get("/auth/callback?code=c&state=s", follow_redirects=False)
+
+    assert response.status_code == 303
+    assert response.headers["location"] == "/login?error=server_error"
+    assert not any("sid=" in c for c in response.headers.get_list("set-cookie"))
 
 
 def test_cookie_name_and_redirect_uri_follow_settings():
@@ -118,5 +152,5 @@ def test_access_log_has_path_but_never_the_oauth_query(caplog):
     client.get("/auth/callback?code=one-time-code-xyz&state=state-abc", follow_redirects=False)
 
     access = [r for r in caplog.records if r.name == "app.access"]
-    assert access and access[-1].path == "/auth/callback" and access[-1].status == 503
+    assert access and access[-1].path == "/auth/callback" and access[-1].status == 303
     assert "one-time-code-xyz" not in caplog.text and "state-abc" not in caplog.text

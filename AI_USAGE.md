@@ -105,6 +105,12 @@ Setup: project rules, specialist agent personas, skills and workflows in `.agent
 - **Fix:** that latency test overrides `settings` with `max_active_jobs_per_user=10`; the cap itself stays tested in `test_rate_limit_api.py`.
 - **Lesson:** When adding a limit, grep every test that exercises the limited path, including those you can't run yourself.
 
+### 16. API-style errors on browser pages
+- **What it did:** In T-030 the agent made `/auth/login` and `/auth/callback` raise `ServiceUnavailableError` when Google wasn't configured, and let a database failure during login fall through to the 500 handler. Both are full-page navigations, so the user saw raw `{"error": …}` JSON. A test even pinned the 503 as "clean".
+- **How I caught it:** The owner clicked "Continue with Google" on a server without Google credentials.
+- **Fix:** every `/auth/*` outcome is now a redirect to `/login?error=<code>` (`login_unavailable`, `cancelled`, `oauth_failed`, `server_error`), which the login page turns into one readable sentence. The missing settings are logged once at startup, and the README has the Google Cloud setup steps.
+- **Lesson:** Decide per route who reads the response: `fetch` gets JSON, a browser tab gets a page or a redirect.
+
 ## How I verified AI-generated code
 - Automated unit test suite with deterministic JSON fixtures (pure logic, no model dependency).
 - Integration tests against migrated Postgres schema with multi-user isolation checks.

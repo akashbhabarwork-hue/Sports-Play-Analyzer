@@ -7,9 +7,24 @@ heatmaps, possession and an annotated video.
 
 ## Run locally (one command)
 ```bash
-cp .env.example .env        # fill GOOGLE_CLIENT_ID/SECRET, SESSION_SECRET
+cp .env.example .env        # fill GOOGLE_CLIENT_ID/SECRET, SESSION_SECRET (see below)
 docker compose up --build   # http://localhost:8000
 ```
+Open **http://localhost:8000** (not `127.0.0.1` — Google matches the redirect URI exactly).
+Without the three Google settings the app still runs, but "Continue with Google" shows
+"sign-in is not available" (and the server log says which settings are missing).
+
+### One-time Google sign-in setup
+1. Google Cloud Console → *APIs & Services* → *OAuth consent screen*: External; app name; your
+   email; scopes `openid`, `email`, `profile`. While it is in **Testing**, add your Google
+   account under *Test users*. (For reviewers: **Publish app → In production**, T-102.)
+2. *Credentials* → *Create credentials* → *OAuth client ID* → **Web application**:
+   - Authorized JavaScript origin: `http://localhost:8000`
+   - Authorized redirect URI: `http://localhost:8000/auth/callback`
+   - (later, production: `https://<your-app>/auth/callback`, and set `APP_ORIGIN` to match)
+3. Put the client ID and secret in `.env`, plus a random session secret:
+   `python -c "import secrets; print(secrets.token_urlsafe(48))"` → `SESSION_SECRET=…`.
+   `.env` is git-ignored; never commit it.
 
 ## Test
 ```bash
