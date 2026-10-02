@@ -206,14 +206,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** `pytest -q backend/tests/unit -k "metric or heatmap or possession"`
 - **Done notes:** `FrameObservation`/`MetricsParams`/`MatchMetrics` models; `core/heatmap.py` (`heatmap_cell`, `build_heatmap`, `sum_heatmaps`), `core/possession.py` (candidate, hysteresis owners, counts), `core/metrics.py` (`path_distance`, `ball_visible_pct`, `build_stats` → stats JSON + `player_tracks` rows); metrics settings + validation, `wiring.metrics_params`. 33 tests in < 1 s (skill cases: 100 px line, ±1 px jitter, gap, heatmap edges + totals, 3/12 = 25.0, P1-1-frame/P2-5-frames hysteresis; plus standing wobble = 0, slow walker, short pass, ball gaps, stats contract, rows, team heatmap sums, empty video, settings). 9 mutations caught. See D-022.
 
-### [ ] T-052 · Team split by jersey colour — `MUST` `10m`
+### [x] T-052 · Team split by jersey colour — `MUST` `10m`
 - **Agent:** cv-pipeline
 - **Depends on:** T-051
 - **Why:** "Per-player and team position heatmaps".
 - **Scope:** pure k-means (k=2, fixed seed) on per-track colour features + `unknown` fallback; team heatmap aggregation.
 - **Acceptance:** synthetic two-colour test → 2 teams; identical colours → `unknown`; team heatmap = sum of members.
 - **Verify:** `pytest -q -k team`
-- **Done notes:** _
+- **Done notes:** `core/teams.py`: `torso_region`/`torso_pixels`, numpy `rgb_to_hsv` (matches `colorsys`), `colour_feature` (HSV cone, median), `kmeans_two` (farthest-point start, 20 iterations), `assign_teams` (A = lowest id, `unknown` fallbacks); `TEAM_MIN_SEPARATION` setting. 15 tests on synthetic frames: red/blue → 2 teams, identical → unknown, white vs black, red hue wrap, deterministic + order-independent, too few players, separation threshold, minority pixels, garbage sample, torso crop clamping, team heatmap = sum of members. 7 mutations caught (2 survived at first → robustness tests added). See D-023.
 
 ## S6 · Worker pipeline (1 h 25 m)
 

@@ -54,6 +54,7 @@ Rollback: Actions → Rollback → enter previous sha. First-time setup: see [do
 | `HEATMAP_GRID_W` / `HEATMAP_GRID_H` | `32` / `18` | Heatmap grid size |
 | `POSSESSION_DIST_RATIO` | `0.5` | Ball counts as at a player's feet within this × their box height |
 | `POSSESSION_MIN_FRAMES` | `3` | Sampled frames in a row before possession changes hands |
+| `TEAM_MIN_SEPARATION` | `0.2` | Jersey-colour clusters closer than this → all players `unknown` team |
 | `MAX_VIDEO_DURATION_SECONDS` | `60` | Maximum allowed duration for processing |
 | `MAX_UPLOAD_SIZE_BYTES` | `104857600` | Maximum upload size (100 MB); enforced before and while the body is read |
 | `UPLOAD_TMP_DIR` | system temp | Parent dir for per-request upload temp dirs (always removed) |

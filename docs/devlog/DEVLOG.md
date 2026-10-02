@@ -211,3 +211,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** (1) the skill's literal jitter rule ("skip steps < JITTER_PX") would give a player walking 1 px per sampled frame zero distance — replaced with a dead-band from the last counted point and a test for the slow walker; (2) my first gap-bridging test had wrong arithmetic (the bridged step didn't move), so it asserted the wrong number — fixed the test data so the bridged step is a real 100 px jump.
 **Explain-it-in-review:** "The worker records what it saw each frame; at the end, plain functions turn that into distance (ignoring detector wobble), heatmaps, ball visibility and possession, where the ball has to stay with a new player for three frames before it changes hands."
 **Next:** T-052 Team split by jersey colour
+
+---
+
+## 2026-10-02 11:45 IST — T-052 Team split by jersey colour (agent: cv-pipeline)
+**What changed:** `core/teams.py` (`torso_region`, `torso_pixels`, `rgb_to_hsv`, `colour_feature`, `kmeans_two`, `assign_teams`); `TEAM_MIN_SEPARATION` setting with validation; `core/metrics.py` now takes team labels from `core/teams.py`. S5 stage summary written.
+**Threats blocked:** n/a (pure maths).
+**Decisions:** D-023 (HSV-cone feature with value, median per crop and per track, farthest-point 2-means, A = lowest id, `unknown` fallbacks).
+**Verification:** 15 team tests in ~0.3 s; full suite, ruff and design checker clean. 7 mutations caught (raw hue, no value channel, no separation check, A not lowest id, mean instead of median ×2, unsorted ids); the two median mutations survived at first and got robustness tests.
+**AI mistakes caught:** (1) the skill's hue+saturation feature can't tell white from black kits and splits reds across the 0°/360° wrap — switched to the HSV cone with value; (2) a crop-clamping test used a box whose torso lay completely outside the frame, so it tested the wrong case — fixed the box.
+**Explain-it-in-review:** "We take a small crop of each player's shirt, turn it into one colour point that treats hue as an angle and keeps brightness, and split the players into two groups. If the groups are too close, we say 'unknown' rather than guess."
+**Next:** S6 — T-060 ffmpeg frame reader/writer
