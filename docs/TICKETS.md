@@ -284,13 +284,13 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 
 ## S8 · Frontend (1 h 10 m)
 
-### [ ] T-080 · Login page + auth guard + layout — `MUST` `10m`
+### [x] T-080 · Login page + auth guard + layout — `MUST` `10m`
 - **Agent:** frontend
 - **Depends on:** T-031, T-011
 - **Scope:** Login page, `/api/me` guard, header with user + logout.
 - **Acceptance:** logged-out user redirected to login; logout returns to login.
 - **Verify:** manual + `npm run build`
-- **Done notes:** _
+- **Done notes:** S8 plan approved (Vitest + CI step). Routes under `/app/…` (`/`→`/app`, `/login`→`/app/login`); `AuthProvider` (GET /api/me), `RequireAuth` → `/app/login`, `Layout` header (Jobs, New analysis, user, Log out = POST /auth/logout → login); `LoginPage` ("Continue with Google" → `/auth/login`, known `?error=` codes only); typed `api` client + `types.ts`; app styles with light/dark tokens; Vitest 3.2.7 + `npm test` in CI. lint, typecheck, 10 tests, build ✓. Browser walkthrough with the S8 preview server after T-084. See D-029.
 
 ### [ ] T-081 · Submit page (upload + URL) — `MUST` `15m`
 - **Agent:** frontend
@@ -437,3 +437,4 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - [ ] **F-005** (devops, before T-100) Finish T-014: Fly app (web+worker), Neon, bucket, first deploy, `/health` live; re-run the YouTube spike from the prod worker (`fly ssh console`) and update D-010. Pick the mitigation (none / cookies / proxy) for A1.
 - [x] **F-004** (T-020) Remove the "exit 5 = ok" allowance from the CI integration step once integration tests exist.
 - [ ] **F-007** (backend-api) Snapshot the full pipeline config into `jobs.config` at submit time (today only `max_video_seconds`; `stats.config` already records the effective values per result — D-026).
+- [ ] **F-008** (frontend, with F-002) Upgrade Vite 5 → current and Vitest 3 → matching major together: `npm audit` reports 1 high + 3 moderate advisories, all in dev-server/test tooling (`npm audit --omit=dev` = 0). Also pin the remaining `^` ranges in `package.json`.

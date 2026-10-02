@@ -69,6 +69,12 @@ Setup: project rules, specialist agent personas, skills and workflows in `.agent
 - **Fix:** `ExternalServiceError` from the poll is logged and treated as an idle poll; compose `restart: unless-stopped` as a second safety net.
 - **Lesson:** For long-running loops, test the failure of every call in the loop, not just the main work.
 
+### 10. A commit silently missing a folder, and wrong advice about `.claude/`
+- **What it did:** (a) In T-080 the agent put the frontend's pure helpers in `frontend/src/lib/`. The repo's Python-template `.gitignore` ignores every `lib/` directory, so `git add` skipped it with only a hint, and the first T-080 commit imported a file that wasn't in the commit — CI would have failed on a clean checkout. (b) Earlier the agent told the owner to stop ignoring `.claude/`; checking `git ls-files` later showed the repo deliberately tracks `.agent/` and keeps `.claude/` local, so that advice (and the owner's local CI path edit it encouraged) would have broken CI.
+- **How I caught it:** (a) Reading `git add` output before pushing (the commit was still local); (b) `git ls-files .claude` / `.agent` while planning the CI change.
+- **Fix:** Renamed to `src/logic/` and amended the unpushed commit; CI change staged on top of the committed `ci.yml` only, leaving the owner's local edit out.
+- **Lesson:** After every commit, compare `git show --stat` with the files you meant to add; check what the repo actually tracks before giving advice about `.gitignore`.
+
 ## How I verified AI-generated code
 - Automated unit test suite with deterministic JSON fixtures (pure logic, no model dependency).
 - Integration tests against migrated Postgres schema with multi-user isolation checks.

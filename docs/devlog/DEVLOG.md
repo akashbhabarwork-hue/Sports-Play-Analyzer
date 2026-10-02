@@ -288,3 +288,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** none.
 **Explain-it-in-review:** "Two browsers, Alice and Bob. Bob tries every URL for Alice's job, on both the /api and the short /jobs paths: always 404, the same answer as for a made-up id — even for a job that isn't finished, where Alice herself would get 409. I checked the test actually bites by removing the user filter from the job lookup and the list: it fails."
 **Next:** S7 complete → stage summary; then T-080 Login page + auth guard + layout (frontend)
+
+---
+
+## 2026-10-02 13:18 IST — T-080 Login page + auth guard + layout (agent: frontend)
+**What changed:** `src/types.ts` (mirrors backend schemas), `src/api.ts` (typed `api` client on the existing envelope-aware `apiFetch`, friendly 413/429 text), `src/auth.tsx` + `src/useAuth.ts` (session from `GET /api/me`, `RequireAuth`), `src/components/Layout.tsx`, `src/pages/LoginPage.tsx`, `src/logic/login.ts`, `src/App.tsx` routes under `/app/…`, new `index.css`/`App.css`, page title; Vitest 3.2.7 (`npm test`) with `src/api.test.ts`, `src/logic/login.test.ts`; CI frontend job runs `npm test`.
+**Why:** "OAuth 2.0 login"; logged-out users must land on login; A1 starts here.
+**Decisions:** D-029 (routes under `/app`, auth only via `/api/me` + httpOnly cookie, pure lib + Vitest, CI step — plan approved by the owner); F-008 (dev-only npm advisories).
+**Verification:** `npm run lint`, `npm run typecheck`, `npm test` (10 passed), `npm run build` ✓. Browser walkthrough deferred to the end of S8 (preview server over in-memory repos; real Google login needs Postgres → Docker pass).
+**AI mistakes caught:** test helper typed errors as `unknown` (strict TS caught it) → `failure()` helper; fast-refresh lint warning → context/hook moved to `useAuth.ts`; helpers first placed in `src/lib/`, which the root `.gitignore` (`lib/`) silently excluded from the commit → renamed to `src/logic/`, unpushed commit amended (AI_USAGE #10). Also corrected earlier advice: `.claude/` is *meant* to be untracked (the repo tracks `.agent/`), so the owner's local `ci.yml` path edit must not be committed — the CI change was staged on top of HEAD's file only.
+**Explain-it-in-review:** "The page never sees the session token — it's an httpOnly cookie. The app asks /api/me who you are; if that's a 401 you're sent to the login page, and logging out is a POST so another site can't trigger it."
+**Next:** T-081 Submit page (upload + URL)
