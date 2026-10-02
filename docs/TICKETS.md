@@ -384,32 +384,32 @@ Scope added by the owner after S8: full visual/UX brief. Backend first so the UI
 
 ## S9 · Security hardening (25 m)
 
-### [ ] T-090 · Rate limiting + active-job cap — `MUST` `10m`
+### [x] T-090 · Rate limiting + active-job cap — `MUST` `10m`
 - **Agent:** auth-security
 - **Depends on:** T-041, T-042
 - **Why:** "Rate limiting on submit endpoints".
 - **Scope:** per-user limits on both submit endpoints, 429 + Retry-After envelope; max 3 active jobs per user.
 - **Acceptance:** test: 11th submit in a minute → 429.
 - **Verify:** `pytest -q -k rate`
-- **Done notes:** _
+- **Done notes:** S9 plan approved. Pure `core/rate_limit.py` + `InMemoryRateLimiter` (10/min, 30/h per user, refused attempts not recorded) behind a `RateLimiter` port; `JobRepo.count_active` (user-scoped) → cap 3; `check_submit_allowed` runs first in both submit routes (+ `/jobs` aliases); `RateLimitedError` (429 + `Retry-After`), `TooManyActiveJobsError` (429). Settings `RATE_LIMIT_PER_MINUTE`, `RATE_LIMIT_PER_HOUR`, `MAX_ACTIVE_JOBS_PER_USER`. `-k rate` → 19 passed (11th submit → 429 + Retry-After, aliases share the count, per user, rejected submissions count, 4th active job → 429 and frees up); `count_active` Postgres test CI-only. See D-032.
 
-### [ ] T-091 · Security headers + CORS + error audit — `MUST` `10m`
+### [x] T-091 · Security headers + CORS + error audit — `MUST` `10m`
 - **Agent:** auth-security
 - **Depends on:** T-070
 - **Why:** "restricted CORS, security headers".
 - **Scope:** header middleware (CSP incl. storage origin for media, HSTS prod-only), CORS only from `CORS_ORIGINS`, no stack traces in responses, log redaction.
 - **Acceptance:** header test on `/health` and `/`; UI still works under CSP (video, canvas).
 - **Verify:** `pytest -q -k headers`; `curl -I`
-- **Done notes:** _
+- **Done notes:** Pure `core/security_headers.py` (CSP: self + Google Fonts + S3 endpoint origin in path- and virtual-hosted form + `CSP_MEDIA_ORIGINS`; nosniff, DENY, Referrer-Policy, Permissions-Policy; HSTS only `APP_ENV=production`; `no-store` on `/api`, `/auth`, `/jobs` unless the route set Cache-Control). Outermost `harden_responses` middleware also catches unhandled exceptions → 500 `INTERNAL` "Something went wrong (ref xxxx)", traceback + ref only in logs. CORS only when `CORS_ORIGINS` set (exact http(s) origins, `*` refused at startup; also CSRF-trusted). Envelope everywhere: `RequestValidationError` → 422 `VALIDATION_ERROR` ("url: Field required", no input echoed), framework 404/405 → `NOT_FOUND`/`METHOD_NOT_ALLOWED` (+ `Allow`). `serve_spa` realpath containment (F-001; test reads `TOP-SECRET` without it). `-k headers` → 21 passed; browser on preview server under the real CSP: Inter fonts, annotated video plays, canvas heatmap, thumbnail — 0 CSP console errors. See D-033.
 
-### [ ] T-092 · Secret scanning in CI — `SHOULD` `5m`
+### [x] T-092 · Secret scanning in CI — `SHOULD` `5m`
 - **Agent:** devops
 - **Depends on:** T-013
 - **Why:** "Nothing sensitive in git history".
 - **Scope:** pinned gitleaks step over full history (`fetch-depth: 0`).
 - **Acceptance:** CI green; scan output clean.
 - **Verify:** Actions log
-- **Done notes:** _
+- **Done notes:** New `secrets` job in `ci.yml` (`contents: read`, checkout pinned SHA with `fetch-depth: 0`, `persist-credentials: false`): downloads gitleaks **v8.30.1** linux_x64, `sha256sum --check` against the hash from the release's official checksums file, `gitleaks git --redact --exit-code 1`. Local run with the same version (Windows build, hash verified): 54 commits, **no leaks** — no `.gitleaks.toml` allowlist needed. Test string `password=hunter2` in T-091 replaced before commit to avoid a false positive. CI result: first run on the S9 PR. See D-034.
 
 ## S10 · CD, production config, rollback (40 m)
 
@@ -488,10 +488,10 @@ Scope added by the owner after S8: full visual/UX brief. Backend first so the UI
 - [ ] **T-B06** Kalman filter / appearance re-ID to reduce ID switches — cv-pipeline
 
 ## Follow-ups (added by /review or acceptance runs)
-- [ ] **F-001** (T-091) `serve_spa` joins the raw URL path onto the static dir without confirming the resolved path stays inside it — add a `realpath` containment check (path traversal).
+- [x] **F-001** (T-091, fixed + regression test `test_headers_spa_route_cannot_escape_dist_folder`) `serve_spa` joins the raw URL path onto the static dir without confirming the resolved path stays inside it — add a `realpath` containment check (path traversal).
 - [ ] **F-002** (devops) Node 20 is past EOL — move the Dockerfile build stage and CI to Node 22 together.
 - [ ] **F-003** (backend-api) `pydantic` is unpinned in `backend/requirements.txt` (sqlalchemy pinned in T-020); local dev ruff differs from the pinned 0.4.8 — pin and bump deliberately.
-- [ ] **F-006** (T-070) ~~Add the `/jobs/...` aliases from D-004 alongside the read endpoints~~ (done in T-070, D-028); still open: return validation errors (e.g. missing `file` field, bad `?team=`) in the `{error:{code,message}}` envelope (T-091).
+- [x] **F-006** (T-070; envelope part done in T-091) ~~Add the `/jobs/...` aliases from D-004 alongside the read endpoints~~ (done in T-070, D-028); still open: return validation errors (e.g. missing `file` field, bad `?team=`) in the `{error:{code,message}}` envelope (T-091).
 - [ ] **F-005** (devops, before T-100) Finish T-014: Fly app (web+worker), Neon, bucket, first deploy, `/health` live; re-run the YouTube spike from the prod worker (`fly ssh console`) and update D-010. Pick the mitigation (none / cookies / proxy) for A1.
 - [x] **F-004** (T-020) Remove the "exit 5 = ok" allowance from the CI integration step once integration tests exist.
 - [ ] **F-007** (backend-api) Snapshot the full pipeline config into `jobs.config` at submit time (today only `max_video_seconds`; `stats.config` already records the effective values per result — D-026).

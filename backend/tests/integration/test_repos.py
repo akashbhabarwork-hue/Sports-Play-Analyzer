@@ -167,3 +167,21 @@ def test_jobs_with_videos_are_joined_and_user_scoped(repos, two_users):
     assert repos["jobs"].get_with_video(a.id, job.id) == item
     assert repos["jobs"].list_with_videos(b.id) == []
     assert repos["jobs"].get_with_video(b.id, job.id) is None
+
+
+def test_count_active_counts_only_this_users_queued_and_processing_jobs(repos, engine, two_users):
+    """T-090 active-job cap reads this; scoped by user_id like every other read."""
+    from sqlalchemy import text
+
+    a, b = two_users
+    url = NewVideo(source_type="url", source_url="https://youtu.be/x")
+    ids = [repos["jobs"].create_with_video(a.id, url, {}).id for _ in range(4)]
+    repos["jobs"].create_with_video(b.id, url, {})
+    with engine.begin() as conn:
+        conn.execute(text("UPDATE jobs SET status = 'processing' WHERE id = :j"), {"j": ids[0]})
+        conn.execute(text("UPDATE jobs SET status = 'succeeded' WHERE id = :j"), {"j": ids[1]})
+        conn.execute(
+            text("UPDATE jobs SET status = 'failed', error_code = 'X' WHERE id = :j"), {"j": ids[2]}
+        )
+    assert repos["jobs"].count_active(a.id) == 2  # one processing + one still queued
+    assert repos["jobs"].count_active(b.id) == 1

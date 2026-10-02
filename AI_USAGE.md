@@ -93,6 +93,18 @@ Setup: project rules, specialist agent personas, skills and workflows in `.agent
 - **Fix:** height cap from the clip's aspect, more specific selector, `flex: none` on the chip, alpha fades in from 0 (regression test), time stamp bottom-left, an honest "ball not detected" note instead of zeros.
 - **Lesson:** Look at real output (a frame, a screenshot) — not just at the code that produces it.
 
+### 14. A path-traversal hole in AI-written SPA serving (F-001)
+- **What it did:** The original `serve_spa` (S1) joined the raw URL path onto the dist folder and served any file that existed, so `GET /..%2fsecret.txt` could read files outside it. In T-091 the agent's first `no-store` rule also forgot the `/jobs…` API aliases, and its crash test assumed pytest's `caplog` sees our JSON logger (it doesn't propagate).
+- **How I caught it:** F-001 came from the S7 review; the new regression test was run against the old code and did read `TOP-SECRET`. The alias gap came from a self-review against D-004; the log assertion failed on the first run.
+- **Fix:** realpath containment check; `/jobs` added to `needs_no_store`; the test reads stderr and checks the same `error_ref` appears in the log and the response.
+- **Lesson:** Prove a security test fails without the fix — otherwise it may not test anything.
+
+### 15. A new limit broke a test that only CI could run
+- **What it did:** T-090 added a cap of 3 active jobs per user. The existing integration test `test_url_submit_answers_within_100ms` submits 6 URL jobs as one user with no worker running, so the 4th got `429 TOO_MANY_ACTIVE_JOBS`. The agent had not searched the integration tests for repeated submits, because they can't run locally (no Postgres yet).
+- **How I caught it:** CI on the S9 PR: `assert 429 == 202` (1 failed, 106 passed).
+- **Fix:** that latency test overrides `settings` with `max_active_jobs_per_user=10`; the cap itself stays tested in `test_rate_limit_api.py`.
+- **Lesson:** When adding a limit, grep every test that exercises the limited path, including those you can't run yourself.
+
 ## How I verified AI-generated code
 - Automated unit test suite with deterministic JSON fixtures (pure logic, no model dependency).
 - Integration tests against migrated Postgres schema with multi-user isolation checks.

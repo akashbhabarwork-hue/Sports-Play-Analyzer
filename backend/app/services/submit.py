@@ -9,11 +9,11 @@ from uuid import UUID, uuid4
 from ..core.blob_keys import upload_key
 from ..core.file_sniff import SNIFF_BYTES, Container, sniff_video_container
 from ..core.models import Job, NewVideo, VideoProbe
-from ..core.ports import BlobStore, JobRepo, VideoProber
+from ..core.ports import BlobStore, JobRepo, RateLimiter, VideoProber
 from ..core.submit_rules import check_sport, clean_title
 from ..core.url_rules import canonicalize_youtube_url
 from ..core.video_rules import UNSUPPORTED_MESSAGE, check_video_limits
-from ..errors import UnsupportedFormatError
+from ..errors import RateLimitedError, TooManyActiveJobsError, UnsupportedFormatError
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +38,27 @@ def validate_video_file(
     probe = prober.probe(path)
     check_video_limits(probe, max_duration_s)
     return container, probe
+
+
+def check_submit_allowed(
+    limiter: RateLimiter | None, jobs: JobRepo, user_id: UUID, max_active: int
+) -> None:
+    """Runs first on every submission (T-090): rate limit, then the active-job cap.
+
+    Every attempt counts — also ones later rejected for a bad file — so validation can't be
+    used to hammer the server. `limiter` is None only in tests that don't exercise limits.
+    """
+    if limiter is not None:
+        wait = limiter.hit(str(user_id))
+        if wait:
+            raise RateLimitedError(
+                f"Too many submissions — please try again in {wait} s.", retry_after=wait
+            )
+    if jobs.count_active(user_id) >= max_active:
+        raise TooManyActiveJobsError(
+            f"You already have {max_active} videos processing. "
+            "Wait for one to finish, then try again."
+        )
 
 
 def submit_upload_job(

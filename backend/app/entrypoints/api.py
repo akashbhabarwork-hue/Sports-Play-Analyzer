@@ -9,20 +9,28 @@ from uuid import UUID
 
 from fastapi import APIRouter, Depends, FastAPI, Form, Request, Response, UploadFile
 from fastapi.concurrency import run_in_threadpool
+from fastapi.exceptions import RequestValidationError
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
+from starlette.exceptions import HTTPException as StarletteHTTPException
 from starlette.middleware.sessions import SessionMiddleware
 
 from ..config import Settings, load_settings
 from ..core.http_range import parse_range
 from ..core.models import JobWithVideo, User
+from ..core.security_headers import media_origins, needs_no_store, security_headers
 from ..errors import (
     AppError,
     CsrfRejectedError,
+    InternalError,
+    MethodNotAllowedError,
+    NotFoundError,
     OAuthLoginError,
     RangeNotSatisfiableError,
     ServiceUnavailableError,
     UnauthorizedError,
+    ValidationError,
 )
 from ..services.auth import login_user, logout, user_for_token
 from ..services.read_job import (
@@ -36,7 +44,12 @@ from ..services.read_job import (
     get_video,
     list_jobs,
 )
-from ..services.submit import UploadLimits, submit_upload_job, submit_url_job
+from ..services.submit import (
+    UploadLimits,
+    check_submit_allowed,
+    submit_upload_job,
+    submit_url_job,
+)
 from ..wiring import Container, build_container
 from .csrf import is_request_trusted
 from .limits import BodySizeLimitMiddleware, copy_capped
@@ -63,10 +76,68 @@ LOGIN_FAILED_URL = "/login?error=oauth_failed"
 
 
 def error_response(exc: AppError) -> JSONResponse:
-    return JSONResponse(
+    response = JSONResponse(
         status_code=exc.status_code,
         content={"error": {"code": exc.code, "message": str(exc)}},
     )
+    retry_after = getattr(exc, "retry_after", None)
+    if retry_after:  # 429 RATE_LIMITED (T-090)
+        response.headers["Retry-After"] = str(retry_after)
+    return response
+
+
+def validation_message(errors: list[dict]) -> str:
+    """First FastAPI/Pydantic error as one readable line, e.g. "url: Field required" (F-006).
+
+    Only the field path and Pydantic's message are used — never the submitted value."""
+    if not errors:
+        return "Invalid request."
+    first = errors[0]
+    field = ".".join(str(p) for p in first.get("loc", ()) if p not in ("body", "query", "path"))
+    message = str(first.get("msg", "invalid value"))
+    return f"{field}: {message}" if field else message
+
+
+def http_error(exc: StarletteHTTPException) -> AppError:
+    """Framework errors (unknown route, wrong method) in our envelope instead of {"detail"}."""
+    if exc.status_code == 404:
+        return NotFoundError("Not found")
+    if exc.status_code == 405:
+        return MethodNotAllowedError("Method not allowed")
+    error = AppError(str(exc.detail))
+    error.status_code = exc.status_code  # instance attribute; the class default stays 400
+    error.code = f"HTTP_{exc.status_code}"
+    return error
+
+
+def add_security_middleware(app: FastAPI, settings: Settings) -> None:
+    """Outermost layer (T-091, D-033): security headers on every response, and a last-resort
+    500 that hides internals. Exceptions escaping a route would otherwise bypass this
+    middleware, so they are caught here, logged with a reference id, and answered safely."""
+    headers = security_headers(
+        production=settings.app_env == "production",
+        media=media_origins(
+            settings.s3_endpoint_url if settings.blob_backend == "s3" else "",
+            settings.s3_bucket,
+            settings.csp_media_origins,
+        ),
+    )
+
+    @app.middleware("http")
+    async def harden_responses(request: Request, call_next):
+        try:
+            response = await call_next(request)
+        except Exception:
+            ref = secrets.token_hex(4)
+            access_logger.exception(
+                "unhandled error",
+                extra={"method": request.method, "path": request.url.path, "error_ref": ref},
+            )
+            response = error_response(InternalError(f"Something went wrong (ref {ref})."))
+        response.headers.update(headers)
+        if needs_no_store(request.url.path) and "cache-control" not in response.headers:
+            response.headers["Cache-Control"] = "no-store"
+        return response
 
 
 def create_app(container: Container | None = None) -> FastAPI:
@@ -132,6 +203,18 @@ def create_app(container: Container | None = None) -> FastAPI:
     async def app_error_handler(request: Request, exc: AppError):
         return error_response(exc)
 
+    # One envelope for every error (F-006): bad request bodies/params and framework 404/405
+    # come back as {"error": {"code", "message"}} like our own errors.
+    @app.exception_handler(RequestValidationError)
+    async def request_validation_handler(request: Request, exc: RequestValidationError):
+        return error_response(ValidationError(validation_message(list(exc.errors()))))
+
+    @app.exception_handler(StarletteHTTPException)
+    async def http_exception_handler(request: Request, exc: StarletteHTTPException):
+        response = error_response(http_error(exc))
+        response.headers.update(exc.headers or {})  # e.g. Allow on 405
+        return response
+
     @app.get("/health")
     def health():
         db_ok = container.health_check.check_db()
@@ -153,9 +236,20 @@ def create_app(container: Container | None = None) -> FastAPI:
         paths=UPLOAD_PATHS,
         max_file_bytes=settings.max_upload_bytes,
     )
+    # CORS is off unless CORS_ORIGINS lists exact origins (same-origin SPA, D-033).
+    if settings.cors_origins:
+        app.add_middleware(
+            CORSMiddleware,
+            allow_origins=list(settings.cors_origins),
+            allow_credentials=True,
+            allow_methods=["GET", "POST"],
+            allow_headers=["Content-Type", "X-Requested-With"],
+        )
+    add_security_middleware(app, settings)  # last = outermost: covers every response
 
     frontend_dir = container.settings.static_dir
     if frontend_dir and os.path.exists(frontend_dir):
+        frontend_root = os.path.realpath(frontend_dir)
         assets_dir = os.path.join(frontend_dir, "assets")
         if os.path.exists(assets_dir):
             app.mount("/assets", StaticFiles(directory=assets_dir), name="assets")
@@ -164,14 +258,16 @@ def create_app(container: Container | None = None) -> FastAPI:
         def serve_spa(full_path: str):
             # /jobs… are API aliases (D-004); the SPA's own pages live under /app/… (D-028).
             if full_path.startswith(("api/", "auth/", "jobs/")) or full_path in ("health", "jobs"):
-                return JSONResponse(status_code=404, content={"detail": "Not Found"})
+                return error_response(NotFoundError("Not found"))
 
-            # Serve specific files in dist root (like vite.svg, etc) if they exist
-            requested_file = os.path.join(frontend_dir, full_path)
-            if os.path.isfile(requested_file):
+            # Files in the dist root (vite.svg, …). The resolved path must stay inside the
+            # dist folder, so "../" tricks can't read other files (F-001).
+            requested_file = os.path.realpath(os.path.join(frontend_root, full_path))
+            inside = requested_file.startswith(frontend_root + os.sep)
+            if inside and os.path.isfile(requested_file):
                 return FileResponse(requested_file)
 
-            return FileResponse(os.path.join(frontend_dir, "index.html"))
+            return FileResponse(os.path.join(frontend_root, "index.html"))
 
     return app
 
@@ -353,6 +449,16 @@ def register_api_routes(app: FastAPI, container: Container) -> None:
     )
     tmp_root = container.settings.upload_tmp_dir or None
 
+    def allow_submit(user: User) -> None:
+        # T-090: rate limit + active-job cap before any work. (For uploads FastAPI has already
+        # received the ≤100 MB body by now; nothing is validated or stored when refused.)
+        check_submit_allowed(
+            container.rate_limiter,
+            container.jobs,
+            user.id,
+            container.settings.max_active_jobs_per_user,
+        )
+
     @jobs.post("/jobs/upload", status_code=202, response_model=JobAccepted)
     def upload_video(
         file: UploadFile,
@@ -360,6 +466,7 @@ def register_api_routes(app: FastAPI, container: Container) -> None:
         title: str | None = Form(default=None, max_length=1000),
         user: User = Depends(current_user),
     ) -> JobAccepted:
+        allow_submit(user)
         # Per-request temp dir, removed in every outcome (success, 4xx, crash).
         with tempfile.TemporaryDirectory(dir=tmp_root, prefix="upload-") as tmp:
             path = os.path.join(tmp, "source")
@@ -380,6 +487,7 @@ def register_api_routes(app: FastAPI, container: Container) -> None:
 
     @jobs.post("/jobs/url", status_code=202, response_model=JobAccepted)
     def submit_url(body: UrlSubmit, user: User = Depends(current_user)) -> JobAccepted:
+        allow_submit(user)
         job = submit_url_job(
             container.jobs,
             user.id,

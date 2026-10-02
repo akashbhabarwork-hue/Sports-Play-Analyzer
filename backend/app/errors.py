@@ -88,6 +88,22 @@ class BlobNotFoundError(AppError):
     code = "NOT_FOUND"
 
 
+class RateLimitedError(AppError):
+    """Too many submissions; the API adds `Retry-After: retry_after`."""
+
+    status_code = 429
+    code = "RATE_LIMITED"
+
+    def __init__(self, message: str, retry_after: int):
+        super().__init__(message)
+        self.retry_after = retry_after
+
+
+class TooManyActiveJobsError(AppError):
+    status_code = 429
+    code = "TOO_MANY_ACTIVE_JOBS"
+
+
 class PayloadTooLargeError(AppError):
     status_code = 413
     code = "PAYLOAD_TOO_LARGE"
@@ -144,3 +160,15 @@ class YouTubeBlockedError(AppError):
 class DownloadFailedError(AppError):
     status_code = 422
     code = "DOWNLOAD_FAILED"
+
+
+class InternalError(AppError):
+    """An unexpected crash. The message carries only a reference id; details go to the logs."""
+
+    status_code = 500
+    code = "INTERNAL"
+
+
+class MethodNotAllowedError(AppError):
+    status_code = 405
+    code = "METHOD_NOT_ALLOWED"

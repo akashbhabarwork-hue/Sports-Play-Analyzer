@@ -442,3 +442,43 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** chained `&&` assertions silently skipped (lint + tsc caught it, AI_USAGE #12); six visual issues found and fixed in the walkthrough (AI_USAGE #13).
 **Explain-it-in-review:** "The results page only shows what the backend computed: the legend lists teams that exist, and if the ball was never seen it says so instead of a 0 % split. Heatmaps are the backend's grid, smoothed in the browser and drawn over a pitch or court depending on the sport the coach picked."
 **Next:** S8b stage summary; then S9 T-090 Rate limiting + active-job cap
+
+---
+
+## 2026-10-02 15:10 IST — T-090 Rate limiting + active-job cap (agent: auth-security)
+**What changed:** `core/rate_limit.py`, `adapters/memory_rate_limiter.py`, `RateLimits` model, `RateLimiter` port + `JobRepo.count_active` (Postgres + fakes), `services/submit.check_submit_allowed`, `RateLimitedError`/`TooManyActiveJobsError`, `Retry-After` in the error envelope response, limiter built in `wiring.py`, three settings (+ `.env.example`, README); tests `test_rate_limit.py`, `test_rate_limit_api.py`, `count_active` repo test.
+**Why:** "Rate limiting on submit endpoints"; protect the single worker from one user's queue.
+**Decisions:** D-032 (in-memory sliding window per user, every attempt counts but refusals don't extend the block, active-job cap 3, checks before any validation/storage).
+**Verification:** `pytest -q -k rate` → 19 passed; unit suite 539 passed, 1 failed (pre-existing Windows-only chmod); ruff, format, design checker ✓. **Not run locally:** `count_active` against Postgres (CI).
+**AI mistakes caught:** the window-boundary test expected a hit exactly 60 s old to still count; the code (and `Retry-After`) treat it as expired — test expectation corrected.
+**Explain-it-in-review:** "Each user gets 10 submissions a minute and 30 an hour; the 11th gets a 429 with Retry-After telling them how long to wait. On top of that, nobody can have more than 3 videos queued or processing, so one person can't starve the worker."
+**Next:** T-091 Security headers + CORS + error audit
+
+---
+
+## 2026-10-02 15:55 IST — T-091 Security headers + CORS + error audit (agent: auth-security)
+**What changed:** new `core/security_headers.py` (pure CSP/headers/no-store rules); `api.py`: outermost `harden_responses` middleware (headers + last-resort 500 with ref id), optional `CORSMiddleware`, `RequestValidationError` and framework 404/405 → envelope, `serve_spa` realpath containment; `errors.py` `InternalError`, `MethodNotAllowedError`; `config.py` `CORS_ORIGINS`, `CSP_MEDIA_ORIGINS` + validation; `.env.example`, README env rows; tests `test_security_headers.py` (7), `test_headers_api.py` (14).
+**Why:** "restricted CORS, security headers"; closes F-001 (path traversal) and F-006 (validation errors outside the envelope).
+**Decisions:** D-033 (pure header builder + one function middleware, HSTS prod-only, fonts + S3 media origins in CSP, CORS off by default, catch crashes in the outermost middleware so 500s keep their headers).
+**Verification:** `pytest -q -k headers` → 21 passed; unit suite 560 passed, 1 failed (pre-existing Windows-only chmod); ruff, format, design checker ✓. Browser on the preview server under the real CSP: Inter fonts load, annotated video plays (readyState 4), canvas heatmap draws, thumbnail loads, 0 CSP console errors.
+**AI mistakes caught:** F-001 traversal in the original SPA route (regression test proven to read the secret without the fix); `/jobs` aliases missing from no-store; `caplog` assumption — see AI_USAGE #14.
+**Explain-it-in-review:** "Every response gets a strict CSP — only our own scripts, Google Fonts and our storage host for video — plus nosniff, frame-deny and HSTS in production. CORS is off because the SPA is same-origin. Every error, even a crash, comes back in the same JSON shape with no internals; a crash gives the user a reference id we can find in the logs."
+**Next:** T-092 Secret scanning in CI
+---
+
+## 2026-10-02 15:57 IST — T-092 Secret scanning in CI (agent: devops)
+**What changed:** `.github/workflows/ci.yml` new `secrets` job (pinned checkout, full history, gitleaks v8.30.1 downloaded + sha256-verified, `gitleaks git --redact --exit-code 1`). Only this job was staged — the local `.agent` → `.claude` path edit in the same file stays uncommitted.
+**Why:** "Nothing sensitive in git history".
+**Decisions:** D-034 (plain pinned binary instead of gitleaks-action; full history; redacted output; no allowlist needed).
+**Verification:** same gitleaks version locally (Windows zip, hash matched the checksums file): 54 commits scanned, no leaks, exit 0. Staged workflow parses (jobs: backend, secrets, frontend, docker). **Not yet run in CI** — first run on the S9 PR.
+**AI mistakes caught:** none in this ticket (the T-091 test string that could have tripped gitleaks was changed before committing).
+**Explain-it-in-review:** "Every push scans the whole git history with gitleaks, a pinned version whose checksum we verify, so even a secret deleted later fails the build. Findings are redacted in the log."
+**Next:** S9 stage summary, then S10 deploy (T-014 / T-100)
+---
+
+## 2026-10-02 16:07 IST — T-090 follow-up: CI integration failure (agent: qa)
+**What changed:** `tests/integration/test_url_submit.py` — the latency test lifts `max_active_jobs_per_user` to 10 via fixture override.
+**Why:** CI on the S9 PR: the test's 6 queued submits hit the new 3-active-job cap → 429.
+**Verification:** test collects with the override; ruff clean. Postgres run = CI re-run on the PR.
+**AI mistakes caught:** integration tests not checked against the new cap (AI_USAGE #15).
+**Next:** CI green on S9 PR → merge → S10.
