@@ -58,6 +58,16 @@ UPLOAD_TMP_DIR = os.getenv("UPLOAD_TMP_DIR", "")
 YTDLP_COOKIES_B64 = os.getenv("YTDLP_COOKIES_B64", "")
 YTDLP_PROXY = os.getenv("YTDLP_PROXY", "")
 
+# ---- video decode/encode (adapters/ffmpeg_video.py) ----
+# Frames analysed per second of video; the annotated output also plays at this rate.
+SAMPLE_FPS = float(os.getenv("SAMPLE_FPS", "5"))
+# Decoded frames are scaled so their long side is at most this (memory + detector cost).
+MAX_FRAME_SIDE = int(os.getenv("MAX_FRAME_SIDE", "1280"))
+# libx264 quality (lower = better, bigger) and speed preset for the annotated video.
+ENCODE_CRF = int(os.getenv("ENCODE_CRF", "26"))
+ENCODE_PRESET = os.getenv("ENCODE_PRESET", "veryfast")
+ENCODE_PRESETS = ("ultrafast", "superfast", "veryfast", "faster", "fast", "medium")
+
 # ---- tracking (ByteTrack-style, core/tracking.py) ----
 # Detections scoring >= TRACKER_HIGH_THRESH are matched first and may start new tracks; those
 # between TRACKER_LOW_THRESH and it only keep existing tracks alive (partly hidden players).
@@ -116,6 +126,10 @@ class Settings:
     upload_tmp_dir: str = ""
     ytdlp_cookies_b64: str = ""
     ytdlp_proxy: str = ""
+    sample_fps: float = 5.0
+    max_frame_side: int = 1280
+    encode_crf: int = 26
+    encode_preset: str = "veryfast"
     tracker_high_thresh: float = 0.5
     tracker_low_thresh: float = 0.1
     tracker_iou_threshold: float = 0.3
@@ -165,6 +179,7 @@ def validate_settings(settings: Settings) -> None:
             raise RuntimeError(
                 f"Missing required settings for BLOB_BACKEND=s3: {', '.join(missing_s3)}"
             )
+    validate_video_settings(settings)
     validate_tracker_settings(settings)
     validate_metrics_settings(settings)
     if settings.app_env != "production":
@@ -179,6 +194,17 @@ def validate_settings(settings: Settings) -> None:
     missing = [name for name in REQUIRED_IN_PRODUCTION if not values[name]]
     if missing:
         raise RuntimeError(f"Missing required settings in production: {', '.join(missing)}")
+
+
+def validate_video_settings(settings: Settings) -> None:
+    if not 0 < settings.sample_fps <= 30:
+        raise RuntimeError("SAMPLE_FPS must be in (0, 30]")
+    if not 64 <= settings.max_frame_side <= 4096:
+        raise RuntimeError("MAX_FRAME_SIDE must be between 64 and 4096")
+    if not 0 <= settings.encode_crf <= 51:
+        raise RuntimeError("ENCODE_CRF must be between 0 and 51")
+    if settings.encode_preset not in ENCODE_PRESETS:
+        raise RuntimeError(f"ENCODE_PRESET must be one of: {', '.join(ENCODE_PRESETS)}")
 
 
 def validate_tracker_settings(settings: Settings) -> None:
@@ -230,6 +256,10 @@ def load_settings() -> Settings:
         upload_tmp_dir=UPLOAD_TMP_DIR,
         ytdlp_cookies_b64=YTDLP_COOKIES_B64,
         ytdlp_proxy=YTDLP_PROXY,
+        sample_fps=SAMPLE_FPS,
+        max_frame_side=MAX_FRAME_SIDE,
+        encode_crf=ENCODE_CRF,
+        encode_preset=ENCODE_PRESET,
         tracker_high_thresh=TRACKER_HIGH_THRESH,
         tracker_low_thresh=TRACKER_LOW_THRESH,
         tracker_iou_threshold=TRACKER_IOU_THRESHOLD,

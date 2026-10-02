@@ -45,6 +45,12 @@ Setup: project rules, specialist agent personas, skills and workflows in `.agent
 - **Fix:** Distance measured from the last counted position with a dead-band; colour feature `(s·cos h, s·sin h, v)` with medians (D-022, D-023).
 - **Lesson:** A spec written by the same assistant isn't a source of truth; test its edge cases like any other code.
 
+### 6. Banker's rounding and a Windows-only pipe error
+- **What it did:** (a) In T-060 the agent wrote a test expecting 641×361 to round *up* to 642×362, then implemented it with Python's `round()`, which rounds halves to even (361/2 = 180.5 → 180). (b) Its first encoder only caught `BrokenPipeError` when ffmpeg dies mid-stream; on Windows the same failure is `OSError(EINVAL)`.
+- **How I caught it:** (a) The test went red on the first run. (b) Self-review against the reviewer checklist, then a new test (`test_encoder_reports_ffmpeg_dying_mid_stream`) that points ffmpeg at an unwritable path.
+- **Fix:** Floor to even (output is never larger than the source); catch `OSError`, the parent of `BrokenPipeError`.
+- **Lesson:** Platform and rounding semantics are easy to "know" wrongly; pin them with a test.
+
 ## How I verified AI-generated code
 - Automated unit test suite with deterministic JSON fixtures (pure logic, no model dependency).
 - Integration tests against migrated Postgres schema with multi-user isolation checks.

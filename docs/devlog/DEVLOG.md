@@ -222,3 +222,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** (1) the skill's hue+saturation feature can't tell white from black kits and splits reds across the 0°/360° wrap — switched to the HSV cone with value; (2) a crop-clamping test used a box whose torso lay completely outside the frame, so it tested the wrong case — fixed the box.
 **Explain-it-in-review:** "We take a small crop of each player's shirt, turn it into one colour point that treats hue as an angle and keeps brightness, and split the players into two groups. If the groups are too close, we say 'unknown' rather than guess."
 **Next:** S6 — T-060 ffmpeg frame reader/writer
+
+---
+
+## 2026-10-02 11:21 IST — T-060 ffmpeg frame reader/writer (agent: cv-pipeline)
+**What changed:** new `adapters/ffmpeg_video.py` (`read_exact`, `FfmpegFrameReader.frames()` generator, `FfmpegVideoEncoder.encode(frames)`); new `core/video_frames.py` (`output_size`, `expected_frames`); `FrameSize` model; `VideoProbe.rotation` read by the ffprobe adapter; `FrameReader`/`VideoEncoder` ports; `DecodeError` (`DECODE_ERROR`); settings `SAMPLE_FPS`, `MAX_FRAME_SIDE`, `ENCODE_CRF`, `ENCODE_PRESET` (+ validation, `.env.example`); `ffmpeg` pytest marker.
+**Why:** "Sample frames at a configurable FPS"; "frames are streamed, the full video is never loaded into RAM"; argument lists only.
+**Decisions:** D-024 (size computed in Python so each frame is exactly W*H*3 bytes; iterator-fed encoder; stderr to temp files; kill+wait in `finally`; ffmpeg tests in `tests/unit` behind a marker).
+**Verification:** `pytest -q -m ffmpeg` → 11 passed; frame-geometry + `read_exact` tests → 18 passed; adapter coverage 96 % (only timeout branches uncovered); ruff, format and design checker clean; full unit suite 357 passed, 1 failed (`test_fetch_ytdlp_cookies_file_is_private_and_deleted` — Windows ignores chmod 0600, pre-existing, passes on Linux CI). Mutation: disabling kill/reap makes `test_reader_closed_early_kills_ffmpeg` fail.
+**AI mistakes caught:** banker's rounding in the even-size calculation (test went red) and a Windows-only `OSError` the encoder didn't map — see AI_USAGE #6.
+**Explain-it-in-review:** "ffmpeg decodes the clip at 5 frames a second and pipes raw pixels to us; we know the exact frame size, so we read exactly that many bytes per frame and only ever hold one frame. The encoder pulls frames from a generator, so detection, drawing and encoding all happen one frame at a time, and if anything fails we kill ffmpeg in a `finally`."
+**Next:** T-061 ONNX detector adapter + model in image

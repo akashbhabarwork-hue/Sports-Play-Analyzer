@@ -217,14 +217,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 
 ## S6 · Worker pipeline (1 h 25 m)
 
-### [ ] T-060 · ffmpeg frame reader/writer — `MUST` `15m`
+### [x] T-060 · ffmpeg frame reader/writer — `MUST` `15m`
 - **Agent:** cv-pipeline
 - **Depends on:** T-012
 - **Why:** "Sample frames at a configurable FPS"; "Frames are streamed. The full video is never loaded into RAM"; arg arrays only.
 - **Scope:** `adapters/ffmpeg_video.py`: probe, output size calc, streaming reader generator, encoder writer, stderr to temp files, kill/wait in finally.
 - **Acceptance:** testsrc 2 s at fps 5 → 10 frames; encoded output probe-able; unit tests for size calc/read_exact.
 - **Verify:** `pytest -q -m ffmpeg`
-- **Done notes:** _
+- **Done notes:** `adapters/ffmpeg_video.py` (`read_exact`, `FfmpegFrameReader.frames` generator, `FfmpegVideoEncoder.encode(frames)` → H.264 yuv420p +faststart); pure `core/video_frames.py` (`output_size` with even-floor + rotation swap, `expected_frames`); `VideoProbe.rotation`; `DecodeError`; `SAMPLE_FPS`/`MAX_FRAME_SIDE`/`ENCODE_CRF`/`ENCODE_PRESET`. testsrc 2 s @5 fps → 10 frames ✓, encoded output probes at 160×120 / 5 fps / 2 s ✓, rotated phone clip → portrait ✓, garbage → `DECODE_ERROR` ✓, early close kills ffmpeg (mutation-checked) ✓. 29 tests. See D-024.
 
 ### [ ] T-061 · ONNX detector adapter + model in image — `MUST` `25m`
 - **Agent:** cv-pipeline

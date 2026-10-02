@@ -77,6 +77,13 @@ class DurationExceededError(AppError):
     code = "DURATION_EXCEEDED"
 
 
+class DecodeError(AppError):
+    """ffmpeg could not decode frames from a file that passed validation."""
+
+    status_code = 422
+    code = "DECODE_ERROR"
+
+
 class UrlNotAllowedError(AppError):
     status_code = 422
     code = "URL_NOT_ALLOWED"
