@@ -6,7 +6,18 @@ from app.wiring import Container
 
 # Repositories are not exercised by these tests.
 NO_REPOS = dict.fromkeys(
-    ("users", "sessions", "videos", "jobs", "results", "queue", "blobs", "prober")
+    (
+        "users",
+        "sessions",
+        "videos",
+        "jobs",
+        "results",
+        "queue",
+        "blobs",
+        "prober",
+        "media_info",
+        "downloader",
+    )
 )
 
 

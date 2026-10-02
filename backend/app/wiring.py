@@ -14,12 +14,16 @@ from .adapters.pg_repos import (
     PostgresUserRepo,
     PostgresVideoRepo,
 )
+from .adapters.safe_http_fetcher import SafeHttpDownloader
+from .adapters.ytdlp_fetcher import YtDlpMetadataFetcher
 from .config import Settings
 from .core.ports import (
     BlobStore,
     HealthCheck,
     JobQueue,
     JobRepo,
+    MediaDownloader,
+    MediaInfoFetcher,
     OAuthProvider,
     ResultRepo,
     SessionRepo,
@@ -41,6 +45,8 @@ class Container:
     queue: JobQueue
     blobs: BlobStore
     prober: VideoProber
+    media_info: MediaInfoFetcher
+    downloader: MediaDownloader
     # None when Google login is not configured (local dev without credentials).
     oauth: OAuthProvider | None = None
 
@@ -76,6 +82,10 @@ def build_container(settings: Settings) -> Container:
         queue=PostgresJobQueue(engine),
         blobs=BLOB_STORES[settings.blob_backend](settings),
         prober=FfprobeVideoProber(),
+        media_info=YtDlpMetadataFetcher(
+            cookies_b64=settings.ytdlp_cookies_b64, proxy=settings.ytdlp_proxy
+        ),
+        downloader=SafeHttpDownloader(proxy=settings.ytdlp_proxy),
         oauth=(
             GoogleOAuthClient(settings.google_client_id, settings.google_client_secret)
             if settings.oauth_configured

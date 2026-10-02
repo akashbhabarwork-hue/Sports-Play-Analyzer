@@ -135,3 +135,15 @@ Chosen: `core/url_rules.py: canonicalize_youtube_url` (pure). Rejects empty/over
 Network-level SSRF (DNS → public IPs only, redirect re-validation, byte/duration caps) stays in the worker (T-043).
 Tooling: the design checker treated every `urllib` import as I/O, which would have forced this pure parser out of `core/`; it now allows `urllib.parse` specifically (still flags `urllib.request` and bare `import urllib`).
 Measured: live 202 in ~8 ms warm (48 ms cold); CI asserts median of 5 < 100 ms.
+
+### D-020 Worker fetch stage: yt-dlp metadata + SSRF-guarded download (2026-10-02, T-043)
+Context: "Block private and internal IPs, including redirects"; hard duration cap; no shell interpolation; YouTube blocking handled gracefully.
+Chosen:
+- `adapters/ytdlp_fetcher.py`: yt-dlp only for **metadata** — argument list, `shell=False`, 45 s timeout, `--use-extractors youtube` (yt-dlp itself refuses non-YouTube URLs), `--` before the canonical URL; flags verified against yt-dlp 2026.08.19 `--help`/`--list-extractors`. Format `bv*[height<=720][ext=mp4]/bv*[height<=720]/b[height<=720]`: video-only single stream (audio not analysed, nothing to merge). Only `User-Agent`/`Accept`/`Accept-Language` headers are forwarded (never cookies). Optional `YTDLP_COOKIES_B64` (0600 temp file, deleted in every outcome) and `YTDLP_PROXY`; neither logged; stderr never logged, only its classification.
+- `core/ytdlp_errors.py`: bot check / 403 / 429 / age gate → `YOUTUBE_BLOCKED` ("…upload it instead"); private/removed/unavailable → `DOWNLOAD_FAILED`.
+- `core/video_rules.check_remote_media`: live / unknown length / > 60 s / no single-stream URL rejected **before any bytes**.
+- `adapters/safe_http_fetcher.py`: httpx2, `follow_redirects=False`, `trust_env=False`, ≤5 hops; each hop must be https, no userinfo, port 443, host `*.googlevideo.com` or exact YouTube hosts, and **all** DNS answers public (`core/net_rules.is_public_ip`, which also unwraps `::ffff:`/6to4/Teredo); 100 MB byte cap, 10 s connect / 30 s read / 120 s total.
+- `services/fetch.fetch_url_video`: metadata → download → the **same** sniff + ffprobe + limits as uploads (`validate_video_file`) → blob `uploads/{video_id}/source.{ext}` → `set_media_for_worker`; blob removed if recording fails; temp dir always removed.
+Mitigation (owner's choice): baseline clean failure + optional cookies/proxy by env, decided at deploy (F-005). With a proxy, googlevideo URLs are bound to the proxy's IP, so the download uses the same proxy; host allowlist still applies, IP check is best-effort (proxy resolves DNS).
+Residual risk: DNS rebinding between our lookup and connect — allowed domains are Google-controlled; full fix (connect to vetted IP with SNI pinning) listed under "with more time".
+Image: `yt-dlp[default,deno]` ships the JS runtime YouTube now requires (+~40–80 MB).

@@ -51,6 +51,13 @@ MAX_VIDEO_DURATION_SECONDS = int(os.getenv("MAX_VIDEO_DURATION_SECONDS", "60"))
 # Per-request temp dirs for uploads live here (default: the system temp dir).
 UPLOAD_TMP_DIR = os.getenv("UPLOAD_TMP_DIR", "")
 
+# ---- YouTube fetch (optional mitigations for datacenter blocking, D-010) ----
+# Base64 of a Netscape cookies.txt from a throwaway account; written to a 0600 temp file
+# per fetch and deleted afterwards. Proxy URL is used for both yt-dlp and the download.
+# Secrets: never logged, never committed.
+YTDLP_COOKIES_B64 = os.getenv("YTDLP_COOKIES_B64", "")
+YTDLP_PROXY = os.getenv("YTDLP_PROXY", "")
+
 REQUIRED_IN_PRODUCTION = ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "SESSION_SECRET")
 
 
@@ -79,6 +86,8 @@ class Settings:
     max_upload_bytes: int = 100 * 1024 * 1024
     max_video_seconds: int = 60
     upload_tmp_dir: str = ""
+    ytdlp_cookies_b64: str = ""
+    ytdlp_proxy: str = ""
 
     @property
     def oauth_configured(self) -> bool:
@@ -154,6 +163,8 @@ def load_settings() -> Settings:
         max_upload_bytes=MAX_UPLOAD_SIZE_BYTES,
         max_video_seconds=MAX_VIDEO_DURATION_SECONDS,
         upload_tmp_dir=UPLOAD_TMP_DIR,
+        ytdlp_cookies_b64=YTDLP_COOKIES_B64,
+        ytdlp_proxy=YTDLP_PROXY,
     )
     validate_settings(settings)
     return settings

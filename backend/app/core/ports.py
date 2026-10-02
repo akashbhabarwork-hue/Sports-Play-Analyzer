@@ -14,6 +14,7 @@ from .models import (
     Job,
     JobOutcome,
     JobResult,
+    MediaInfo,
     NewVideo,
     OAuthProfile,
     PlayerTrack,
@@ -149,4 +150,16 @@ class BlobStore(Protocol):
 class VideoProber(Protocol):
     def probe(self, path: str) -> VideoProbe:
         """Read container/stream metadata; raises CorruptFileError if unreadable."""
+        ...
+
+
+class MediaInfoFetcher(Protocol):
+    def fetch_info(self, url: str) -> MediaInfo:
+        """Metadata for a canonical YouTube URL; raises YouTubeBlockedError/DownloadFailedError."""
+        ...
+
+
+class MediaDownloader(Protocol):
+    def download(self, url: str, headers: dict[str, str], dest_path: str, max_bytes: int) -> int:
+        """SSRF-guarded download to dest_path; returns bytes written."""
         ...

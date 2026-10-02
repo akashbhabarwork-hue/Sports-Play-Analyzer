@@ -19,6 +19,10 @@ pytest -q backend/tests -m integration
 cd frontend && npm ci && npm run lint && npm run typecheck && npm run build
 ```
 
+## Manual YouTube fetch check
+Edit `URL` at the top of `backend/scripts/fetch_check.py`, then `cd backend && python scripts/fetch_check.py`.
+It runs the production fetch path (yt-dlp metadata → SSRF-guarded download → ffprobe) without a database.
+
 ## Deploy
 Merging to `main` runs `.github/workflows/cd.yml`: build → GHCR → migrate → deploy → `/health` smoke.
 Rollback: Actions → Rollback → enter previous sha. First-time setup: see [docs/ADR.md](docs/ADR.md) §6.
@@ -44,6 +48,8 @@ Rollback: Actions → Rollback → enter previous sha. First-time setup: see [do
 | `MAX_VIDEO_DURATION_SECONDS` | `60` | Maximum allowed duration for processing |
 | `MAX_UPLOAD_SIZE_BYTES` | `104857600` | Maximum upload size (100 MB); enforced before and while the body is read |
 | `UPLOAD_TMP_DIR` | system temp | Parent dir for per-request upload temp dirs (always removed) |
+| `YTDLP_COOKIES_B64` | `""` | Optional: base64 cookies.txt (throwaway account) if YouTube blocks the server — secret |
+| `YTDLP_PROXY` | `""` | Optional: proxy for yt-dlp and the media download |
 
 ## API
 `GET /auth/login`, `GET /auth/callback`, `POST /auth/logout`, `GET /api/me`,

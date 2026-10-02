@@ -120,3 +120,14 @@ class VideoProbe:
     width: int
     height: int
     fps: float | None
+
+
+@dataclass(frozen=True, slots=True)
+class MediaInfo:
+    """What yt-dlp reports about a remote video (no bytes downloaded yet)."""
+
+    duration_s: float | None
+    is_live: bool
+    media_url: str | None  # single-stream URL; None if the format needs merging
+    http_headers: dict[str, str]
+    title: str | None = None

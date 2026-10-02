@@ -68,3 +68,6 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# Output of backend/scripts/fetch_check.py
+fetch_check_out.mp4
