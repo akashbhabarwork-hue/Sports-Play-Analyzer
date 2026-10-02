@@ -68,6 +68,22 @@ ENCODE_CRF = int(os.getenv("ENCODE_CRF", "26"))
 ENCODE_PRESET = os.getenv("ENCODE_PRESET", "veryfast")
 ENCODE_PRESETS = ("ultrafast", "superfast", "veryfast", "faster", "fast", "medium")
 
+# ---- detection (adapters/onnx_detector.py, core/detection.py) ----
+# Pretrained YOLOX-S (Apache-2.0); the Docker image downloads it and checks its sha256.
+MODEL_PATH = os.getenv(
+    "MODEL_PATH",
+    os.path.abspath(os.path.join(os.path.dirname(__file__), "../../models/yolox_s.onnx")),
+)
+# Square model input in pixels (multiple of 32). Smaller = faster, misses small players/ball.
+DETECT_INPUT_SIZE = int(os.getenv("DETECT_INPUT_SIZE", "640"))
+# Players are kept down to TRACKER_LOW_THRESH (tracker stage 2, D-021). The ball is small and
+# blurry, so it gets its own, lower bar; at most one ball per frame is kept.
+BALL_CONF_THRESHOLD = float(os.getenv("BALL_CONF_THRESHOLD", "0.15"))
+NMS_THRESHOLD = float(os.getenv("NMS_THRESHOLD", "0.45"))
+DETECT_MAX_CANDIDATES = int(os.getenv("DETECT_MAX_CANDIDATES", "300"))
+# ONNX Runtime CPU threads; 0 lets ONNX Runtime pick (one per core).
+ORT_THREADS = int(os.getenv("ORT_THREADS", "0"))
+
 # ---- tracking (ByteTrack-style, core/tracking.py) ----
 # Detections scoring >= TRACKER_HIGH_THRESH are matched first and may start new tracks; those
 # between TRACKER_LOW_THRESH and it only keep existing tracks alive (partly hidden players).
@@ -130,6 +146,12 @@ class Settings:
     max_frame_side: int = 1280
     encode_crf: int = 26
     encode_preset: str = "veryfast"
+    model_path: str = ""
+    detect_input_size: int = 640
+    ball_conf_threshold: float = 0.15
+    nms_threshold: float = 0.45
+    detect_max_candidates: int = 300
+    ort_threads: int = 0
     tracker_high_thresh: float = 0.5
     tracker_low_thresh: float = 0.1
     tracker_iou_threshold: float = 0.3
@@ -205,6 +227,12 @@ def validate_video_settings(settings: Settings) -> None:
         raise RuntimeError("ENCODE_CRF must be between 0 and 51")
     if settings.encode_preset not in ENCODE_PRESETS:
         raise RuntimeError(f"ENCODE_PRESET must be one of: {', '.join(ENCODE_PRESETS)}")
+    if not (64 <= settings.detect_input_size <= 1280 and settings.detect_input_size % 32 == 0):
+        raise RuntimeError("DETECT_INPUT_SIZE must be a multiple of 32 between 64 and 1280")
+    if not (0 < settings.ball_conf_threshold <= 1 and 0 < settings.nms_threshold <= 1):
+        raise RuntimeError("BALL_CONF_THRESHOLD and NMS_THRESHOLD must be in (0, 1]")
+    if settings.detect_max_candidates < 1 or settings.ort_threads < 0:
+        raise RuntimeError("DETECT_MAX_CANDIDATES must be >= 1 and ORT_THREADS >= 0")
 
 
 def validate_tracker_settings(settings: Settings) -> None:
@@ -260,6 +288,12 @@ def load_settings() -> Settings:
         max_frame_side=MAX_FRAME_SIDE,
         encode_crf=ENCODE_CRF,
         encode_preset=ENCODE_PRESET,
+        model_path=MODEL_PATH,
+        detect_input_size=DETECT_INPUT_SIZE,
+        ball_conf_threshold=BALL_CONF_THRESHOLD,
+        nms_threshold=NMS_THRESHOLD,
+        detect_max_candidates=DETECT_MAX_CANDIDATES,
+        ort_threads=ORT_THREADS,
         tracker_high_thresh=TRACKER_HIGH_THRESH,
         tracker_low_thresh=TRACKER_LOW_THRESH,
         tracker_iou_threshold=TRACKER_IOU_THRESHOLD,

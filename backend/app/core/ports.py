@@ -13,6 +13,7 @@ from uuid import UUID
 import numpy as np
 
 from .models import (
+    Detection,
     FrameSize,
     Job,
     JobOutcome,
@@ -169,6 +170,13 @@ class VideoEncoder(Protocol):
         self, frames: Iterable[np.ndarray], out_path: str, size: FrameSize, fps: float
     ) -> int:
         """Write browser-playable H.264 MP4 from the frames as they arrive; returns the count."""
+        ...
+
+
+class Detector(Protocol):
+    def detect(self, frame_bgr: np.ndarray) -> list[Detection]:
+        """Players (down to the tracker's low threshold) + at most one ball, in frame pixels.
+        Raises ModelError if inference fails."""
         ...
 
 
