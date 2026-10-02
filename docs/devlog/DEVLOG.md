@@ -518,3 +518,12 @@ Stage summaries live in `docs/devlog/stages/`.
 **Verification:** direct probe on the real bucket — default config fails, fixed config passes upload / presigned GET / range / delete; blob tests 9 passed (2 new fail on the old code); unit 568 passed (+ known Windows-only failure); ruff, format, design ✓.
 **AI mistakes caught:** AI_USAGE #20.
 **Next:** hot-deploy this image, owner re-uploads; PR → dev → main.
+
+---
+
+## 2026-10-02 15:20 IST — Fix: first CD run failed at the migration step (agent: devops)
+**What changed:** `.github/workflows/cd.yml` migration job uses `--set-cloudsql-instances` (jobs have no `--add-` form).
+**Why:** first run on `main` (Actions run 37020616640): WIF auth, build and push to Artifact Registry passed; `gcloud run jobs deploy` failed with `unrecognized arguments`; later steps skipped, production untouched (still 67f2dda).
+**Verification:** every flag in `cd.yml` and `rollback.yml` checked against `gcloud <command> --help` (no missing flags; checker flags the old one). Real proof = next CD run.
+**AI mistakes caught:** AI_USAGE #21.
+**Next:** PR → dev → main; watch CD go green end to end.
