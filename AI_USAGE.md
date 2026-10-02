@@ -123,6 +123,12 @@ Setup: project rules, specialist agent personas, skills and workflows in `.agent
 - **Fix:** a new letters-and-digits-only password (`tr -dc 'A-Za-z0-9' </dev/urandom`) set on the DB user and written to both secrets with `printf '%s'` (0 CR bytes verified), old versions disabled; `--port=8000` on the web deploy in `cd.yml` and `rollback.yml`.
 - **Lesson:** On Windows, generate secrets from a restricted alphabet and verify the stored bytes; read the platform's defaults (port, probes) instead of assuming the local compose setup carries over.
 
+### 19. A secret written to a file named "-", and a half-done line-ending check
+- **What it did:** (a) To count stray bytes the agent ran `gcloud secrets versions access --out-file=-`, expecting stdout. Windows gcloud created a file literally named `-` in the repo folder holding the production `DATABASE_URL` with the DB password (never committed; the folder syncs to OneDrive). (b) After #18 it cleaned only the DB secrets; `google-client-id`, `google-client-secret` and `session-secret` (copied from a CRLF `.env`) still ended in `\r\n`, so Google answered `Error 401: invalid_client` on the live login.
+- **How I caught it:** (a) `git status` showed an untracked `-` while fixing the main/dev merge; inspected by size and a match count only. (b) The owner's screenshot; a CR/LF byte count over all seven secrets and the live redirect's `client_id=…%0A`.
+- **Fix:** deleted the file and rotated the DB password (secrets + DB user, old versions disabled, web + worker restarted); clean versions of the three secrets; `config.env()` now strips every setting at the source, with a regression test proven to fail without it.
+- **Lesson:** After one bad secret, check *all* of them; never point a tool at "-" unless you know it means stdout on that platform — and look at `git status` after any command that might write files.
+
 ## How I verified AI-generated code
 - Automated unit test suite with deterministic JSON fixtures (pure logic, no model dependency).
 - Integration tests against migrated Postgres schema with multi-user isolation checks.
