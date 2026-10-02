@@ -10,6 +10,7 @@ from ..core.blob_keys import upload_key
 from ..core.file_sniff import SNIFF_BYTES, Container, sniff_video_container
 from ..core.models import Job, NewVideo, VideoProbe
 from ..core.ports import BlobStore, JobRepo, VideoProber
+from ..core.submit_rules import check_sport, clean_title
 from ..core.url_rules import canonicalize_youtube_url
 from ..core.video_rules import UNSUPPORTED_MESSAGE, check_video_limits
 from ..errors import UnsupportedFormatError
@@ -48,6 +49,8 @@ def submit_upload_job(
     original_filename: str | None,
     limits: UploadLimits,
     config: dict[str, Any],
+    sport: str | None = None,
+    title: str | None = None,
 ) -> Job:
     """Validate a fully received upload at `path`, store it, and queue its job.
 
@@ -55,6 +58,7 @@ def submit_upload_job(
     an app-generated video id before the rows exist, so the worker can never claim a job
     whose file is missing; if the insert fails the blob is removed again.
     """
+    sport, title = check_sport(sport), clean_title(title)  # cheap checks before ffprobe
     container, probe = validate_video_file(path, prober, limits.max_duration_s)
 
     video_id = uuid4()
@@ -70,6 +74,8 @@ def submit_upload_job(
         width=probe.width,
         height=probe.height,
         fps=probe.fps,
+        sport=sport,
+        title=title,
     )
     try:
         job = jobs.create_with_video(user_id, new_video, config)
@@ -83,13 +89,22 @@ def submit_upload_job(
     return job
 
 
-def submit_url_job(jobs: JobRepo, user_id: UUID, raw_url: str, config: dict[str, Any]) -> Job:
+def submit_url_job(
+    jobs: JobRepo,
+    user_id: UUID,
+    raw_url: str,
+    config: dict[str, Any],
+    sport: str | None = None,
+    title: str | None = None,
+) -> Job:
     """Queue a job for a YouTube link. No network here: the worker fetches it (T-043).
 
     Only the canonical URL rebuilt from the video id is stored, never the raw input.
     """
+    sport, title = check_sport(sport), clean_title(title)
     ref = canonicalize_youtube_url(raw_url)
-    job = jobs.create_with_video(user_id, NewVideo(source_type="url", source_url=ref.url), config)
+    new_video = NewVideo(source_type="url", source_url=ref.url, sport=sport, title=title)
+    job = jobs.create_with_video(user_id, new_video, config)
     logger.info(
         "url job queued",
         extra={"user_id": str(user_id), "job_id": str(job.id), "video_ref": ref.video_id},

@@ -343,3 +343,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** logout didn't survive a failing request; muddy heatmap colours and an over-tall canvas; my preview script first forgot `static_dir` (SPA not served). Two false alarms disproved with server logs / `document.hidden` (AI_USAGE #11).
 **Explain-it-in-review:** "The heatmap is a canvas: a neutral pitch, then each grid cell coloured by how much time was spent there. Team maps are already in the stats, so switching is instant; a player's map is fetched once and cached — under 130 ms in my test."
 **Next:** S8 complete → stage summary; then S9 T-090 Rate limiting + active-job cap (auth-security)
+
+---
+
+## 2026-10-02 14:03 IST — T-085 Sport + title on submissions (agents: database + backend-api)
+**What changed:** migration `0002_video_sport_title_thumbnail` (expand-only: `videos.sport` NOT NULL default 'football' + `ck_videos_sport_valid`, `videos.title` + `ck_videos_title_length` ≤120, `videos.thumbnail_key`), `db_tables.py` mirror, `core/submit_rules.py` (`clean_title`, `check_sport`), `ValidationError` + `InvalidSportError`, `NewVideo`/`Video` fields, repo insert, `submit_upload_job`/`submit_url_job` keyword args, upload `Form` fields + `UrlSubmit.sport/title`; tests `test_submit_rules.py`, `test_submit_sport_title.py`, migration CHECK test; S8b tickets added (D-030).
+**Why:** owner's UI brief needs a sport (pitch vs court outline) and a human title per analysis; real columns instead of faked UI data.
+**Decisions:** D-030 (scope + budget). Expand-only migration so rollback-by-image stays safe; sport defaults to football so the brief's curl examples and old clients keep working; cheap field checks before ffprobe.
+**Verification:** 18 new local tests; full unit suite 506 passed, 1 failed (pre-existing Windows-only chmod); ruff, format, design checker ✓. **Not run locally:** migration up/down/up + CHECK tests (CI first run).
+**AI mistakes caught:** title test expected control characters to be deleted, code replaces them with a space (safer — no glued words) → test expectation fixed; shared test container lacked a prober → upload test crashed before validation → fixed in the fakes.
+**Explain-it-in-review:** "Sport and title are just two more video columns, added with a migration that only adds — the old app version keeps working against the new schema, which keeps rollback safe. Both are cleaned and checked in pure functions before we even look at the file."
+**Next:** T-086 Job read model with video info + thumbnail

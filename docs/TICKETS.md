@@ -324,6 +324,64 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** manual A1 final step
 - **Done notes:** `HeatmapPanel` (team maps from stats = instant; player map fetched once then cached), `HeatmapCanvas` (DPR-scaled, ResizeObserver, neutral pitch outline, yellow→red ramp, legend, optional path overlay, `role="img"` label, max 760 px wide), native `<select>` `PlayerSelector` (All / Team A (n) / Team B (n) / `#id · team · distance`), pure `logic/heatmap.ts` (cell geometry, colour ramp, track points, options, selection parsing). Browser (preview server, visible tab): switches redrew in 41–125 ms incl. first player fetch 42 ms, cached 41 ms. 11 new tests (43 total incl. logout regression).
 
+## S8b · UI redesign (owner's brief, added 2026-10-02 — see D-030)
+
+Scope added by the owner after S8: full visual/UX brief. Backend first so the UI never fakes data. Pages stay under `/app/…` (public `/` landing, `/login`).
+
+### [x] T-085 · Sport + title on submissions — `MUST` `20m` `[review-plan]`
+- **Agent:** database + backend-api
+- **Depends on:** T-041, T-042
+- **Scope:** Alembic 0002 (`videos.sport` NOT NULL default football + CHECK, `videos.title` ≤120 CHECK, `videos.thumbnail_key`), `core/submit_rules.py`, upload Form fields + URL JSON fields.
+- **Acceptance:** sport/title stored from both endpoints; invalid sport → 422 `INVALID_SPORT`; title >120 → 422; migration up/down/up + CHECKs.
+- **Verify:** `pytest -q -k "submit_rules or sport_title"`; CI `-m integration -k "migration or sport"`
+- **Done notes:** Plan approved. Migration 0002 expand-only with working downgrade; `db_tables.py` mirrors it (+ `SPORTS` tuple kept equal to `core.submit_rules.SPORTS` by a test). `clean_title` (control chars → space, collapse, ≤120, empty → None), `check_sport` (case-insensitive, default football). New `ValidationError` (422) and `InvalidSportError` (422). Cheap checks run before ffprobe. 18 local tests; migration/CHECK tests CI-only.
+
+### [ ] T-086 · Job read model with video info + thumbnail — `MUST` `25m`
+- **Agent:** backend-api + cv-pipeline
+- **Depends on:** T-085
+- **Scope:** list/detail return `{id, title, sport, source_type, status, progress, stage, duration_s, size_bytes, thumbnail_url, error, created_at, …}` (job JOIN video, user-scoped); worker saves first-frame JPEG thumbnail; ownership-checked `GET /api/jobs/{id}/thumbnail` (+ alias). Closes F-009.
+- **Acceptance:** shapes match the brief's contract; foreign thumbnail → 404; A3 matrix includes `/thumbnail`.
+- **Verify:** `pytest -q -k "read_api or thumbnail or user_b_cannot"`
+- **Done notes:** _
+
+### [ ] T-087 · Two-pass render: team-coloured boxes + honest stages — `MUST` `30m` `[review-plan]`
+- **Agent:** cv-pipeline
+- **Depends on:** T-062
+- **Scope:** pass 1 detect/track/record (`analysing`), teams+metrics (`computing`), pass 2 decode+draw by team+encode (`rendering`), `saving`; legend in HUD. Revises D-026.
+- **Acceptance:** boxes coloured by team in the output (pixel check); stage sequence; lease lost in pass 2 writes nothing.
+- **Verify:** `pytest -q -k process_job`
+- **Done notes:** _
+
+### [ ] T-088 · Design system + app shell — `MUST` `30m`
+- **Agent:** frontend · **Depends on:** T-084
+- **Scope:** tokens (brief palette, light/dark), Inter, SVG icons, original logo, sidebar → top bar + drawer <900 px, user menu, Settings page.
+- **Done notes:** _
+
+### [ ] T-089 · Landing + sign-in pages — `MUST` `25m`
+- **Agent:** frontend · **Depends on:** T-088
+- **Scope:** public `/` dark hero + feature strip (original art only), `/login` card with reassurances.
+- **Done notes:** _
+
+### [ ] T-094 · New analysis redesign — `MUST` `30m`
+- **Agent:** frontend · **Depends on:** T-085, T-088
+- **Scope:** segmented tabs, drag-drop, file row with first-frame thumbnail, sport select, optional title, tips card, inline server errors.
+- **Done notes:** _
+
+### [ ] T-095 · My videos redesign — `MUST` `30m`
+- **Agent:** frontend · **Depends on:** T-086, T-088
+- **Scope:** filter chips with counts, table/cards with thumbnail, sport, status + progress, actions (View results / Resubmit / copy id), polling, empty state.
+- **Done notes:** _
+
+### [ ] T-096 · Processing view (stepper) — `MUST` `25m`
+- **Agent:** frontend · **Depends on:** T-087, T-088
+- **Scope:** stage stepper (queued → fetching (URL) → analysing → computing → rendering → saving), current-step card, source card, failure card, auto-switch to results.
+- **Done notes:** _
+
+### [ ] T-097 · Results tabs + smooth heatmaps — `MUST` `45m`
+- **Agent:** frontend · **Depends on:** T-086, T-087, T-088
+- **Scope:** Overview (video + team legend, key metrics, settings footnote), Player stats (sortable), Team heatmaps, Player heatmaps (bilinear blue→green→yellow→red, pitch/court by sport, path toggle); responsive + dark pass; browser walkthrough; S8b summary.
+- **Done notes:** _
+
 ## S9 · Security hardening (25 m)
 
 ### [ ] T-090 · Rate limiting + active-job cap — `MUST` `10m`

@@ -183,6 +183,8 @@ class PostgresJobRepo:
                 "width": new_video.width,
                 "height": new_video.height,
                 "fps": new_video.fps,
+                "sport": new_video.sport,
+                "title": new_video.title,
             }
             if new_video.id is not None:
                 values["id"] = new_video.id

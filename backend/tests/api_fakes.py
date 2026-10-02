@@ -14,6 +14,7 @@ from uuid import UUID, uuid4
 from fastapi.testclient import TestClient
 
 from app.adapters.blob_local import LocalBlobStore
+from app.adapters.ffprobe import FfprobeVideoProber
 from app.config import Settings
 from app.core.models import Job, JobResult, PlayerTrack, User, Video
 from app.core.sessions import hash_token
@@ -56,6 +57,18 @@ class FakeJobs:
     def get(self, user_id, job_id):
         job = self.w.jobs.get(job_id)
         return job if job and job.user_id == user_id else None
+
+    def create_with_video(self, user_id, new_video, config):
+        video = Video(new_video.id or uuid4(), user_id, new_video.source_type,
+                      new_video.source_url, new_video.original_filename, new_video.storage_key,
+                      new_video.size_bytes, new_video.duration_s, new_video.width,
+                      new_video.height, new_video.fps, NOW, sport=new_video.sport,
+                      title=new_video.title)  # fmt: skip
+        job = Job(uuid4(), user_id, video.id, "queued", 0, None, None, None, 0, 3, config, NOW,
+                  None, None, NOW)  # fmt: skip
+        self.w.videos[video.id] = video
+        self.w.jobs[job.id] = job
+        return job
 
     def list_for_user(self, user_id, limit=50):
         mine = [j for j in self.w.jobs.values() if j.user_id == user_id]
@@ -153,8 +166,9 @@ def _put_video(blobs, key: str) -> None:
 def make_container(w: World, blobs) -> Container:
     settings = Settings(app_env="test", app_origin="http://localhost:8000", database_url="x",
                         git_sha="t", cookie_secure=False)  # fmt: skip
-    none = dict.fromkeys(("users", "queue", "prober", "media_info", "downloader"))
+    none = dict.fromkeys(("users", "queue", "media_info", "downloader"))
     return Container(**none, settings=settings, health_check=OkHealth(),
+                     prober=FfprobeVideoProber(),
                      sessions=FakeSessions(w), videos=FakeVideos(w), jobs=FakeJobs(w),
                      results=FakeResults(w), blobs=blobs)  # fmt: skip
 

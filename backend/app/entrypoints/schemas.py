@@ -21,6 +21,8 @@ class JobAccepted(BaseModel):
 
 class UrlSubmit(BaseModel):
     url: str = Field(min_length=1, max_length=2048)
+    sport: str | None = Field(default=None, max_length=32)  # football | basketball (default)
+    title: str | None = Field(default=None, max_length=1000)  # cleaned + capped at 120 later
 
 
 class JobError(BaseModel):

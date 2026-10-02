@@ -7,7 +7,7 @@ from datetime import UTC, datetime
 from typing import Literal
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, FastAPI, Request, Response, UploadFile
+from fastapi import APIRouter, Depends, FastAPI, Form, Request, Response, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
@@ -340,7 +340,12 @@ def register_api_routes(app: FastAPI, container: Container) -> None:
     tmp_root = container.settings.upload_tmp_dir or None
 
     @jobs.post("/jobs/upload", status_code=202, response_model=JobAccepted)
-    def upload_video(file: UploadFile, user: User = Depends(current_user)) -> JobAccepted:
+    def upload_video(
+        file: UploadFile,
+        sport: str | None = Form(default=None, max_length=32),
+        title: str | None = Form(default=None, max_length=1000),
+        user: User = Depends(current_user),
+    ) -> JobAccepted:
         # Per-request temp dir, removed in every outcome (success, 4xx, crash).
         with tempfile.TemporaryDirectory(dir=tmp_root, prefix="upload-") as tmp:
             path = os.path.join(tmp, "source")
@@ -354,13 +359,20 @@ def register_api_routes(app: FastAPI, container: Container) -> None:
                 file.filename,
                 limits,
                 {"max_video_seconds": limits.max_duration_s},
+                sport=sport,
+                title=title,
             )
         return JobAccepted(job_id=job.id, status=job.status)
 
     @jobs.post("/jobs/url", status_code=202, response_model=JobAccepted)
     def submit_url(body: UrlSubmit, user: User = Depends(current_user)) -> JobAccepted:
         job = submit_url_job(
-            container.jobs, user.id, body.url, {"max_video_seconds": limits.max_duration_s}
+            container.jobs,
+            user.id,
+            body.url,
+            {"max_video_seconds": limits.max_duration_s},
+            sport=body.sport,
+            title=body.title,
         )
         return JobAccepted(job_id=job.id, status=job.status)
 

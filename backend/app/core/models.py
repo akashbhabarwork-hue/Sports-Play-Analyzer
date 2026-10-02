@@ -33,6 +33,8 @@ class NewVideo:
     width: int | None = None
     height: int | None = None
     fps: float | None = None
+    sport: str = "football"  # T-085: validated by core.submit_rules
+    title: str | None = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -49,6 +51,9 @@ class Video:
     height: int | None
     fps: float | None
     created_at: datetime
+    sport: str = "football"
+    title: str | None = None
+    thumbnail_key: str | None = None  # set by the worker (T-086)
 
 
 @dataclass(frozen=True, slots=True)
