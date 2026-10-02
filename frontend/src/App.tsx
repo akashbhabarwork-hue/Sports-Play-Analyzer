@@ -5,9 +5,9 @@ import { JobDetailPage } from './pages/JobDetailPage'
 import { JobsPage } from './pages/JobsPage'
 import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
+import { NewAnalysisPage } from './pages/NewAnalysisPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { SettingsPage } from './pages/SettingsPage'
-import { SubmitPage } from './pages/SubmitPage'
 import './App.css'
 
 // Public pages: `/` (landing) and `/login`. Signed-in pages live under /app/… because /jobs/…
@@ -35,7 +35,7 @@ function App() {
             }
           >
             <Route index element={<JobsPage />} />
-            <Route path="new" element={<SubmitPage />} />
+            <Route path="new" element={<NewAnalysisPage />} />
             <Route path="jobs/:jobId" element={<JobDetailPage />} />
             <Route path="settings" element={<SettingsPage />} />
             <Route path="*" element={<NotFoundPage />} />

@@ -63,6 +63,25 @@ describe('api', () => {
     expect(api.videoUrl('a/../b')).toBe('/api/jobs/a%2F..%2Fb/video')
   })
 
+  it('sends sport and title with a link submission', async () => {
+    const fetchMock = respond(202, { job_id: 'j1', status: 'queued' })
+    await api.submitUrl('https://youtu.be/x', { sport: 'basketball', title: 'Semi final' })
+    expect(JSON.parse(fetchMock.mock.calls[0][1].body)).toEqual({
+      url: 'https://youtu.be/x',
+      sport: 'basketball',
+      title: 'Semi final',
+    })
+  })
+
+  it('sends sport (and title only if given) as multipart fields with the file', async () => {
+    const fetchMock = respond(202, { job_id: 'j1', status: 'queued' })
+    await api.uploadFile(new File(['x'], 'clip.mp4'), { sport: 'football' })
+    const form: FormData = fetchMock.mock.calls[0][1].body
+    expect(form.get('sport')).toBe('football')
+    expect(form.has('title')).toBe(false)
+    expect((form.get('file') as File).name).toBe('clip.mp4')
+  })
+
   it('unwraps the job list', async () => {
     respond(200, { jobs: [{ id: '1' }] })
     await expect(api.listJobs()).resolves.toEqual([{ id: '1' }])

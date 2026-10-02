@@ -7,6 +7,7 @@ import type {
   JobSummary,
   Me,
   PlayerDetail,
+  Sport,
   Stats,
 } from './types'
 
@@ -61,6 +62,11 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
 
 const job = (id: string) => `/api/jobs/${encodeURIComponent(id)}`
 
+export interface SubmitDetails {
+  sport: Sport
+  title?: string
+}
+
 export const api = {
   me: () => apiFetch<Me>('/api/me'),
   logout: () => apiFetch<void>('/auth/logout', { method: 'POST' }),
@@ -72,16 +78,18 @@ export const api = {
   getHeatmap: (id: string, team: 'all' | 'A' | 'B') =>
     apiFetch<Heatmap>(`${job(id)}/heatmap?team=${team}`),
   videoUrl: (id: string) => `${job(id)}/video`,
-  submitUrl: (url: string) =>
+  submitUrl: (url: string, details: SubmitDetails) =>
     apiFetch<JobAccepted>('/api/jobs/url', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ url }),
+      body: JSON.stringify({ url, sport: details.sport, title: details.title || null }),
     }),
   // FormData sets its own multipart Content-Type (with boundary): never set it by hand.
-  uploadFile: (file: File) => {
+  uploadFile: (file: File, details: SubmitDetails) => {
     const form = new FormData()
     form.append('file', file)
+    form.append('sport', details.sport)
+    if (details.title) form.append('title', details.title)
     return apiFetch<JobAccepted>('/api/jobs/upload', { method: 'POST', body: form })
   },
 }

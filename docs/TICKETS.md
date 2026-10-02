@@ -362,10 +362,10 @@ Scope added by the owner after S8: full visual/UX brief. Backend first so the UI
 - **Scope:** public `/` dark hero + feature strip (original art only), `/login` card with reassurances.
 - **Done notes:** `LandingPage` (`/`, signed-in visitors → `/app`): navy gradient hero, nav (Features, How it works, Sign in), Football/Basketball pills, headline/subline per brief, "Get started with Google" → `/auth/login`, original `HeroArt` SVG (pitch, player boxes with trails in team colours, heat glow, ball), 4-item feature strip, 3-step "How it works", footer. `LoginPage` (`/login`): card on faint CSS pitch lines, logo, "Sign in to continue", Google button (G mark per Google branding), known `?error=` message, 3 reassurances. Shared `pages/public.css`. lint/typecheck/46 tests/build ✓.
 
-### [ ] T-094 · New analysis redesign — `MUST` `30m`
+### [x] T-094 · New analysis redesign — `MUST` `30m`
 - **Agent:** frontend · **Depends on:** T-085, T-088
 - **Scope:** segmented tabs, drag-drop, file row with first-frame thumbnail, sport select, optional title, tips card, inline server errors.
-- **Done notes:** _
+- **Done notes:** `/app/new` (`NewAnalysisPage`, old `SubmitPage` removed): segmented tablist (arrow keys switch), drag-and-drop zone (a `<label>` around a visually hidden file input → keyboard/click work too), file row with early-frame thumbnail + size + duration via `media.readClipMeta` (local only, 5 s timeout, revokes object URL), remove ×, sport radio pills (Football/Basketball), optional title (≤120), full-width "Start analysis →" with spinner, server `error.message` inline (A2/413/429), Tips card; navigates to `/app/jobs/:id` on 202. `api.submitUrl/uploadFile(…, {sport, title})`; pure `logic/format.ts`. 7 new tests (53).
 
 ### [ ] T-095 · My videos redesign — `MUST` `30m`
 - **Agent:** frontend · **Depends on:** T-086, T-088

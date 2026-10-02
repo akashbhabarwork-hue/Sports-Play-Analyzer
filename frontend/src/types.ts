@@ -14,11 +14,24 @@ export interface JobError {
   message: string | null
 }
 
+export type Sport = 'football' | 'basketball'
+
+// Worker stages in order (backend core/pipeline.STAGES, T-087); "fetching" only for URL jobs.
+export type Stage = 'fetching' | 'analysing' | 'computing' | 'rendering' | 'saving'
+
 export interface JobSummary {
   id: string
+  title: string | null
+  sport: Sport
+  source_type: 'upload' | 'url'
+  original_filename: string | null
+  source_url: string | null
+  duration_s: number | null
+  size_bytes: number | null
+  thumbnail_url: string | null
   status: JobStatus
   progress: number // 0-100; 100 only once succeeded
-  stage: string | null // fetching | analysing | saving while processing
+  stage: Stage | null
   error: JobError | null
   created_at: string
   finished_at: string | null

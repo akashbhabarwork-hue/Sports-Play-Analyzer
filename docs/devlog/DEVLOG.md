@@ -398,3 +398,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** none.
 **Explain-it-in-review:** "The landing and sign-in pages are static; the only action is a full-page link to /auth/login, because the OAuth flow runs on the server."
 **Next:** T-094 New analysis redesign
+
+---
+
+## 2026-10-02 14:34 IST — T-094 New analysis redesign (agent: frontend)
+**What changed:** `frontend/src/pages/NewAnalysisPage.tsx` + `new-analysis.css` (replaces `SubmitPage`), `src/media.ts` (local duration + thumbnail), `logic/format.ts` + tests, `types.ts` (sport, stage list, job video fields), `api.ts` sport/title on both submissions + tests.
+**Why:** brief screen 4; sport/title are real fields since T-085.
+**Decisions:** drop zone is a label around a hidden file input (keyboard and screen readers keep the native control); thumbnail and duration are read locally and never uploaded; pre-checks stay UX-only.
+**Verification:** lint, typecheck, `npm test` (53), build ✓; drag-drop + thumbnail checked in the S8b walkthrough.
+**AI mistakes caught:** none.
+**Explain-it-in-review:** "Dropping a file reads its length and a preview frame in the browser, so you see mistakes before uploading 100 MB; the server still re-checks everything."
+**Next:** T-095 My videos redesign
