@@ -13,7 +13,7 @@ export function anyActive(jobs: Pick<JobSummary, 'status'>[]): boolean {
 const STATUS: Record<JobStatus, string> = {
   queued: 'Queued',
   processing: 'Processing',
-  succeeded: 'Done',
+  succeeded: 'Completed',
   failed: 'Failed',
 }
 

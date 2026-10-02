@@ -2,7 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-route
 import { AuthProvider, RequireAuth } from './auth'
 import { AppShell } from './components/AppShell'
 import { JobDetailPage } from './pages/JobDetailPage'
-import { JobsPage } from './pages/JobsPage'
+import { MyVideosPage } from './pages/MyVideosPage'
 import { LandingPage } from './pages/LandingPage'
 import { LoginPage } from './pages/LoginPage'
 import { NewAnalysisPage } from './pages/NewAnalysisPage'
@@ -34,7 +34,7 @@ function App() {
               </RequireAuth>
             }
           >
-            <Route index element={<JobsPage />} />
+            <Route index element={<MyVideosPage />} />
             <Route path="new" element={<NewAnalysisPage />} />
             <Route path="jobs/:jobId" element={<JobDetailPage />} />
             <Route path="settings" element={<SettingsPage />} />

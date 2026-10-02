@@ -367,10 +367,10 @@ Scope added by the owner after S8: full visual/UX brief. Backend first so the UI
 - **Scope:** segmented tabs, drag-drop, file row with first-frame thumbnail, sport select, optional title, tips card, inline server errors.
 - **Done notes:** `/app/new` (`NewAnalysisPage`, old `SubmitPage` removed): segmented tablist (arrow keys switch), drag-and-drop zone (a `<label>` around a visually hidden file input → keyboard/click work too), file row with early-frame thumbnail + size + duration via `media.readClipMeta` (local only, 5 s timeout, revokes object URL), remove ×, sport radio pills (Football/Basketball), optional title (≤120), full-width "Start analysis →" with spinner, server `error.message` inline (A2/413/429), Tips card; navigates to `/app/jobs/:id` on 202. `api.submitUrl/uploadFile(…, {sport, title})`; pure `logic/format.ts`. 7 new tests (53).
 
-### [ ] T-095 · My videos redesign — `MUST` `30m`
+### [x] T-095 · My videos redesign — `MUST` `30m`
 - **Agent:** frontend · **Depends on:** T-086, T-088
 - **Scope:** filter chips with counts, table/cards with thumbnail, sport, status + progress, actions (View results / Resubmit / copy id), polling, empty state.
-- **Done notes:** _
+- **Done notes:** `/app` = `MyVideosPage` (old `JobsPage` removed): header + New analysis, filter chips All/Processing/Completed/Failed with client-side counts (`aria-pressed`), table (thumbnail from `thumbnail_url` or placeholder, title via `jobTitle` fallback chain, duration, sport, status chip + inline progress bar/% for processing + failure message, local created time), actions (View results / View progress / Resubmit — URLs re-POST same link+sport+title, uploads → New analysis), `RowMenu` ⋮ (Open, Copy job ID with live-region notice), rows become cards < 700 px, empty-state illustration + CTA, 2 s polling only while active. New `StatusChip` (Queued/Processing/Completed/Failed per brief colours). Pure `logic/videos.ts`. 6 new tests (59).
 
 ### [ ] T-096 · Processing view (stepper) — `MUST` `25m`
 - **Agent:** frontend · **Depends on:** T-087, T-088

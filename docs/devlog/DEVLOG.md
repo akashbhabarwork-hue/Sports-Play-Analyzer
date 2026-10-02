@@ -409,3 +409,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** none.
 **Explain-it-in-review:** "Dropping a file reads its length and a preview frame in the browser, so you see mistakes before uploading 100 MB; the server still re-checks everything."
 **Next:** T-095 My videos redesign
+
+---
+
+## 2026-10-02 14:37 IST — T-095 My videos redesign (agent: frontend)
+**What changed:** `frontend/src/pages/MyVideosPage.tsx` + `videos.css` (replaces `JobsPage`), `components/{StatusChip,RowMenu}.tsx` + `status.css`, `logic/videos.ts` + tests, status label "Completed".
+**Why:** brief screen 5; the list can show real titles, durations, sports and thumbnails since T-086.
+**Decisions:** counts are computed client-side from the one list request; queued counts as Processing; Resubmit never invents a file — uploads go back to New analysis, links are re-posted.
+**Verification:** lint, typecheck, `npm test` (59), build ✓; walkthrough at the end of S8b.
+**AI mistakes caught:** none.
+**Explain-it-in-review:** "The list is one request; filters and counts are just grouping on the client. It refreshes every two seconds only while something is still running."
+**Next:** T-096 Processing view (stepper)
