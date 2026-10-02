@@ -23,13 +23,15 @@ probe → stream frames → detect/track/metrics → encode → persist in one t
 ## 3. Key decisions
 | Topic | Decision | Why | Trade-off |
 |---|---|---|---|
-| Model | YOLOX-S ONNX (default) | Apache-2.0, CPU friendly, zero model training needed | Lower recall on crowded wide shots vs large models |
+| Model | YOLOX-S ONNX on ONNX Runtime CPU; official release, sha256-checked in the Dockerfile; per-class person/ball scores (D-025) | Apache-2.0 (Ultralytics is AGPL-3.0), no PyTorch in the image, ~160 ms/frame on a laptop | Ball is small/fast → low recall, reported as ball-visible %; referees/crowd count as "person" |
+| Worker pass | One streamed pass: decode → detect → track → draw → encode, one frame in memory (D-026) | Memory flat regardless of clip length | Boxes coloured by player id, not team (teams known only after the pass) |
 | Tracker | ByteTrack-style pure Python (numpy + scipy Hungarian, D-021) | Fast, pure maths, unit-testable with fixtures, no PyTorch needed | IoU only: ids can swap when identical kits cross or at low SAMPLE_FPS; hidden > `TRACKER_MAX_AGE` (2 s) → new id |
 | Metrics | One pass over per-frame observations; feet point, jitter dead-band, possession with hysteresis (D-022) | Pure functions, each unit-tested with hand-built frames | Distances in pixels / frame diagonal, not metres (camera pans); possession = proximity, not touches |
 | Teams | Jersey colour (HSV cone, torso crop) + deterministic 2-means; `unknown` when kits are too similar (D-023) | No training data, pure numpy, testable on synthetic frames | Referees/goalkeepers join the nearest team; similar kits → `unknown` |
 | Queue | Postgres SKIP LOCKED + lease | Zero extra infra (Redis/RabbitMQ), ACID consistency with job records | DB polling load (mitigated by exponential/jittered backoff) |
 | Sessions | Server-side `sessions` table, `__Host-sid` httpOnly Secure SameSite=Lax | Immediate revocation, immune to XSS token theft | DB query on authenticated requests (cached per-request) |
 | Storage | BlobStore protocol: local disk (dev) / S3-compatible Tigris or R2 (prod) | Single abstraction, zero cloud lock-in | Presigned URL expiration handling |
+| Read API & authz | Every read looks the job up with the session `user_id` first → 404 (never 403) for missing *or* foreign, then 409 if unfinished; video = 302 to ≤5-min presigned URL (S3) or Range streaming (local); `/jobs…` aliases + SPA under `/app/…` (D-028) | Other users can't even learn a job exists (A3); `<video>` can seek | Two URL prefixes to keep in sync (one router mounted twice) |
 | Host | Fly.io (web + worker process groups) + Neon Postgres | Free/cheap tier, process group separation in one image | Machine sleep / cold start latency |
 | SSRF | Host allowlist + DNS IP validation + manual redirect checks | Protects internal networks & cloud metadata endpoints | Residual: DNS rebinding during multi-step hops |
 | YouTube blocking | Graceful `YOUTUBE_BLOCKED` error + upload fallback | Datacenter IPs frequently challenged by YouTube anti-bot | User must upload file if cloud IP is blocked |
@@ -47,7 +49,9 @@ Source of truth: `backend/app/adapters/db_tables.py`; revision `0001`. UUID PKs,
 ## 5. Reliability
 - Queue in Postgres (D-014): one-statement claim with `FOR UPDATE SKIP LOCKED`; 60 s lease extended by heartbeats; every write after claim is guarded by `locked_by`, so a worker that lost its lease writes nothing.
 - Idempotent retry: `finish` is one transaction (`delete` tracks → `insert` → upsert result → `succeeded`) on natural keys.
-- Crashes retry via lease expiry (≤3 attempts), then `sweep_dead` → `failed/WORKER_CRASHED`; handled errors fail immediately — no job stays `processing`.
+- Crashes retry via lease expiry (≤3 attempts), then `sweep_dead` → `failed/WORKER_CRASHED`; no job stays `processing`.
+- Final vs transient (D-026): bad input (`CORRUPT_FILE`, `DECODE_ERROR`, `YOUTUBE_BLOCKED`, `MODEL_ERROR`, …) fails at once with a readable message; storage/DB/encoder errors and bugs are re-raised so the lease lapses and the job is retried. A heartbeat or finish that finds the lease lost stops without writing.
+- Worker loop (D-027): sweep → claim → process; idle polls jittered ±25 %; never dies on a job error or DB blip; SIGTERM finishes the current job; missing model → exit 1 before claiming.
 - Granular error codes (`CORRUPT_FILE`, `DURATION_EXCEEDED`, `UNSUPPORTED_FORMAT`, `YOUTUBE_BLOCKED`, `DECODE_ERROR`).
 
 ## 6. CI/CD & rollback
