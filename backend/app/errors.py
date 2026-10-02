@@ -91,6 +91,13 @@ class ModelError(AppError):
     code = "MODEL_ERROR"
 
 
+class LeaseLostError(AppError):
+    """The queue no longer lists this worker as the job's owner; stop without writing."""
+
+    status_code = 409
+    code = "LEASE_LOST"
+
+
 class UrlNotAllowedError(AppError):
     status_code = 422
     code = "URL_NOT_ALLOWED"

@@ -244,3 +244,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** duplicate `SAMPLE_FPS` and missing README rows from T-060 (AI_USAGE #7); first `ModelError` messages leaked the model path to users — found in self-review, now logged only.
 **Explain-it-in-review:** "We use YOLOX-S, a pretrained Apache-licensed detector, through ONNX Runtime on CPU. The image downloads it at build time and checks its hash. The model gives raw grid predictions; plain numpy code turns them into boxes, keeps every plausible player for the tracker, and keeps just the single most likely ball."
 **Next:** T-062 process_job service end-to-end `[review-plan]`
+
+---
+
+## 2026-10-02 12:25 IST — T-062 process_job service end-to-end (agent: cv-pipeline)
+**What changed:** new `services/process.py` (`process_job`, `PipelinePorts`, `ProcessConfig`, `_annotated_frames`), `core/pipeline.py` (progress bands, team sampling cap, config snapshot), `adapters/opencv_annotator.py`; `FrameAnnotator` port; `PipelineParams` model; `LeaseLostError`; settings `HEARTBEAT_EVERY_FRAMES`, `TEAM_SAMPLE_EVERY`, `TEAM_MAX_SAMPLES` (+ `.env.example`, README); `wiring.py` `pipeline_params`, `detector_params`, `process_config`, `build_detector`, `build_pipeline_ports`; tests `tests/unit/test_pipeline.py`, `tests/unit/test_process_job.py`, `tests/integration/test_process_job_pg.py`, shared `tests/pipeline_helpers.py`; follow-up F-007.
+**Why:** Worker + Outputs sections of the brief, progress %, readable failures (A2); the step that makes scenario A1 produce a video and stats.
+**Decisions:** D-026 (one streamed pass; final vs transient failures; lost lease = stop without writing; BGR→RGB before team colours; boxes coloured by id). Plan reviewed and approved before coding (`[review-plan]`).
+**Verification:** `pytest -q -k "process_job or pipeline"` locally → 20 passed (2 Postgres tests skipped: no DB); mutations "ignore lost lease" and "storage outage is final" both caught; full unit suite 402 passed, 1 failed (pre-existing Windows-only chmod test); ruff, format, design checker clean. **Not run locally:** `pytest -q -m integration -k process_job` — Docker/Postgres deferred to the end by the owner, so CI is its first run.
+**AI mistakes caught:** two test modules named `test_process_job.py` collided at collection (AI_USAGE #8). De-risked before coding: confirmed a truncated `+faststart` MP4 passes ffprobe but decodes to zero frames.
+**Explain-it-in-review:** "The worker streams the video through ffmpeg; for each frame it detects, tracks, notes positions and shirt colours, draws the boxes and hands the frame straight to the encoder — so we never hold the video in memory. If the input is bad the job fails with a clear message; if something like storage hiccups, we let the lease expire so another attempt retries it, and after three tries it's marked crashed."
+**Next:** T-063 Worker loop + crash-retry idempotency (database)

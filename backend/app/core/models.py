@@ -173,6 +173,19 @@ class DetectorParams:
 
 
 @dataclass(frozen=True, slots=True)
+class PipelineParams:
+    """Worker knobs for one processing pass (from Settings via wiring.pipeline_params)."""
+
+    sample_fps: float
+    max_seconds: int
+    max_frame_side: int
+    heartbeat_every_frames: int  # lease heartbeat + progress update cadence
+    team_sample_every: int  # take jersey-colour samples every N sampled frames
+    team_max_samples: int  # per player; colour is a median, so a few are enough
+    team_min_separation: float
+
+
+@dataclass(frozen=True, slots=True)
 class Track:
     """One tracked player. `public_id` is set on confirmation, so shown ids are 1..N."""
 
