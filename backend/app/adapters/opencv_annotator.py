@@ -69,8 +69,9 @@ class OpenCvFrameAnnotator:
             centre = _pt((ball.x1 + ball.x2) / 2, (ball.y1 + ball.y2) / 2)
             radius = max(int((ball.x2 - ball.x1) / 2) + 3, 6)
             cv2.circle(out, centre, radius, BALL_BGR, thick)
-        cv2.putText(out, f"{t_s:5.1f} s", (8, int(24 * scale) + 4), FONT, 0.7 * scale,
-                    WHITE, thick, cv2.LINE_AA)  # fmt: skip
+        # Bottom-left: id labels sit above boxes, so a top-left time stamp could hide one.
+        cv2.putText(out, f"{t_s:5.1f} s", (8, out.shape[0] - int(10 * scale) - 4), FONT,
+                    0.7 * scale, WHITE, thick, cv2.LINE_AA)  # fmt: skip
         self._legend(out, sorted(set(teams.values())), scale)
         return out
 
