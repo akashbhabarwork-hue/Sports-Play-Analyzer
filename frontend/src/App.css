@@ -125,6 +125,90 @@
   border-bottom-color: var(--accent);
 }
 
+.page-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin-bottom: 1rem;
+}
+
+table.jobs {
+  width: 100%;
+  border-collapse: collapse;
+  padding: 0;
+}
+
+table.jobs th,
+table.jobs td {
+  text-align: left;
+  padding: 0.65rem 1rem;
+  border-bottom: 1px solid var(--border);
+}
+
+table.jobs th {
+  color: var(--muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+table.jobs tr:last-child td {
+  border-bottom: 0;
+}
+
+.chip {
+  display: inline-block;
+  padding: 0.1rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  border: 1px solid currentColor;
+}
+
+.chip-queued {
+  color: var(--muted);
+}
+
+.chip-processing {
+  color: var(--info);
+}
+
+.chip-succeeded {
+  color: var(--ok);
+}
+
+.chip-failed {
+  color: var(--danger);
+}
+
+.progress {
+  display: grid;
+  gap: 0.2rem;
+  min-width: 160px;
+}
+
+.progress-track {
+  height: 8px;
+  background: var(--border);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 0.4s ease;
+}
+
+.progress-text {
+  font-size: 0.85rem;
+  color: var(--muted);
+}
+
+.error-text {
+  color: var(--danger);
+}
+
 @media (max-width: 640px) {
   .topbar {
     flex-wrap: wrap;

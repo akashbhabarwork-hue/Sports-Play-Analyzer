@@ -300,13 +300,13 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** manual A2 run locally
 - **Done notes:** `/app/submit` with Upload | YouTube link tabs (`?tab=url`), pure `logic/precheck.ts` (size ≤100 MB, empty, non-video type, duration ≤60 s via detached `<video>` metadata, link shape — UX only, server is authority), server `ApiError.message` shown inline in `role="alert"` (A2), navigate to `/app/jobs/:id` on 202. 8 new tests (18 total). A2 browser run with the preview server after T-084.
 
-### [ ] T-082 · Job list with live status — `MUST` `10m`
+### [x] T-082 · Job list with live status — `MUST` `10m`
 - **Agent:** frontend
 - **Depends on:** T-070, T-080
 - **Scope:** table, status chips, progress bars, 2 s polling only while active, pause when tab hidden.
 - **Acceptance:** progress moves live during a real job; polling stops when all jobs finished.
 - **Verify:** manual + network tab
-- **Done notes:** _
+- **Done notes:** `/app` jobs table (id link, submitted, status chip, progress bar + stage label, failure message), empty state. Polling = pure `logic/poller.ts` (wait 2 s *after* each response — no overlap; failed request retried next tick; paused while `document.hidden`, immediate refresh on return) wrapped by `hooks/usePolling.ts`, enabled only while any job is queued/processing. 9 new tests (27 total). Network-tab check with the preview server after T-084; live progress during a real job → Docker pass. List rows show a short id (the list API has no filename — F-009).
 
 ### [ ] T-083 · Job detail: video, stats, errors — `MUST` `15m`
 - **Agent:** frontend
@@ -437,4 +437,5 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - [ ] **F-005** (devops, before T-100) Finish T-014: Fly app (web+worker), Neon, bucket, first deploy, `/health` live; re-run the YouTube spike from the prod worker (`fly ssh console`) and update D-010. Pick the mitigation (none / cookies / proxy) for A1.
 - [x] **F-004** (T-020) Remove the "exit 5 = ok" allowance from the CI integration step once integration tests exist.
 - [ ] **F-007** (backend-api) Snapshot the full pipeline config into `jobs.config` at submit time (today only `max_video_seconds`; `stats.config` already records the effective values per result — D-026).
+- [ ] **F-009** (backend-api + frontend) Include the video's filename / URL in `GET /api/jobs` rows (join `videos`, user-scoped) so the jobs table can show "match.mp4" instead of a short id.
 - [ ] **F-008** (frontend, with F-002) Upgrade Vite 5 → current and Vitest 3 → matching major together: `npm audit` reports 1 high + 3 moderate advisories, all in dev-server/test tooling (`npm audit --omit=dev` = 0). Also pin the remaining `^` ranges in `package.json`.

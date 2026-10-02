@@ -1,6 +1,7 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AuthProvider, RequireAuth } from './auth'
 import { Layout } from './components/Layout'
+import { JobsPage } from './pages/JobsPage'
 import { LoginPage } from './pages/LoginPage'
 import { SubmitPage } from './pages/SubmitPage'
 import './App.css'
@@ -27,7 +28,7 @@ function App() {
               </RequireAuth>
             }
           >
-            <Route index element={<p className="muted">Your jobs will appear here.</p>} />
+            <Route index element={<JobsPage />} />
             <Route path="submit" element={<SubmitPage />} />
           </Route>
         </Routes>

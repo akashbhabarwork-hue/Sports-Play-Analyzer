@@ -310,3 +310,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** none.
 **Explain-it-in-review:** "The browser checks size and length first so nobody waits for a 100 MB upload to be refused, but the server decides: if the file is corrupt, its exact message appears under the form."
 **Next:** T-082 Job list with live status
+
+---
+
+## 2026-10-02 13:36 IST — T-082 Job list with live status (agent: frontend)
+**What changed:** `src/pages/JobsPage.tsx`, `src/logic/poller.ts` + tests, `src/logic/jobs.ts` + tests, `src/hooks/usePolling.ts`, `src/components/StatusChip.tsx`, `src/components/ProgressBar.tsx` (`role="progressbar"` with aria values), table/chip/progress styles; follow-up F-009.
+**Why:** "live job status" in the brief; reviewers watch A1's job progress.
+**Decisions:** polling waits 2 s after each response (never overlapping requests on a slow network), keeps going after errors, pauses while the tab is hidden and refreshes immediately on return; enabled only while a job is active, so a finished list stops hitting the server (D-029).
+**Verification:** lint, typecheck, `npm test` (27 passed), build ✓.
+**AI mistakes caught:** none.
+**Explain-it-in-review:** "The list asks the server every two seconds, but only while something is still running, never twice at once, and not at all while the tab is in the background."
+**Next:** T-083 Job detail: video, stats, errors
