@@ -1,0 +1,12 @@
+{"frames": [
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}, {"box": [600, 300, 640, 400], "score": 0.95, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}]
+]}

@@ -58,6 +58,19 @@ UPLOAD_TMP_DIR = os.getenv("UPLOAD_TMP_DIR", "")
 YTDLP_COOKIES_B64 = os.getenv("YTDLP_COOKIES_B64", "")
 YTDLP_PROXY = os.getenv("YTDLP_PROXY", "")
 
+# ---- tracking (ByteTrack-style, core/tracking.py) ----
+# Detections scoring >= TRACKER_HIGH_THRESH are matched first and may start new tracks; those
+# between TRACKER_LOW_THRESH and it only keep existing tracks alive (partly hidden players).
+# Ages and hit counts are in *sampled* frames (SAMPLE_FPS), not video frames.
+TRACKER_HIGH_THRESH = float(os.getenv("TRACKER_HIGH_THRESH", "0.5"))
+TRACKER_LOW_THRESH = float(os.getenv("TRACKER_LOW_THRESH", "0.1"))
+TRACKER_IOU_THRESHOLD = float(os.getenv("TRACKER_IOU_THRESHOLD", "0.3"))
+TRACKER_LOW_IOU = float(os.getenv("TRACKER_LOW_IOU", "0.5"))
+TRACKER_MAX_AGE = int(os.getenv("TRACKER_MAX_AGE", "10"))
+TRACKER_MIN_HITS = int(os.getenv("TRACKER_MIN_HITS", "3"))
+# Boxes smaller than this fraction of the frame area are ignored (crowd, far-away noise).
+MIN_BOX_AREA_REL = float(os.getenv("MIN_BOX_AREA_REL", "0.0005"))
+
 REQUIRED_IN_PRODUCTION = ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "SESSION_SECRET")
 
 
@@ -88,6 +101,13 @@ class Settings:
     upload_tmp_dir: str = ""
     ytdlp_cookies_b64: str = ""
     ytdlp_proxy: str = ""
+    tracker_high_thresh: float = 0.5
+    tracker_low_thresh: float = 0.1
+    tracker_iou_threshold: float = 0.3
+    tracker_low_iou: float = 0.5
+    tracker_max_age: int = 10
+    tracker_min_hits: int = 3
+    min_box_area_rel: float = 0.0005
 
     @property
     def oauth_configured(self) -> bool:
@@ -124,6 +144,7 @@ def validate_settings(settings: Settings) -> None:
             raise RuntimeError(
                 f"Missing required settings for BLOB_BACKEND=s3: {', '.join(missing_s3)}"
             )
+    validate_tracker_settings(settings)
     if settings.app_env != "production":
         return
     if settings.blob_backend != "s3":
@@ -136,6 +157,17 @@ def validate_settings(settings: Settings) -> None:
     missing = [name for name in REQUIRED_IN_PRODUCTION if not values[name]]
     if missing:
         raise RuntimeError(f"Missing required settings in production: {', '.join(missing)}")
+
+
+def validate_tracker_settings(settings: Settings) -> None:
+    if not 0 < settings.tracker_low_thresh < settings.tracker_high_thresh <= 1:
+        raise RuntimeError("Need 0 < TRACKER_LOW_THRESH < TRACKER_HIGH_THRESH <= 1")
+    if not (0 < settings.tracker_iou_threshold <= 1 and 0 < settings.tracker_low_iou <= 1):
+        raise RuntimeError("TRACKER_IOU_THRESHOLD and TRACKER_LOW_IOU must be in (0, 1]")
+    if settings.tracker_max_age < 1 or settings.tracker_min_hits < 1:
+        raise RuntimeError("TRACKER_MAX_AGE and TRACKER_MIN_HITS must be at least 1")
+    if not 0 <= settings.min_box_area_rel < 1:
+        raise RuntimeError("MIN_BOX_AREA_REL must be in [0, 1)")
 
 
 def load_settings() -> Settings:
@@ -165,6 +197,13 @@ def load_settings() -> Settings:
         upload_tmp_dir=UPLOAD_TMP_DIR,
         ytdlp_cookies_b64=YTDLP_COOKIES_B64,
         ytdlp_proxy=YTDLP_PROXY,
+        tracker_high_thresh=TRACKER_HIGH_THRESH,
+        tracker_low_thresh=TRACKER_LOW_THRESH,
+        tracker_iou_threshold=TRACKER_IOU_THRESHOLD,
+        tracker_low_iou=TRACKER_LOW_IOU,
+        tracker_max_age=TRACKER_MAX_AGE,
+        tracker_min_hits=TRACKER_MIN_HITS,
+        min_box_area_rel=MIN_BOX_AREA_REL,
     )
     validate_settings(settings)
     return settings

@@ -17,6 +17,7 @@ from .adapters.pg_repos import (
 from .adapters.safe_http_fetcher import SafeHttpDownloader
 from .adapters.ytdlp_fetcher import YtDlpMetadataFetcher
 from .config import Settings
+from .core.models import TrackerParams
 from .core.ports import (
     BlobStore,
     HealthCheck,
@@ -67,6 +68,18 @@ def _s3_blobs(settings: Settings) -> BlobStore:
 
 # Registry keyed by BLOB_BACKEND (validated in config.validate_settings).
 BLOB_STORES: dict[str, Callable[[Settings], BlobStore]] = {"local": _local_blobs, "s3": _s3_blobs}
+
+
+def tracker_params(settings: Settings) -> TrackerParams:
+    return TrackerParams(
+        high_thresh=settings.tracker_high_thresh,
+        low_thresh=settings.tracker_low_thresh,
+        match_iou=settings.tracker_iou_threshold,
+        low_match_iou=settings.tracker_low_iou,
+        max_age=settings.tracker_max_age,
+        min_hits=settings.tracker_min_hits,
+        min_box_area_rel=settings.min_box_area_rel,
+    )
 
 
 def build_container(settings: Settings) -> Container:

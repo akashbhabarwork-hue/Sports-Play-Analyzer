@@ -131,3 +131,52 @@ class MediaInfo:
     media_url: str | None  # single-stream URL; None if the format needs merging
     http_headers: dict[str, str]
     title: str | None = None
+
+
+@dataclass(frozen=True, slots=True)
+class Box:
+    """Pixel box, top-left (x1, y1) to bottom-right (x2, y2)."""
+
+    x1: float
+    y1: float
+    x2: float
+    y2: float
+
+
+@dataclass(frozen=True, slots=True)
+class Detection:
+    box: Box
+    score: float
+    cls: str  # "player" | "ball"
+
+
+@dataclass(frozen=True, slots=True)
+class Track:
+    """One tracked player. `public_id` is set on confirmation, so shown ids are 1..N."""
+
+    internal_id: int
+    public_id: int | None
+    box: Box  # last matched box
+    vx: float  # centre velocity, pixels per sampled frame
+    vy: float
+    hits: int
+    misses: int  # sampled frames since the last match
+    state: str  # "tentative" | "confirmed" | "lost"
+
+
+@dataclass(frozen=True, slots=True)
+class TrackerParams:
+    high_thresh: float
+    low_thresh: float
+    match_iou: float
+    low_match_iou: float
+    max_age: int
+    min_hits: int
+    min_box_area_rel: float = 0.0
+
+
+@dataclass(frozen=True, slots=True)
+class TrackerState:
+    tracks: tuple[Track, ...] = ()
+    next_internal: int = 1
+    next_public: int = 1

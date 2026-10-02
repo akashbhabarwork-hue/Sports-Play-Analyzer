@@ -189,3 +189,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** (1) a classifier test expected a private video to be `YOUTUBE_BLOCKED` — wrong; it is `DOWNLOAD_FAILED` (uploading wouldn't help either); (2) the first "no unwrapping" mutation survived because this Python's `ipaddress` already treats those ranges as non-global — added a direct `unwrap_ipv4` test so the defence-in-depth path is covered; (3) one mutation produced a syntax error instead of a behaviour change and had to be redone; (4) `IPv6Address.ipv4_compat` doesn't exist on Python 3.11 — replaced with an explicit ::/96 check.
 **Explain-it-in-review:** "yt-dlp only tells us what to download; our own client downloads it, refusing any hop that isn't https on a Google video host whose every DNS answer is public, and it never follows redirects on its own. Then the file goes through exactly the same checks as an upload."
 **Next:** owner runs `scripts/fetch_check.py` locally; S4 stage summary; then S5 — T-050 tracker
+
+---
+
+## 2026-10-02 10:45 IST — T-050 Tracker (ByteTrack-style) + fixture tests (agent: cv-pipeline)
+**What changed:** `Box`, `Detection`, `Track`, `TrackerParams`, `TrackerState` in `core/models.py`; `core/tracking.py` (`iou_matrix`, `associate`, `predict`, `update`, `player_detections`, `pick_ball`); tracker settings (`TRACKER_HIGH_THRESH`, `TRACKER_LOW_THRESH`, `TRACKER_IOU_THRESHOLD`, `TRACKER_LOW_IOU`, `TRACKER_MAX_AGE`, `TRACKER_MIN_HITS`, `MIN_BOX_AREA_REL`) with range validation; `wiring.tracker_params`; fixtures `tests/fixtures/tracks_*.json` + generator; `numpy` and `scipy` pinned. Also wrote the S4 stage summary.
+**Threats blocked:** n/a (pure maths); bad tracker config fails at startup instead of silently mis-tracking.
+**Decisions:** D-021 (Hungarian via scipy, low boxes only extend established tracks, `TRACKER_MAX_AGE` 30 → 10, detector must keep boxes down to the low threshold).
+**Verification:** 33 tracker tests in ~0.1 s; full suite, ruff and design checker clean. 7 mutations caught; the 8th ("tentative tracks join stage 2") survived at first and got its own test.
+**AI mistakes caught:** the first test set did not cover tentative tracks being fed by low-confidence boxes — found by the mutation run, test added.
+**Explain-it-in-review:** "Each frame we predict where every player should be, match confident boxes to those predictions with the Hungarian algorithm, then let weak boxes keep already-known players alive. A player gets a number only after three sightings, so one-frame false positives never show up and ids stay 1..N."
+**Next:** T-051 Metrics: distance, heatmaps, ball %, possession
