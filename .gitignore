@@ -51,7 +51,9 @@ storage/
 *.webm
 *.mkv
 *.avi
-*.ts
+# Transport-stream video; not *.ts, which would also match TypeScript sources
+*.m2ts
+*.mts
 
 # Model Weights
 *.onnx
@@ -66,3 +68,6 @@ Thumbs.db
 .vscode/
 *.swp
 *.swo
+
+# Output of backend/scripts/fetch_check.py
+fetch_check_out.mp4

@@ -1,0 +1,126 @@
+name: CD
+
+on:
+  push:
+    branches: [main]
+
+permissions: {}
+
+concurrency:
+  group: cd-production
+  cancel-in-progress: false
+
+env:
+  PROJECT_ID: sports-play-analyzer
+  REGION: asia-south1
+  AR_REPO: asia-south1-docker.pkg.dev/sports-play-analyzer/sports-analyzer
+  WEB_SERVICE: sports-analyzer-web
+  WORKER_POOL: sports-analyzer-worker
+  MIGRATE_JOB: sports-analyzer-migrate
+  CLOUDSQL_CONN: sports-play-analyzer:asia-south1:sports-analyzer-db
+  RUNTIME_SA: sports-analyzer-run@sports-play-analyzer.iam.gserviceaccount.com
+  # Stable once the service exists (Cloud Run's run.app URL doesn't change between deploys).
+  APP_ORIGIN: https://sports-analyzer-web-328974482077.asia-south1.run.app
+
+jobs:
+  deploy:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    environment: production
+    permissions:
+      contents: read
+      id-token: write # Workload Identity Federation: no stored Google key
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          persist-credentials: false
+
+      - id: auth
+        uses: google-github-actions/auth@7c6bc770dae815cd3e89ee6cdf493a5fab2cc093 # v3.0.0
+        with:
+          workload_identity_provider: projects/328974482077/locations/global/workloadIdentityPools/github-actions/providers/github
+          service_account: github-deployer@sports-play-analyzer.iam.gserviceaccount.com
+
+      - uses: google-github-actions/setup-gcloud@aa5489c8933f4cc7a4f7d45035b3b1440c9c10db # v3.0.1
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - uses: docker/setup-buildx-action@f87e5991a6d7451dcb8d9637bfbc97413f497069 # v4.4.1
+
+      - name: Build and push image
+        uses: docker/build-push-action@c3c9e263c25d99ce0380d002d59b67737d91b0dc # v7.4.0
+        with:
+          context: .
+          push: true
+          tags: |
+            ${{ env.AR_REPO }}/web:${{ github.sha }}
+            ${{ env.AR_REPO }}/web:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Run database migration (Cloud Run job, one-shot)
+        run: |
+          IMAGE="${{ env.AR_REPO }}/web:${{ github.sha }}"
+          gcloud run jobs deploy "${{ env.MIGRATE_JOB }}" \
+            --image="$IMAGE" \
+            --region="${{ env.REGION }}" \
+            --service-account="${{ env.RUNTIME_SA }}" \
+            --add-cloudsql-instances="${{ env.CLOUDSQL_CONN }}" \
+            --set-secrets="DATABASE_URL=database-url:latest" \
+            --command="alembic" \
+            --args="upgrade,head" \
+            --max-retries=0 \
+            --task-timeout=300 \
+            --quiet
+          gcloud run jobs execute "${{ env.MIGRATE_JOB }}" --region="${{ env.REGION }}" --wait
+
+      - name: Deploy web service
+        run: |
+          IMAGE="${{ env.AR_REPO }}/web:${{ github.sha }}"
+          gcloud run deploy "${{ env.WEB_SERVICE }}" \
+            --image="$IMAGE" \
+            --region="${{ env.REGION }}" \
+            --service-account="${{ env.RUNTIME_SA }}" \
+            --add-cloudsql-instances="${{ env.CLOUDSQL_CONN }}" \
+            --port=8000 \
+            --allow-unauthenticated \
+            --min-instances=1 \
+            --max-instances=3 \
+            --cpu=1 \
+            --memory=1Gi \
+            --set-env-vars="APP_ENV=production,APP_ORIGIN=${{ env.APP_ORIGIN }},GIT_SHA=${{ github.sha }},BLOB_BACKEND=s3,S3_ENDPOINT_URL=https://storage.googleapis.com,S3_BUCKET=sports-play-analyzer-media,S3_REGION=auto,COOKIE_SECURE=true" \
+            --set-secrets="DATABASE_URL=database-url:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest,SESSION_SECRET=session-secret:latest,S3_ACCESS_KEY_ID=s3-access-key-id:latest,S3_SECRET_ACCESS_KEY=s3-secret-access-key:latest" \
+            --quiet
+
+      - name: Deploy worker pool
+        run: |
+          IMAGE="${{ env.AR_REPO }}/web:${{ github.sha }}"
+          gcloud run worker-pools deploy "${{ env.WORKER_POOL }}" \
+            --image="$IMAGE" \
+            --region="${{ env.REGION }}" \
+            --service-account="${{ env.RUNTIME_SA }}" \
+            --add-cloudsql-instances="${{ env.CLOUDSQL_CONN }}" \
+            --instances=1 \
+            --cpu=2 \
+            --memory=2Gi \
+            --command="python" \
+            --args="-m,app.entrypoints.worker" \
+            --set-env-vars="APP_ENV=production,GIT_SHA=${{ github.sha }},BLOB_BACKEND=s3,S3_ENDPOINT_URL=https://storage.googleapis.com,S3_BUCKET=sports-play-analyzer-media,S3_REGION=auto" \
+            --set-secrets="DATABASE_URL=database-url:latest,GOOGLE_CLIENT_ID=google-client-id:latest,GOOGLE_CLIENT_SECRET=google-client-secret:latest,SESSION_SECRET=session-secret:latest,S3_ACCESS_KEY_ID=s3-access-key-id:latest,S3_SECRET_ACCESS_KEY=s3-secret-access-key:latest" \
+            --quiet
+
+      - name: Smoke test /health
+        run: |
+          for i in $(seq 1 30); do
+            BODY=$(curl -fsS "${{ env.APP_ORIGIN }}/health" || true)
+            if echo "$BODY" | grep -q '"status":"ok"' && echo "$BODY" | grep -q "${{ github.sha }}"; then
+              echo "healthy at sha ${{ github.sha }}"
+              echo "$BODY"
+              exit 0
+            fi
+            sleep 3
+          done
+          echo "health check failed or sha mismatch"
+          curl -fsS "${{ env.APP_ORIGIN }}/health" || true
+          exit 1

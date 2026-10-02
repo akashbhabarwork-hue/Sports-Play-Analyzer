@@ -1,0 +1,22 @@
+{"frames": [
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}, {"box": [280, 210, 320, 310], "score": 0.9, "cls": "player"}],
+  [{"box": [110, 200, 150, 300], "score": 0.9, "cls": "player"}, {"box": [270, 210, 310, 310], "score": 0.9, "cls": "player"}],
+  [{"box": [120, 200, 160, 300], "score": 0.9, "cls": "player"}, {"box": [260, 210, 300, 310], "score": 0.9, "cls": "player"}],
+  [{"box": [130, 200, 170, 300], "score": 0.9, "cls": "player"}, {"box": [250, 210, 290, 310], "score": 0.9, "cls": "player"}],
+  [{"box": [140, 200, 180, 300], "score": 0.9, "cls": "player"}, {"box": [240, 210, 280, 310], "score": 0.9, "cls": "player"}],
+  [{"box": [150, 200, 190, 300], "score": 0.9, "cls": "player"}, {"box": [230, 210, 270, 310], "score": 0.9, "cls": "player"}],
+  [{"box": [160, 200, 200, 300], "score": 0.9, "cls": "player"}, {"box": [220, 210, 260, 310], "score": 0.9, "cls": "player"}],
+  [{"box": [170, 200, 210, 300], "score": 0.9, "cls": "player"}, {"box": [210, 210, 250, 310], "score": 0.9, "cls": "player"}],
+  [{"box": [180, 200, 220, 300], "score": 0.9, "cls": "player"}, {"box": [200, 210, 240, 310], "score": 0.9, "cls": "player"}],
+  [{"box": [190, 200, 230, 300], "score": 0.9, "cls": "player"}, {"box": [190, 210, 230, 310], "score": 0.9, "cls": "player"}],
+  [{"box": [200, 200, 240, 300], "score": 0.9, "cls": "player"}, {"box": [180, 210, 220, 310], "score": 0.9, "cls": "player"}],
+  [{"box": [210, 200, 250, 300], "score": 0.9, "cls": "player"}, {"box": [170, 210, 210, 310], "score": 0.9, "cls": "player"}],
+  [{"box": [220, 200, 260, 300], "score": 0.9, "cls": "player"}, {"box": [160, 210, 200, 310], "score": 0.9, "cls": "player"}],
+  [{"box": [230, 200, 270, 300], "score": 0.9, "cls": "player"}, {"box": [150, 210, 190, 310], "score": 0.9, "cls": "player"}],
+  [{"box": [240, 200, 280, 300], "score": 0.9, "cls": "player"}, {"box": [140, 210, 180, 310], "score": 0.9, "cls": "player"}],
+  [{"box": [250, 200, 290, 300], "score": 0.9, "cls": "player"}, {"box": [130, 210, 170, 310], "score": 0.9, "cls": "player"}],
+  [{"box": [260, 200, 300, 300], "score": 0.9, "cls": "player"}, {"box": [120, 210, 160, 310], "score": 0.9, "cls": "player"}],
+  [{"box": [270, 200, 310, 300], "score": 0.9, "cls": "player"}, {"box": [110, 210, 150, 310], "score": 0.9, "cls": "player"}],
+  [{"box": [280, 200, 320, 300], "score": 0.9, "cls": "player"}, {"box": [100, 210, 140, 310], "score": 0.9, "cls": "player"}],
+  [{"box": [290, 200, 330, 300], "score": 0.9, "cls": "player"}, {"box": [90, 210, 130, 310], "score": 0.9, "cls": "player"}]
+]}

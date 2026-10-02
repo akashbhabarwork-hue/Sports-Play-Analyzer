@@ -1,0 +1,70 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres_password
+      POSTGRES_DB: sports_analyzer
+    ports:
+      - "5432:5432"
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sports_analyzer"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    build: .
+    command: ["alembic", "upgrade", "head"]
+    environment:
+      - DATABASE_URL=postgresql+psycopg://postgres:postgres_password@db:5432/sports_analyzer
+    depends_on:
+      db:
+        condition: service_healthy
+
+  web:
+    build: .
+    command: ["uvicorn", "--factory", "app.entrypoints.api:create_app", "--host", "0.0.0.0", "--port", "8000", "--no-access-log"]
+    ports:
+      - "8000:8000"
+    environment:
+      - DATABASE_URL=postgresql+psycopg://postgres:postgres_password@db:5432/sports_analyzer
+      - BLOB_LOCAL_DIR=/app/blobs
+      - BLOB_BACKEND=local
+      - APP_ORIGIN=http://localhost:8000
+      # Empty unless set in .env: login then answers "not configured" instead of failing.
+      - GOOGLE_CLIENT_ID=${GOOGLE_CLIENT_ID:-}
+      - GOOGLE_CLIENT_SECRET=${GOOGLE_CLIENT_SECRET:-}
+      - SESSION_SECRET=${SESSION_SECRET:-}
+      - COOKIE_SECURE=false
+    volumes:
+      - blobs_data:/app/blobs
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  worker:
+    build: .
+    command: ["python", "-m", "app.entrypoints.worker"]
+    # The image's HEALTHCHECK curls the web server's /health; the worker serves no HTTP.
+    healthcheck:
+      disable: true
+    # SIGTERM → finish the current job, then exit; a kill after this grace period is
+    # handled like a crash (lease lapses, job retried).
+    stop_grace_period: 60s
+    restart: unless-stopped
+    environment:
+      - DATABASE_URL=postgresql+psycopg://postgres:postgres_password@db:5432/sports_analyzer
+      - BLOB_LOCAL_DIR=/app/blobs
+      - BLOB_BACKEND=local
+    volumes:
+      - blobs_data:/app/blobs
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+volumes:
+  db_data:
+  blobs_data:

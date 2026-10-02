@@ -1,0 +1,60 @@
+/* Design tokens (owner's UI brief). Components only use these variables, so dark mode is just a
+   different set of values. Contrast checked for body text and buttons (≥ 4.5:1). */
+:root {
+  --bg: #f7f8fc;
+  --surface: #ffffff;
+  --surface-2: #f2f4fa;
+  --border: #e6e8f0;
+  --text: #111827;
+  --muted: #5b6474;
+  --primary: #4f46e5;
+  --primary-hover: #4338ca;
+  --primary-soft: #eef0ff;
+  --on-primary: #ffffff;
+  --success: #16a34a;
+  --success-soft: #e8f7ee;
+  --danger: #dc2626;
+  --danger-soft: #fdeceb;
+  --queued: #6b7280;
+  --queued-soft: #f1f2f5;
+  --team-a: #2563eb;
+  --team-b: #e11d48;
+  --ball: #f59e0b;
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 2px rgb(16 24 40 / 6%), 0 4px 12px rgb(16 24 40 / 6%);
+  --shadow-lg: 0 12px 32px rgb(16 24 40 / 14%);
+  --focus: 0 0 0 3px rgb(79 70 229 / 45%);
+  --sidebar-w: 240px;
+  --font: 'Inter', system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif;
+
+  color-scheme: light;
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0b1020;
+    --surface: #121831;
+    --surface-2: #19203d;
+    --border: #262f52;
+    --text: #e8eaf2;
+    --muted: #a3abc2;
+    --primary: #818cf8;
+    --primary-hover: #a5b4fc;
+    --primary-soft: #1f2450;
+    --on-primary: #0b1020;
+    --success: #4ade80;
+    --success-soft: #12301f;
+    --danger: #f87171;
+    --danger-soft: #3a1717;
+    --queued: #9ca3af;
+    --queued-soft: #1d2440;
+    --team-a: #60a5fa;
+    --team-b: #fb7185;
+    --shadow: 0 1px 2px rgb(0 0 0 / 40%);
+    --shadow-lg: 0 12px 32px rgb(0 0 0 / 50%);
+    --focus: 0 0 0 3px rgb(129 140 248 / 55%);
+
+    color-scheme: dark;
+  }
+}

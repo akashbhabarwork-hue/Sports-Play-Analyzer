@@ -1,0 +1,104 @@
+"""HTTP response/request models. Pydantic lives only here (the boundary)."""
+
+from datetime import datetime
+from typing import Any
+from uuid import UUID
+
+from pydantic import BaseModel, Field
+
+
+class MeResponse(BaseModel):
+    id: UUID
+    email: str | None
+    name: str | None
+    avatar_url: str | None
+
+
+class JobAccepted(BaseModel):
+    job_id: UUID
+    status: str
+
+
+class UrlSubmit(BaseModel):
+    url: str = Field(min_length=1, max_length=2048)
+    sport: str | None = Field(default=None, max_length=32)  # football | basketball (default)
+    title: str | None = Field(default=None, max_length=1000)  # cleaned + capped at 120 later
+
+
+class JobError(BaseModel):
+    code: str
+    message: str | None
+
+
+class JobSummary(BaseModel):
+    id: UUID
+    title: str | None  # coach's title; UI falls back to filename / URL
+    sport: str  # football | basketball
+    source_type: str  # upload | url
+    original_filename: str | None
+    source_url: str | None
+    duration_s: float | None  # known at submit for uploads, after fetching for URLs
+    size_bytes: int | None
+    thumbnail_url: str | None  # /api/jobs/{id}/thumbnail once the worker has saved one
+    status: str  # queued | processing | succeeded | failed
+    progress: int  # 0-100; 100 only once succeeded
+    stage: str | None  # fetching | analysing | saving while processing
+    error: JobError | None
+    created_at: datetime
+    finished_at: datetime | None
+
+
+class JobList(BaseModel):
+    jobs: list[JobSummary]
+
+
+class VideoInfo(BaseModel):
+    source_type: str  # upload | url
+    original_filename: str | None
+    source_url: str | None
+    duration_s: float | None
+
+
+class JobDetail(BaseModel):
+    """JobSummary's fields plus run details (spelled out: schemas don't inherit, rule 10)."""
+
+    id: UUID
+    title: str | None
+    sport: str
+    source_type: str
+    original_filename: str | None
+    source_url: str | None
+    duration_s: float | None
+    size_bytes: int | None
+    thumbnail_url: str | None
+    status: str
+    progress: int
+    stage: str | None
+    error: JobError | None
+    created_at: datetime
+    finished_at: datetime | None
+    started_at: datetime | None
+    attempts: int
+    video: VideoInfo | None  # kept for the S8 UI until the redesign (T-095/T-097) replaces it
+
+
+class Heatmap(BaseModel):
+    w: int
+    h: int
+    counts: list[int]  # row-major, h rows of w cells
+    max: int
+
+
+class PlayerDetail(BaseModel):
+    player_id: int
+    team: str | None
+    distance_px: float
+    distance_rel: float
+    frames_visible: int
+    possession_pct: float
+    track: list[list[float]]  # [t_s, nx, ny] feet positions, normalised to the frame
+    heatmap: Heatmap
+
+
+# Stats are returned exactly as stored (sports-metrics contract); documented, not re-modelled.
+StatsResponse = dict[str, Any]
