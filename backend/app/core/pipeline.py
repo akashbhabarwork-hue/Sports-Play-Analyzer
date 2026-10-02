@@ -38,6 +38,14 @@ def add_team_sample(
         bucket.append(feature)
 
 
+def poll_delay(base_s: float, jitter: float, u: float) -> float:
+    """Idle wait before the next claim: base ± jitter·base, `u` uniform in [0, 1].
+
+    Jitter keeps several workers from hitting the jobs table in lockstep.
+    """
+    return max(0.0, base_s * (1 + jitter * (2 * u - 1)))
+
+
 def pipeline_config(params: PipelineParams, extra: dict[str, Any]) -> dict[str, Any]:
     """Effective settings stored in stats["config"], so a result can be reproduced."""
     return {**asdict(params), **extra}

@@ -48,6 +48,13 @@ services:
   worker:
     build: .
     command: ["python", "-m", "app.entrypoints.worker"]
+    # The image's HEALTHCHECK curls the web server's /health; the worker serves no HTTP.
+    healthcheck:
+      disable: true
+    # SIGTERM → finish the current job, then exit; a kill after this grace period is
+    # handled like a crash (lease lapses, job retried).
+    stop_grace_period: 60s
+    restart: unless-stopped
     environment:
       - DATABASE_URL=postgresql+psycopg://postgres:postgres_password@db:5432/sports_analyzer
       - BLOB_LOCAL_DIR=/app/blobs

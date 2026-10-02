@@ -255,3 +255,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** two test modules named `test_process_job.py` collided at collection (AI_USAGE #8). De-risked before coding: confirmed a truncated `+faststart` MP4 passes ffprobe but decodes to zero frames.
 **Explain-it-in-review:** "The worker streams the video through ffmpeg; for each frame it detects, tracks, notes positions and shirt colours, draws the boxes and hands the frame straight to the encoder — so we never hold the video in memory. If the input is bad the job fails with a clear message; if something like storage hiccups, we let the lease expire so another attempt retries it, and after three tries it's marked crashed."
 **Next:** T-063 Worker loop + crash-retry idempotency (database)
+
+---
+
+## 2026-10-02 12:41 IST — T-063 Worker loop + crash-retry idempotency (agent: database)
+**What changed:** real `entrypoints/worker.py` replacing the placeholder sleep loop (`run_once`, `run_forever`, signal handlers, `main`); logging setup moved from `api.py` to shared `entrypoints/log_config.py`; `core/pipeline.poll_delay`; `WORKER_POLL_SECONDS` (+ `.env.example`, README); compose worker: healthcheck disabled, `stop_grace_period: 60s`, `restart: unless-stopped`; tests `tests/unit/test_worker.py`, `tests/integration/test_worker_retry.py`.
+**Why:** "Idempotent retry after a worker crash mid-job (no duplicate rows, no jobs stuck in processing)".
+**Decisions:** D-027 (poll with jitter via `Event.wait`; finish current job on SIGTERM; never die on a job error or DB blip; model checked at startup; no early-release call).
+**Verification:** unit 13 passed locally; worker started without a model → JSON error log + exit 1; full unit suite 415 passed, 1 failed (pre-existing Windows-only chmod test); ruff, format, design checker clean. **Not run locally:** `pytest -q -m integration -k "retry or idempot"` (CI is the first run) and the `docker compose up` end-to-end upload — queued for the final Docker pass (owner's decision).
+**AI mistakes caught:** a DB outage during an idle poll would have killed the worker (AI_USAGE #9) — found in self-review, regression tests written first, then fixed.
+**Explain-it-in-review:** "The worker loop is deliberately boring: sweep jobs that ran out of attempts, claim the next one with SKIP LOCKED, process it, repeat. The safety is in the queue — leases, attempt counts and a one-transaction finish — so if the worker dies anywhere, the lease runs out and another worker redoes the job from scratch without duplicating anything. On SIGTERM it finishes the job it has, then exits."
+**Next:** T-070 Job read endpoints (backend-api) — T-064 (SHOULD) needs the prod worker, so it waits for the deploy.

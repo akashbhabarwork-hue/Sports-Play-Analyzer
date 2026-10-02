@@ -71,6 +71,8 @@ ENCODE_PRESETS = ("ultrafast", "superfast", "veryfast", "faster", "fast", "mediu
 # ---- worker pass (services/process.py) ----
 # Heartbeat (extends the lease, writes progress) every N sampled frames; 10 at ~6 fps ≈ 2 s,
 # far inside LEASE_SECONDS.
+# Idle worker waits this long (±25 % jitter) before polling the queue again.
+WORKER_POLL_SECONDS = float(os.getenv("WORKER_POLL_SECONDS", "2"))
 HEARTBEAT_EVERY_FRAMES = int(os.getenv("HEARTBEAT_EVERY_FRAMES", "10"))
 # Jersey-colour samples for the team split: every N sampled frames, at most M per player.
 TEAM_SAMPLE_EVERY = int(os.getenv("TEAM_SAMPLE_EVERY", "5"))
@@ -154,6 +156,7 @@ class Settings:
     max_frame_side: int = 1280
     encode_crf: int = 26
     encode_preset: str = "veryfast"
+    worker_poll_seconds: float = 2.0
     heartbeat_every_frames: int = 10
     team_sample_every: int = 5
     team_max_samples: int = 20
@@ -248,6 +251,8 @@ def validate_video_settings(settings: Settings) -> None:
         raise RuntimeError("HEARTBEAT_EVERY_FRAMES and TEAM_SAMPLE_EVERY must be >= 1")
     if settings.team_max_samples < 1:
         raise RuntimeError("TEAM_MAX_SAMPLES must be >= 1")
+    if not 0.1 <= settings.worker_poll_seconds <= 60:
+        raise RuntimeError("WORKER_POLL_SECONDS must be between 0.1 and 60")
 
 
 def validate_tracker_settings(settings: Settings) -> None:
@@ -303,6 +308,7 @@ def load_settings() -> Settings:
         max_frame_side=MAX_FRAME_SIDE,
         encode_crf=ENCODE_CRF,
         encode_preset=ENCODE_PRESET,
+        worker_poll_seconds=WORKER_POLL_SECONDS,
         heartbeat_every_frames=HEARTBEAT_EVERY_FRAMES,
         team_sample_every=TEAM_SAMPLE_EVERY,
         team_max_samples=TEAM_MAX_SAMPLES,
