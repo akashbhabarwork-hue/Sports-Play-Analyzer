@@ -16,6 +16,14 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && rm -rf /var/lib/apt/lists/*
 
+# Pretrained detector (YOLOX-S, Apache-2.0) from the official release; the build fails if the
+# checksum differs. Weights are never committed to git. See D-025.
+ARG MODEL_URL=https://github.com/Megvii-BaseDetection/YOLOX/releases/download/0.1.1rc0/yolox_s.onnx
+ARG MODEL_SHA256=c5c2d13e59ae883e6af3b45daea64af4833a4951c92d116ec270d9ddbe998063
+RUN mkdir -p /models \
+    && curl -fsSL --retry 3 -o /models/yolox_s.onnx "$MODEL_URL" \
+    && echo "$MODEL_SHA256  /models/yolox_s.onnx" | sha256sum -c -
+
 # Install python dependencies
 COPY backend/requirements.txt ./
 RUN pip install --no-cache-dir -r requirements.txt
@@ -33,7 +41,8 @@ RUN useradd -m -u 1000 appuser && \
 
 USER appuser
 ENV BLOB_LOCAL_DIR=/app/blobs \
-    STATIC_DIR=/app/backend/static
+    STATIC_DIR=/app/backend/static \
+    MODEL_PATH=/models/yolox_s.onnx
 
 EXPOSE 8000
 

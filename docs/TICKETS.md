@@ -226,14 +226,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** `pytest -q -m ffmpeg`
 - **Done notes:** `adapters/ffmpeg_video.py` (`read_exact`, `FfmpegFrameReader.frames` generator, `FfmpegVideoEncoder.encode(frames)` → H.264 yuv420p +faststart); pure `core/video_frames.py` (`output_size` with even-floor + rotation swap, `expected_frames`); `VideoProbe.rotation`; `DecodeError`; `SAMPLE_FPS`/`MAX_FRAME_SIDE`/`ENCODE_CRF`/`ENCODE_PRESET`. testsrc 2 s @5 fps → 10 frames ✓, encoded output probes at 160×120 / 5 fps / 2 s ✓, rotated phone clip → portrait ✓, garbage → `DECODE_ERROR` ✓, early close kills ffmpeg (mutation-checked) ✓. 29 tests. See D-024.
 
-### [ ] T-061 · ONNX detector adapter + model in image — `MUST` `25m`
+### [x] T-061 · ONNX detector adapter + model in image — `MUST` `25m`
 - **Agent:** cv-pipeline
 - **Depends on:** T-060
 - **Why:** "Detect players and the ball"; "Use pretrained models only"; licence justification.
 - **Scope:** Dockerfile model download with verified URL + sha256; `adapters/onnx_detector.py` (letterbox, decode, NMS, class filter, one ball; keep player boxes down to `TRACKER_LOW_THRESH` for tracker stage 2, see D-021); output-shape assert; `FakeDetector`; pure NMS/decode tests.
 - **Acceptance:** sample frame → persons detected (manual/`model` marker test); unit tests pass without the model.
 - **Verify:** `pytest -q -k "nms or decode"`; `pytest -q -m model` locally
-- **Done notes:** _
+- **Done notes:** YOLOX-S `0.1.1rc0` (URL via GitHub API, sha256 `c5c2d13e…8063`, checked in Dockerfile → `/models/yolox_s.onnx`). Real model inspected: `[1,3,640,640]` → `[1,8400,85]` raw. Pure `core/detection.py` (decode, NMS, per-class person/ball scores, players ≥ `TRACKER_LOW_THRESH`, top-K, one ball, rescale + clip); `OnnxYoloxDetector` (letterbox, startup shape check → `MODEL_ERROR`); `FakeDetector`. 26 tests incl. `model` smoke on `tests/fixtures/people.jpg` (≥3 players ≥0.5); ~160 ms/frame locally. Pinned onnxruntime 1.30.0 + opencv-python-headless 5.0.0.93. See D-025.
 
 ### [ ] T-062 · process_job service end-to-end — `MUST` `25m` `[review-plan]`
 - **Agent:** cv-pipeline

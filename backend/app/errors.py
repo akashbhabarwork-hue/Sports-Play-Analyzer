@@ -84,6 +84,13 @@ class DecodeError(AppError):
     code = "DECODE_ERROR"
 
 
+class ModelError(AppError):
+    """The detector model is missing, the wrong export, or failed at inference."""
+
+    status_code = 500
+    code = "MODEL_ERROR"
+
+
 class UrlNotAllowedError(AppError):
     status_code = 422
     code = "URL_NOT_ALLOWED"

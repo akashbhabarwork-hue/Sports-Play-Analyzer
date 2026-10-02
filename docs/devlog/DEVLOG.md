@@ -233,3 +233,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** banker's rounding in the even-size calculation (test went red) and a Windows-only `OSError` the encoder didn't map — see AI_USAGE #6.
 **Explain-it-in-review:** "ffmpeg decodes the clip at 5 frames a second and pipes raw pixels to us; we know the exact frame size, so we read exactly that many bytes per frame and only ever hold one frame. The encoder pulls frames from a generator, so detection, drawing and encoding all happen one frame at a time, and if anything fails we kill ffmpeg in a `finally`."
 **Next:** T-061 ONNX detector adapter + model in image
+
+---
+
+## 2026-10-02 11:45 IST — T-061 ONNX detector adapter + model in image (agent: cv-pipeline)
+**What changed:** pure `core/detection.py` (`yolox_num_anchors`, `decode_yolox`, `letterbox_ratio`, `nms`, `select_detections`); `adapters/onnx_detector.py` (`letterbox`, `OnnxYoloxDetector` with startup I/O-shape check); `adapters/fake_detector.py`; `Detector` port; `DetectorParams`; `ModelError` (`MODEL_ERROR`); settings `MODEL_PATH`, `DETECT_INPUT_SIZE`, `BALL_CONF_THRESHOLD`, `NMS_THRESHOLD`, `DETECT_MAX_CANDIDATES`, `ORT_THREADS`; `requirements.txt` + `onnxruntime==1.30.0`, `opencv-python-headless==5.0.0.93`; Dockerfile downloads YOLOX-S and verifies sha256; `tests/fixtures/people.jpg` (Apache-2.0 crop, attributed); `.env.example`/README env docs cleaned up.
+**Why:** "Detect players and the ball"; "Use pretrained models only"; licence justification.
+**Decisions:** D-025 (YOLOX-S Apache-2.0 vs AGPL Ultralytics; verified URL + sha256; per-class scores; players down to `TRACKER_LOW_THRESH`; one ball; startup shape check; generic user-facing errors).
+**Verification:** `pytest -q -k "nms or decode"` → 13 passed; detector tests 26 passed incl. `-m model` with real weights (≥3 confident players on the fixture; ~160 ms/frame); core 100 %, adapter 92 % coverage; ruff, format, design checker clean; unit suite 383 passed, 1 failed (pre-existing Windows-only chmod test). Docker build not run locally (no Docker) — CI's docker build job is the check.
+**AI mistakes caught:** duplicate `SAMPLE_FPS` and missing README rows from T-060 (AI_USAGE #7); first `ModelError` messages leaked the model path to users — found in self-review, now logged only.
+**Explain-it-in-review:** "We use YOLOX-S, a pretrained Apache-licensed detector, through ONNX Runtime on CPU. The image downloads it at build time and checks its hash. The model gives raw grid predictions; plain numpy code turns them into boxes, keeps every plausible player for the tracker, and keeps just the single most likely ball."
+**Next:** T-062 process_job service end-to-end `[review-plan]`

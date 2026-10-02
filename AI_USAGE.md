@@ -51,6 +51,12 @@ Setup: project rules, specialist agent personas, skills and workflows in `.agent
 - **Fix:** Floor to even (output is never larger than the source); catch `OSError`, the parent of `BrokenPipeError`.
 - **Lesson:** Platform and rounding semantics are easy to "know" wrongly; pin them with a test.
 
+### 7. Config docs that drifted from the code
+- **What it did:** In T-060 the agent appended a new `SAMPLE_FPS=5` block to `.env.example` without noticing the variable was already there, and didn't add its new variables to the README env table. `.env.example` also still listed `CONF_THRESHOLD`, which no code reads.
+- **How I caught it:** Reading `.env.example` in full while adding the T-061 detector settings.
+- **Fix:** One detector/video section in `.env.example`, README rows for every new variable, `CONF_THRESHOLD` removed (players use `TRACKER_LOW_THRESH`, the ball `BALL_CONF_THRESHOLD`).
+- **Lesson:** When adding a setting, grep for the name in `.env.example` and README first; tests don't check docs.
+
 ## How I verified AI-generated code
 - Automated unit test suite with deterministic JSON fixtures (pure logic, no model dependency).
 - Integration tests against migrated Postgres schema with multi-user isolation checks.

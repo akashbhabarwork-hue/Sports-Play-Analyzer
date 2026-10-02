@@ -13,3 +13,5 @@ python-multipart==0.0.32
 yt-dlp[default,deno]==2026.8.19
 numpy==2.4.6
 scipy==1.17.1
+onnxruntime==1.30.0
+opencv-python-headless==5.0.0.93

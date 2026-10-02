@@ -164,6 +164,15 @@ class Detection:
 
 
 @dataclass(frozen=True, slots=True)
+class DetectorParams:
+    input_size: int  # square model input, multiple of 32
+    player_min_score: float  # = TRACKER_LOW_THRESH: weak boxes feed tracker stage 2 (D-021)
+    ball_min_score: float
+    nms_iou: float
+    max_candidates: int = 300  # top-K player boxes kept before NMS (bounds CPU per frame)
+
+
+@dataclass(frozen=True, slots=True)
 class Track:
     """One tracked player. `public_id` is set on confirmation, so shown ids are 1..N."""
 

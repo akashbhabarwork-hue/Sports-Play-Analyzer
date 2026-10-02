@@ -43,8 +43,15 @@ Rollback: Actions → Rollback → enter previous sha. First-time setup: see [do
 | `BLOB_LOCAL_DIR` | `<repo>/blobs` | Directory for `local` (Docker: `/app/blobs`) |
 | `S3_ENDPOINT_URL` / `S3_BUCKET` / `S3_REGION` | `""` | S3-compatible storage; empty endpoint = AWS |
 | `S3_ACCESS_KEY_ID` / `S3_SECRET_ACCESS_KEY` | `""` | Storage credentials (required for `s3`) |
-| `SAMPLE_FPS` | `5` | Video decoding sample rate (frames/sec) |
-| `CONF_THRESHOLD` | `0.35` | Object detector confidence threshold |
+| `SAMPLE_FPS` | `5` | Video decoding sample rate (frames/sec); the annotated video plays at this rate |
+| `MAX_FRAME_SIDE` | `1280` | Decoded frames are scaled so the long side is at most this |
+| `ENCODE_CRF` / `ENCODE_PRESET` | `26` / `veryfast` | libx264 quality and speed for the annotated video |
+| `MODEL_PATH` | `<repo>/models/yolox_s.onnx` | YOLOX-S ONNX weights (Docker: `/models/yolox_s.onnx`, sha256-checked at build) |
+| `DETECT_INPUT_SIZE` | `640` | Square detector input (multiple of 32; must match the model file) |
+| `BALL_CONF_THRESHOLD` | `0.15` | Minimum ball score; players are kept down to `TRACKER_LOW_THRESH` |
+| `NMS_THRESHOLD` | `0.45` | IoU above which overlapping player boxes are merged |
+| `DETECT_MAX_CANDIDATES` | `300` | Player boxes kept per frame before NMS (bounds CPU) |
+| `ORT_THREADS` | `0` | ONNX Runtime CPU threads (0 = one per core) |
 | `TRACKER_HIGH_THRESH` / `TRACKER_LOW_THRESH` | `0.5` / `0.1` | Detection scores that start/match tracks vs. only keep existing tracks alive (ByteTrack stage 2) |
 | `TRACKER_IOU_THRESHOLD` / `TRACKER_LOW_IOU` | `0.3` / `0.5` | Minimum IoU for a match in stage 1 / stage 2 |
 | `TRACKER_MAX_AGE` | `10` | Sampled frames a hidden player keeps their id (10 at 5 fps = 2 s) |
