@@ -2,12 +2,22 @@ import os
 import socket
 from dataclasses import dataclass
 
-APP_ENV = os.getenv("APP_ENV", "dev")
-APP_ORIGIN = os.getenv("APP_ORIGIN", "http://localhost:8000")
-DATABASE_URL = os.getenv("DATABASE_URL", "postgresql+psycopg://app:app@localhost:5432/app")
-GIT_SHA = os.getenv("GIT_SHA", "unknown")
+
+def env(name: str, default: str = "") -> str:
+    """One environment variable, without surrounding whitespace.
+
+    Values pasted or piped on Windows can carry a trailing \\r\\n; in production that turned
+    GOOGLE_CLIENT_ID into an unknown client (Google: invalid_client). Strip at the source.
+    """
+    return os.environ.get(name, default).strip()
+
+
+APP_ENV = env("APP_ENV", "dev")
+APP_ORIGIN = env("APP_ORIGIN", "http://localhost:8000")
+DATABASE_URL = env("DATABASE_URL", "postgresql+psycopg://app:app@localhost:5432/app")
+GIT_SHA = env("GIT_SHA", "unknown")
 # Built SPA directory served by FastAPI; the Docker image sets this to /app/backend/static
-STATIC_DIR = os.getenv(
+STATIC_DIR = env(
     "STATIC_DIR",
     os.path.abspath(os.path.join(os.path.dirname(__file__), "../../frontend/dist")),
 )
@@ -15,127 +25,125 @@ STATIC_DIR = os.getenv(
 # ---- job queue ----
 # A claimed job is held for LEASE_SECONDS; the worker's heartbeat extends it. If the worker
 # dies, the lease lapses and another worker reclaims the job (up to jobs.max_attempts).
-LEASE_SECONDS = int(os.getenv("LEASE_SECONDS", "60"))
-WORKER_ID = os.getenv("WORKER_ID", f"{socket.gethostname()}-{os.getpid()}")
+LEASE_SECONDS = int(env("LEASE_SECONDS", "60"))
+WORKER_ID = env("WORKER_ID", f"{socket.gethostname()}-{os.getpid()}")
 
 # ---- auth ----
 # Secrets have no usable default: in production load_settings() refuses to start without
 # them; in dev, /auth/login answers "not configured" instead. Real values live only in .env
 # or host secrets.
-GOOGLE_CLIENT_ID = os.getenv("GOOGLE_CLIENT_ID", "")
-GOOGLE_CLIENT_SECRET = os.getenv("GOOGLE_CLIENT_SECRET", "")
-SESSION_SECRET = os.getenv("SESSION_SECRET", "")
-COOKIE_SECURE = os.getenv("COOKIE_SECURE", "true").lower() == "true"
-SESSION_TTL_DAYS = int(os.getenv("SESSION_TTL_DAYS", "7"))
+GOOGLE_CLIENT_ID = env("GOOGLE_CLIENT_ID", "")
+GOOGLE_CLIENT_SECRET = env("GOOGLE_CLIENT_SECRET", "")
+SESSION_SECRET = env("SESSION_SECRET", "")
+COOKIE_SECURE = env("COOKIE_SECURE", "true").lower() == "true"
+SESSION_TTL_DAYS = int(env("SESSION_TTL_DAYS", "7"))
 # Extra origins allowed to send unsafe requests (CSRF check), comma-separated. APP_ORIGIN is
 # always trusted; local dev adds the Vite server, e.g. http://localhost:5173.
-TRUSTED_ORIGINS = tuple(o.strip() for o in os.getenv("TRUSTED_ORIGINS", "").split(",") if o.strip())
+TRUSTED_ORIGINS = tuple(o.strip() for o in env("TRUSTED_ORIGINS", "").split(",") if o.strip())
 # CORS is off: the SPA is served from the same origin. Set exact origins (comma-separated) only
 # if another site must call the API with cookies; "*" is refused. They are CSRF-trusted too.
-CORS_ORIGINS = tuple(o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip())
+CORS_ORIGINS = tuple(o.strip() for o in env("CORS_ORIGINS", "").split(",") if o.strip())
 
 # ---- storage ----
 # local: a directory (compose volume / dev). s3: Tigris, R2 or AWS — required in production
 # because web and worker run on different machines and cannot share a disk.
-BLOB_BACKEND = os.getenv("BLOB_BACKEND", "local")
-BLOB_LOCAL_DIR = os.getenv(
+BLOB_BACKEND = env("BLOB_BACKEND", "local")
+BLOB_LOCAL_DIR = env(
     "BLOB_LOCAL_DIR", os.path.abspath(os.path.join(os.path.dirname(__file__), "../../blobs"))
 )
-S3_ENDPOINT_URL = os.getenv("S3_ENDPOINT_URL", "")
-S3_BUCKET = os.getenv("S3_BUCKET", "")
-S3_REGION = os.getenv("S3_REGION", "")
-S3_ACCESS_KEY_ID = os.getenv("S3_ACCESS_KEY_ID", "")
-S3_SECRET_ACCESS_KEY = os.getenv("S3_SECRET_ACCESS_KEY", "")
+S3_ENDPOINT_URL = env("S3_ENDPOINT_URL", "")
+S3_BUCKET = env("S3_BUCKET", "")
+S3_REGION = env("S3_REGION", "")
+S3_ACCESS_KEY_ID = env("S3_ACCESS_KEY_ID", "")
+S3_SECRET_ACCESS_KEY = env("S3_SECRET_ACCESS_KEY", "")
 # Extra origins the browser may load video/thumbnails from (CSP), e.g. a CDN in front of the
 # bucket. The S3_ENDPOINT_URL origin (path- and virtual-hosted style) is always allowed.
-CSP_MEDIA_ORIGINS = tuple(
-    o.strip() for o in os.getenv("CSP_MEDIA_ORIGINS", "").split(",") if o.strip()
-)
+CSP_MEDIA_ORIGINS = tuple(o.strip() for o in env("CSP_MEDIA_ORIGINS", "").split(",") if o.strip())
 BLOB_BACKENDS = ("local", "s3")
 
 # ---- ingestion limits ----
-MAX_UPLOAD_SIZE_BYTES = int(os.getenv("MAX_UPLOAD_SIZE_BYTES", str(100 * 1024 * 1024)))
-MAX_VIDEO_DURATION_SECONDS = int(os.getenv("MAX_VIDEO_DURATION_SECONDS", "60"))
+MAX_UPLOAD_SIZE_BYTES = int(env("MAX_UPLOAD_SIZE_BYTES", str(100 * 1024 * 1024)))
+MAX_VIDEO_DURATION_SECONDS = int(env("MAX_VIDEO_DURATION_SECONDS", "60"))
 # Per-request temp dirs for uploads live here (default: the system temp dir).
-UPLOAD_TMP_DIR = os.getenv("UPLOAD_TMP_DIR", "")
+UPLOAD_TMP_DIR = env("UPLOAD_TMP_DIR", "")
 
 # ---- YouTube fetch (optional mitigations for datacenter blocking, D-010) ----
 # Base64 of a Netscape cookies.txt from a throwaway account; written to a 0600 temp file
 # per fetch and deleted afterwards. Proxy URL is used for both yt-dlp and the download.
 # Secrets: never logged, never committed.
-YTDLP_COOKIES_B64 = os.getenv("YTDLP_COOKIES_B64", "")
-YTDLP_PROXY = os.getenv("YTDLP_PROXY", "")
+YTDLP_COOKIES_B64 = env("YTDLP_COOKIES_B64", "")
+YTDLP_PROXY = env("YTDLP_PROXY", "")
 
 # ---- video decode/encode (adapters/ffmpeg_video.py) ----
 # Frames analysed per second of video; the annotated output also plays at this rate.
-SAMPLE_FPS = float(os.getenv("SAMPLE_FPS", "5"))
+SAMPLE_FPS = float(env("SAMPLE_FPS", "5"))
 # Decoded frames are scaled so their long side is at most this (memory + detector cost).
-MAX_FRAME_SIDE = int(os.getenv("MAX_FRAME_SIDE", "1280"))
+MAX_FRAME_SIDE = int(env("MAX_FRAME_SIDE", "1280"))
 # libx264 quality (lower = better, bigger) and speed preset for the annotated video.
-ENCODE_CRF = int(os.getenv("ENCODE_CRF", "26"))
-ENCODE_PRESET = os.getenv("ENCODE_PRESET", "veryfast")
+ENCODE_CRF = int(env("ENCODE_CRF", "26"))
+ENCODE_PRESET = env("ENCODE_PRESET", "veryfast")
 ENCODE_PRESETS = ("ultrafast", "superfast", "veryfast", "faster", "fast", "medium")
 
 # ---- worker pass (services/process.py) ----
 # Heartbeat (extends the lease, writes progress) every N sampled frames; 10 at ~6 fps ≈ 2 s,
 # far inside LEASE_SECONDS.
 # Idle worker waits this long (±25 % jitter) before polling the queue again.
-WORKER_POLL_SECONDS = float(os.getenv("WORKER_POLL_SECONDS", "2"))
-HEARTBEAT_EVERY_FRAMES = int(os.getenv("HEARTBEAT_EVERY_FRAMES", "10"))
+WORKER_POLL_SECONDS = float(env("WORKER_POLL_SECONDS", "2"))
+HEARTBEAT_EVERY_FRAMES = int(env("HEARTBEAT_EVERY_FRAMES", "10"))
 
 # ---- submission limits (T-090) ----
 # Per user, across both submit endpoints; every attempt counts, refused ones don't.
-RATE_LIMIT_PER_MINUTE = int(os.getenv("RATE_LIMIT_PER_MINUTE", "10"))
-RATE_LIMIT_PER_HOUR = int(os.getenv("RATE_LIMIT_PER_HOUR", "30"))
+RATE_LIMIT_PER_MINUTE = int(env("RATE_LIMIT_PER_MINUTE", "10"))
+RATE_LIMIT_PER_HOUR = int(env("RATE_LIMIT_PER_HOUR", "30"))
 # Jobs a user may have queued or processing at once (protects the single worker).
-MAX_ACTIVE_JOBS_PER_USER = int(os.getenv("MAX_ACTIVE_JOBS_PER_USER", "3"))
+MAX_ACTIVE_JOBS_PER_USER = int(env("MAX_ACTIVE_JOBS_PER_USER", "3"))
 # Jersey-colour samples for the team split: every N sampled frames, at most M per player.
-TEAM_SAMPLE_EVERY = int(os.getenv("TEAM_SAMPLE_EVERY", "5"))
-TEAM_MAX_SAMPLES = int(os.getenv("TEAM_MAX_SAMPLES", "20"))
+TEAM_SAMPLE_EVERY = int(env("TEAM_SAMPLE_EVERY", "5"))
+TEAM_MAX_SAMPLES = int(env("TEAM_MAX_SAMPLES", "20"))
 
 # ---- detection (adapters/onnx_detector.py, core/detection.py) ----
 # Pretrained YOLOX-S (Apache-2.0); the Docker image downloads it and checks its sha256.
-MODEL_PATH = os.getenv(
+MODEL_PATH = env(
     "MODEL_PATH",
     os.path.abspath(os.path.join(os.path.dirname(__file__), "../../models/yolox_s.onnx")),
 )
 # Square model input in pixels (multiple of 32). Smaller = faster, misses small players/ball.
-DETECT_INPUT_SIZE = int(os.getenv("DETECT_INPUT_SIZE", "640"))
+DETECT_INPUT_SIZE = int(env("DETECT_INPUT_SIZE", "640"))
 # Players are kept down to TRACKER_LOW_THRESH (tracker stage 2, D-021). The ball is small and
 # blurry, so it gets its own, lower bar; at most one ball per frame is kept.
-BALL_CONF_THRESHOLD = float(os.getenv("BALL_CONF_THRESHOLD", "0.15"))
-NMS_THRESHOLD = float(os.getenv("NMS_THRESHOLD", "0.45"))
-DETECT_MAX_CANDIDATES = int(os.getenv("DETECT_MAX_CANDIDATES", "300"))
+BALL_CONF_THRESHOLD = float(env("BALL_CONF_THRESHOLD", "0.15"))
+NMS_THRESHOLD = float(env("NMS_THRESHOLD", "0.45"))
+DETECT_MAX_CANDIDATES = int(env("DETECT_MAX_CANDIDATES", "300"))
 # ONNX Runtime CPU threads; 0 lets ONNX Runtime pick (one per core).
-ORT_THREADS = int(os.getenv("ORT_THREADS", "0"))
+ORT_THREADS = int(env("ORT_THREADS", "0"))
 
 # ---- tracking (ByteTrack-style, core/tracking.py) ----
 # Detections scoring >= TRACKER_HIGH_THRESH are matched first and may start new tracks; those
 # between TRACKER_LOW_THRESH and it only keep existing tracks alive (partly hidden players).
 # Ages and hit counts are in *sampled* frames (SAMPLE_FPS), not video frames.
-TRACKER_HIGH_THRESH = float(os.getenv("TRACKER_HIGH_THRESH", "0.5"))
-TRACKER_LOW_THRESH = float(os.getenv("TRACKER_LOW_THRESH", "0.1"))
-TRACKER_IOU_THRESHOLD = float(os.getenv("TRACKER_IOU_THRESHOLD", "0.3"))
-TRACKER_LOW_IOU = float(os.getenv("TRACKER_LOW_IOU", "0.5"))
-TRACKER_MAX_AGE = int(os.getenv("TRACKER_MAX_AGE", "10"))
-TRACKER_MIN_HITS = int(os.getenv("TRACKER_MIN_HITS", "3"))
+TRACKER_HIGH_THRESH = float(env("TRACKER_HIGH_THRESH", "0.5"))
+TRACKER_LOW_THRESH = float(env("TRACKER_LOW_THRESH", "0.1"))
+TRACKER_IOU_THRESHOLD = float(env("TRACKER_IOU_THRESHOLD", "0.3"))
+TRACKER_LOW_IOU = float(env("TRACKER_LOW_IOU", "0.5"))
+TRACKER_MAX_AGE = int(env("TRACKER_MAX_AGE", "10"))
+TRACKER_MIN_HITS = int(env("TRACKER_MIN_HITS", "3"))
 # Boxes smaller than this fraction of the frame area are ignored (crowd, far-away noise).
-MIN_BOX_AREA_REL = float(os.getenv("MIN_BOX_AREA_REL", "0.0005"))
+MIN_BOX_AREA_REL = float(env("MIN_BOX_AREA_REL", "0.0005"))
 
 # ---- metrics (core/metrics.py, heatmap.py, possession.py) ----
 # Feet movements under JITTER_PX pixels are detector wobble, not running.
-JITTER_PX = float(os.getenv("JITTER_PX", "2.0"))
-HEATMAP_GRID_W = int(os.getenv("HEATMAP_GRID_W", "32"))
-HEATMAP_GRID_H = int(os.getenv("HEATMAP_GRID_H", "18"))
+JITTER_PX = float(env("JITTER_PX", "2.0"))
+HEATMAP_GRID_W = int(env("HEATMAP_GRID_W", "32"))
+HEATMAP_GRID_H = int(env("HEATMAP_GRID_H", "18"))
 # A player "has" the ball when it is within this many box heights of their feet, for at
 # least POSSESSION_MIN_FRAMES sampled frames in a row.
-POSSESSION_DIST_RATIO = float(os.getenv("POSSESSION_DIST_RATIO", "0.5"))
-POSSESSION_MIN_FRAMES = int(os.getenv("POSSESSION_MIN_FRAMES", "3"))
+POSSESSION_DIST_RATIO = float(env("POSSESSION_DIST_RATIO", "0.5"))
+POSSESSION_MIN_FRAMES = int(env("POSSESSION_MIN_FRAMES", "3"))
 
 # ---- teams (core/teams.py) ----
 # Distance between the two jersey-colour cluster centres (HSV cone units, 0..~2) below which
 # the kits are considered indistinguishable and every player is labelled "unknown".
-TEAM_MIN_SEPARATION = float(os.getenv("TEAM_MIN_SEPARATION", "0.2"))
+TEAM_MIN_SEPARATION = float(env("TEAM_MIN_SEPARATION", "0.2"))
 
 REQUIRED_IN_PRODUCTION = ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "SESSION_SECRET")
 
