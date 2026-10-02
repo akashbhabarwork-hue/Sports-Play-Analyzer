@@ -5,7 +5,7 @@ Authorization rule (A3): every method that reads a user's videos, jobs or result
 `tests/unit/test_ports.py` enforces this. "Not found" and "not yours" both return None.
 """
 
-from collections.abc import Iterable, Iterator, Sequence
+from collections.abc import Iterable, Iterator, Mapping, Sequence
 from datetime import datetime
 from typing import Any, Protocol
 from uuid import UUID
@@ -184,9 +184,15 @@ class VideoEncoder(Protocol):
 
 class FrameAnnotator(Protocol):
     def draw(
-        self, frame_bgr: np.ndarray, tracks: Sequence[Track], ball: Box | None, t_s: float
+        self,
+        frame_bgr: np.ndarray,
+        tracks: Sequence[Track],
+        ball: Box | None,
+        t_s: float,
+        teams: Mapping[int, str],
     ) -> np.ndarray:
-        """Return a copy of the frame with player boxes + ids, the ball and a time stamp."""
+        """Return a copy of the frame with boxes coloured by team (public id → "A"/"B"/
+        "unknown"), ids, the ball, a time stamp and a legend of what is drawn."""
         ...
 
     def thumbnail_jpeg(self, frame_bgr: np.ndarray, max_width: int) -> bytes:

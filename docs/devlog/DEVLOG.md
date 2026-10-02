@@ -365,3 +365,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** none.
 **Explain-it-in-review:** "The job list is one query that joins each job with its video, filtered by your user id on both sides. The worker saves the first frame as a small JPEG; it's served through the same ownership check as the video, so another user gets 404 for it too."
 **Next:** T-087 Two-pass render: team-coloured boxes + honest stages `[review-plan]` (covered by the approved S8b plan)
+
+---
+
+## 2026-10-02 14:25 IST — T-087 Two-pass render: team-coloured boxes + honest stages (agent: cv-pipeline)
+**What changed:** `services/process.py` split into `_analyse` (pass 1: detect/track/record + thumbnail + jersey samples) and `_rendered_frames` (pass 2: decode again, draw recorded boxes by team, stream to the encoder); new `computing` and `rendering` heartbeats; `core/pipeline.py` stage list + bands (`band_pct`, `render_pct`); `adapters/opencv_annotator.py` team colours (brief's hex in BGR), id label contrast, legend; `FrameAnnotator.draw(..., teams)` port; tests `test_opencv_annotator.py`, new process_job/pipeline tests.
+**Why:** the brief's video legend (Team A / Team B / Ball) and processing stepper must be true, not decorative (D-030).
+**Decisions:** D-031 (decode twice instead of buffering frames; deterministic decoder aligns pass 2 with pass 1).
+**Verification:** 29 local tests in touched files; real-detector timing on a 12 s clip: analysing 10.34 s, computing 0.09 s, rendering 0.23 s, saving 0.02 s.
+**AI mistakes caught:** none.
+**Explain-it-in-review:** "We can only know the teams after watching the whole clip, so we watch it twice: first pass finds and tracks players (the expensive part), then we split teams, then a second, cheap pass redraws the boxes in team colours. Measured, the second pass is about 2 % of the time."
+**Next:** T-088 Design system + app shell (frontend)

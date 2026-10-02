@@ -344,13 +344,13 @@ Scope added by the owner after S8: full visual/UX brief. Backend first so the UI
 - **Verify:** `pytest -q -k "read_api or thumbnail or user_b_cannot"`
 - **Done notes:** `JobRepo.get_with_video` / `list_with_videos` (one JOIN, both tables filtered on `user_id`) → `JobWithVideo`; list/detail items now carry `title, sport, source_type, original_filename, source_url, duration_s, size_bytes, thumbnail_url` (detail keeps the nested `video` for the S8 UI until T-095/T-097). Worker saves frame 0 as a ≤320 px JPEG at `videos/{video_id}/thumbnail.jpg` (deterministic key) + `set_thumbnail_for_worker`. `GET /api/jobs/{id}/thumbnail` (+ alias): ownership-first 404, presigned 302 on S3 or streamed `image/jpeg` with `Cache-Control: private, max-age=3600`. A3 matrix (unit + CI) includes `/thumbnail`. Local 74 tests in the touched files; Postgres JOIN/scoping + thumbnail round-trip CI-only. Closes F-009.
 
-### [ ] T-087 · Two-pass render: team-coloured boxes + honest stages — `MUST` `30m` `[review-plan]`
+### [x] T-087 · Two-pass render: team-coloured boxes + honest stages — `MUST` `30m` `[review-plan]`
 - **Agent:** cv-pipeline
 - **Depends on:** T-062
 - **Scope:** pass 1 detect/track/record (`analysing`), teams+metrics (`computing`), pass 2 decode+draw by team+encode (`rendering`), `saving`; legend in HUD. Revises D-026.
 - **Acceptance:** boxes coloured by team in the output (pixel check); stage sequence; lease lost in pass 2 writes nothing.
 - **Verify:** `pytest -q -k process_job`
-- **Done notes:** _
+- **Done notes:** Plan approved (S8b). `_analyse` (pass 1) + `_rendered_frames` (pass 2) in `services/process.py`; stages analysing → computing → rendering → saving with bands in `core/pipeline` (`STAGES`, `render_pct`); `FrameAnnotator.draw(..., teams)` colours boxes A #2563EB / B #E11D48 / unknown grey, white/black id labels, legend of teams present + ball. Tests: band order, annotator pixel colours (BGR of the brief's hex), stepper order, every pass-2 frame drawn with the same split as the stats, lease lost during rendering writes nothing — 29 local. Measured with real YOLOX: rendering 0.23 s vs analysing 10.34 s (≈2 %). See D-031.
 
 ### [ ] T-088 · Design system + app shell — `MUST` `30m`
 - **Agent:** frontend · **Depends on:** T-084

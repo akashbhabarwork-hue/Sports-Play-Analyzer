@@ -5,9 +5,15 @@ from app.core.models import PipelineParams
 from app.core.pipeline import (
     PROGRESS_ANALYSE_END,
     PROGRESS_ANALYSE_START,
+    PROGRESS_COMPUTING,
+    PROGRESS_RENDER_END,
+    PROGRESS_RENDER_START,
+    PROGRESS_SAVING,
+    STAGES,
     add_team_sample,
     pipeline_config,
     progress_pct,
+    render_pct,
     should_sample_team,
 )
 
@@ -35,6 +41,15 @@ def test_progress_is_monotonic_and_capped_when_estimate_is_short():
 
 def test_progress_never_reaches_100_before_results_are_saved():
     assert progress_pct(10**6, 1) < 100
+    assert render_pct(10**6, 1) < PROGRESS_SAVING < 100
+
+
+def test_stage_bands_follow_the_stepper_order():
+    # analysing → computing → rendering → saving, each band strictly after the previous one
+    assert PROGRESS_ANALYSE_END < PROGRESS_COMPUTING < PROGRESS_RENDER_START
+    assert render_pct(0, 100) == PROGRESS_RENDER_START
+    assert render_pct(100, 100) == PROGRESS_RENDER_END < PROGRESS_SAVING
+    assert STAGES == ("fetching", "analysing", "computing", "rendering", "saving")
 
 
 def test_progress_handles_zero_expected():
