@@ -9,7 +9,6 @@ from fastapi import APIRouter, Depends, FastAPI, Request, Response, UploadFile
 from fastapi.concurrency import run_in_threadpool
 from fastapi.responses import FileResponse, JSONResponse, RedirectResponse
 from fastapi.staticfiles import StaticFiles
-from pythonjsonlogger import jsonlogger
 from starlette.middleware.sessions import SessionMiddleware
 
 from ..config import Settings, load_settings
@@ -26,6 +25,7 @@ from ..services.submit import UploadLimits, submit_upload_job, submit_url_job
 from ..wiring import Container, build_container
 from .csrf import is_request_trusted
 from .limits import BodySizeLimitMiddleware, copy_capped
+from .log_config import setup_logging
 from .schemas import JobAccepted, MeResponse, UrlSubmit
 
 access_logger = logging.getLogger("app.access")
@@ -35,24 +35,6 @@ UPLOAD_PATH = "/api/jobs/upload"
 OAUTH_TX_COOKIE = "oauth_tx"
 OAUTH_TX_MAX_AGE = 600  # state/nonce/PKCE verifier only live for the login round trip
 LOGIN_FAILED_URL = "/login?error=oauth_failed"
-
-
-def setup_logging():
-    logger = logging.getLogger()
-    logger.setLevel(logging.INFO)
-
-    # Remove existing handlers
-    for handler in logger.handlers[:]:
-        logger.removeHandler(handler)
-
-    handler = logging.StreamHandler()
-    formatter = jsonlogger.JsonFormatter("%(asctime)s %(levelname)s %(name)s %(message)s")
-    handler.setFormatter(formatter)
-    logger.addHandler(handler)
-    # HTTP client libraries log full request URLs at INFO; keep them quiet so URLs with
-    # tokens or OAuth parameters never reach the logs.
-    for name in ("httpx", "httpx2", "httpcore"):
-        logging.getLogger(name).setLevel(logging.WARNING)
 
 
 def error_response(exc: AppError) -> JSONResponse:

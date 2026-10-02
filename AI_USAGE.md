@@ -63,6 +63,12 @@ Setup: project rules, specialist agent personas, skills and workflows in `.agent
 - **Fix:** Renamed the Postgres one to `test_process_job_pg.py` (the ticket's `-k process_job` still selects it); shared clip builders and the scripted detector moved to `tests/pipeline_helpers.py`.
 - **Lesson:** Check the repo's test-module conventions (existing names are unique across folders for this reason).
 
+### 9. A worker that a database blip would kill
+- **What it did:** In T-063 the agent's first `run_once` guarded `process_job` with a broad `except`, but left `sweep_dead()` and `claim()` outside it. A short Postgres outage would have raised out of the loop and ended the worker process — and the compose service had no restart policy — so queued jobs would sit until someone noticed.
+- **How I caught it:** Self-review question "what happens if the database is down while the worker is idle?", then two failing regression tests (`DownQueue`, `FlakyQueue`).
+- **Fix:** `ExternalServiceError` from the poll is logged and treated as an idle poll; compose `restart: unless-stopped` as a second safety net.
+- **Lesson:** For long-running loops, test the failure of every call in the loop, not just the main work.
+
 ## How I verified AI-generated code
 - Automated unit test suite with deterministic JSON fixtures (pure logic, no model dependency).
 - Integration tests against migrated Postgres schema with multi-user isolation checks.

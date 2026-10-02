@@ -46,6 +46,7 @@ Rollback: Actions → Rollback → enter previous sha. First-time setup: see [do
 | `SAMPLE_FPS` | `5` | Video decoding sample rate (frames/sec); the annotated video plays at this rate |
 | `MAX_FRAME_SIDE` | `1280` | Decoded frames are scaled so the long side is at most this |
 | `ENCODE_CRF` / `ENCODE_PRESET` | `26` / `veryfast` | libx264 quality and speed for the annotated video |
+| `WORKER_POLL_SECONDS` | `2` | Idle worker polls the queue this often (±25 % jitter) |
 | `HEARTBEAT_EVERY_FRAMES` | `10` | Worker extends its lease and reports progress every N sampled frames |
 | `TEAM_SAMPLE_EVERY` / `TEAM_MAX_SAMPLES` | `5` / `20` | Jersey-colour sampling for the team split: every N frames, at most M per player |
 | `MODEL_PATH` | `<repo>/models/yolox_s.onnx` | YOLOX-S ONNX weights (Docker: `/models/yolox_s.onnx`, sha256-checked at build) |

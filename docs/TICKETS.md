@@ -244,14 +244,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** `pytest -q -m integration -k process_job`
 - **Done notes:** Plan approved. `services/process.py` (`process_job`, `PipelinePorts`, `ProcessConfig`, streamed `_annotated_frames` generator feeding the encoder), pure `core/pipeline.py` (progress bands, team sampling, config snapshot), `adapters/opencv_annotator.py`, `FrameAnnotator` port, `LeaseLostError`, settings `HEARTBEAT_EVERY_FRAMES`/`TEAM_SAMPLE_EVERY`/`TEAM_MAX_SAMPLES`, wiring `process_config`/`build_pipeline_ports`/`build_detector`. Final input errors → `failed` + code; transient → re-raised for retry; lost lease → stop, no writes. Locally (real ffmpeg, fakes): success with stats/tracks/playable video, progress rises fetching→analysing→saving <100, temp dir cleaned, truncated-but-sniffable MP4 → `DECODE_ERROR`, `MODEL_ERROR` final, lost lease writes nothing, storage outage re-raised, URL source fetched first — 9 tests, 2 mutations caught. `tests/integration/test_process_job_pg.py` (submit → claim → process against Postgres) **not run locally — CI-only while Docker is deferred**. See D-026.
 
-### [ ] T-063 · Worker loop + crash-retry idempotency — `MUST` `15m`
+### [x] T-063 · Worker loop + crash-retry idempotency — `MUST` `15m`
 - **Agent:** database
 - **Depends on:** T-062
 - **Why:** "Idempotent retry after a worker crash mid-job (no duplicate rows, no jobs stuck in processing)".
 - **Scope:** `entrypoints/worker.py` (`run_once`, `run_forever`, SIGTERM handling, jittered polling); compose/Fly worker command.
 - **Acceptance:** tests: crash simulation then retry → same row counts; exhausted attempts → failed; `docker compose up` processes a real upload end-to-end.
 - **Verify:** `pytest -q -m integration -k "retry or idempot"`; manual compose run
-- **Done notes:** _
+- **Done notes:** `entrypoints/worker.py` (`WorkerContext`, `run_once`, `run_forever`, `install_stop_handlers`, `main`), shared `entrypoints/log_config.py`, `core/pipeline.poll_delay`, `WORKER_POLL_SECONDS`; compose worker: healthcheck disabled, 60 s stop grace, `restart: unless-stopped`. Unit (local): 13 tests — empty queue, claim→process, transient error and bug survive, DB outage while polling survives, drains then stops on signal, finishes current job, real SIGINT handler; missing model → exit 1 checked by hand. Integration (`tests/integration/test_worker_retry.py`, **CI-only while Docker is deferred**): crash mid-job → retry by another worker → same rows as a clean run (1 result, 2 tracks, attempts 2); rerun overwrites the same `jobs/{id}/annotated.mp4`; attempts exhausted → `failed/WORKER_CRASHED`, nothing written. **Queued for the final Docker pass:** `docker compose up` processing a real upload end-to-end. See D-027.
 
 ### [ ] T-064 · Performance check & default tuning — `SHOULD` `5m`
 - **Agent:** cv-pipeline
