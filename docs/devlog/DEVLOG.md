@@ -442,3 +442,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** chained `&&` assertions silently skipped (lint + tsc caught it, AI_USAGE #12); six visual issues found and fixed in the walkthrough (AI_USAGE #13).
 **Explain-it-in-review:** "The results page only shows what the backend computed: the legend lists teams that exist, and if the ball was never seen it says so instead of a 0 % split. Heatmaps are the backend's grid, smoothed in the browser and drawn over a pitch or court depending on the sport the coach picked."
 **Next:** S8b stage summary; then S9 T-090 Rate limiting + active-job cap
+
+---
+
+## 2026-10-02 15:10 IST — T-090 Rate limiting + active-job cap (agent: auth-security)
+**What changed:** `core/rate_limit.py`, `adapters/memory_rate_limiter.py`, `RateLimits` model, `RateLimiter` port + `JobRepo.count_active` (Postgres + fakes), `services/submit.check_submit_allowed`, `RateLimitedError`/`TooManyActiveJobsError`, `Retry-After` in the error envelope response, limiter built in `wiring.py`, three settings (+ `.env.example`, README); tests `test_rate_limit.py`, `test_rate_limit_api.py`, `count_active` repo test.
+**Why:** "Rate limiting on submit endpoints"; protect the single worker from one user's queue.
+**Decisions:** D-032 (in-memory sliding window per user, every attempt counts but refusals don't extend the block, active-job cap 3, checks before any validation/storage).
+**Verification:** `pytest -q -k rate` → 19 passed; unit suite 539 passed, 1 failed (pre-existing Windows-only chmod); ruff, format, design checker ✓. **Not run locally:** `count_active` against Postgres (CI).
+**AI mistakes caught:** the window-boundary test expected a hit exactly 60 s old to still count; the code (and `Retry-After`) treat it as expired — test expectation corrected.
+**Explain-it-in-review:** "Each user gets 10 submissions a minute and 30 an hour; the 11th gets a 429 with Retry-After telling them how long to wait. On top of that, nobody can have more than 3 videos queued or processing, so one person can't starve the worker."
+**Next:** T-091 Security headers + CORS + error audit

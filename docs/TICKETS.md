@@ -384,14 +384,14 @@ Scope added by the owner after S8: full visual/UX brief. Backend first so the UI
 
 ## S9 · Security hardening (25 m)
 
-### [ ] T-090 · Rate limiting + active-job cap — `MUST` `10m`
+### [x] T-090 · Rate limiting + active-job cap — `MUST` `10m`
 - **Agent:** auth-security
 - **Depends on:** T-041, T-042
 - **Why:** "Rate limiting on submit endpoints".
 - **Scope:** per-user limits on both submit endpoints, 429 + Retry-After envelope; max 3 active jobs per user.
 - **Acceptance:** test: 11th submit in a minute → 429.
 - **Verify:** `pytest -q -k rate`
-- **Done notes:** _
+- **Done notes:** S9 plan approved. Pure `core/rate_limit.py` + `InMemoryRateLimiter` (10/min, 30/h per user, refused attempts not recorded) behind a `RateLimiter` port; `JobRepo.count_active` (user-scoped) → cap 3; `check_submit_allowed` runs first in both submit routes (+ `/jobs` aliases); `RateLimitedError` (429 + `Retry-After`), `TooManyActiveJobsError` (429). Settings `RATE_LIMIT_PER_MINUTE`, `RATE_LIMIT_PER_HOUR`, `MAX_ACTIVE_JOBS_PER_USER`. `-k rate` → 19 passed (11th submit → 429 + Retry-After, aliases share the count, per user, rejected submissions count, 4th active job → 429 and frees up); `count_active` Postgres test CI-only. See D-032.
 
 ### [ ] T-091 · Security headers + CORS + error audit — `MUST` `10m`
 - **Agent:** auth-security

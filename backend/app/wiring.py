@@ -6,6 +6,7 @@ from .adapters.blob_s3 import S3BlobStore, make_s3_client
 from .adapters.db import PostgresHealthCheck, create_db_engine
 from .adapters.ffmpeg_video import FfmpegFrameReader, FfmpegVideoEncoder
 from .adapters.ffprobe import FfprobeVideoProber
+from .adapters.memory_rate_limiter import InMemoryRateLimiter
 from .adapters.oauth_google import GoogleOAuthClient
 from .adapters.onnx_detector import OnnxYoloxDetector
 from .adapters.opencv_annotator import OpenCvFrameAnnotator
@@ -20,7 +21,7 @@ from .adapters.pg_repos import (
 from .adapters.safe_http_fetcher import SafeHttpDownloader
 from .adapters.ytdlp_fetcher import YtDlpMetadataFetcher
 from .config import Settings
-from .core.models import DetectorParams, MetricsParams, PipelineParams, TrackerParams
+from .core.models import DetectorParams, MetricsParams, PipelineParams, RateLimits, TrackerParams
 from .core.ports import (
     BlobStore,
     Detector,
@@ -30,6 +31,7 @@ from .core.ports import (
     MediaDownloader,
     MediaInfoFetcher,
     OAuthProvider,
+    RateLimiter,
     ResultRepo,
     SessionRepo,
     UserRepo,
@@ -56,6 +58,8 @@ class Container:
     downloader: MediaDownloader
     # None when Google login is not configured (local dev without credentials).
     oauth: OAuthProvider | None = None
+    # Always set by build_container; None only in tests that don't exercise limits.
+    rate_limiter: RateLimiter | None = None
 
 
 def _local_blobs(settings: Settings) -> BlobStore:
@@ -184,5 +188,8 @@ def build_container(settings: Settings) -> Container:
             GoogleOAuthClient(settings.google_client_id, settings.google_client_secret)
             if settings.oauth_configured
             else None
+        ),
+        rate_limiter=InMemoryRateLimiter(
+            RateLimits(settings.rate_limit_per_minute, settings.rate_limit_per_hour)
         ),
     )

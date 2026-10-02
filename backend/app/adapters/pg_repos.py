@@ -237,6 +237,17 @@ class PostgresJobRepo:
         )
 
     @db_errors
+    def count_active(self, user_id: UUID) -> int:
+        # ix_jobs_user_created narrows to this user's jobs; the status filter is cheap on top.
+        stmt = (
+            select(func.count())
+            .select_from(jobs)
+            .where(jobs.c.user_id == user_id, jobs.c.status.in_(("queued", "processing")))
+        )
+        with self.engine.connect() as conn:
+            return int(conn.execute(stmt).scalar_one())
+
+    @db_errors
     def get_with_video(self, user_id: UUID, job_id: UUID) -> JobWithVideo | None:
         stmt = self._with_video(user_id).where(jobs.c.id == job_id)
         with self.engine.connect() as conn:

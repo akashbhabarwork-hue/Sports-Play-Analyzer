@@ -86,6 +86,12 @@ class FakeJobs:
     def list_with_videos(self, user_id, limit=50):
         return [p for j in self.list_for_user(user_id, limit) if (p := self._pair(j))]
 
+    def count_active(self, user_id):
+        return sum(
+            1 for j in self.w.jobs.values()
+            if j.user_id == user_id and j.status in ("queued", "processing")
+        )  # fmt: skip
+
 
 class FakeVideos:
     def __init__(self, w: World):
@@ -179,14 +185,14 @@ def _put_blob(blobs, key: str, data: bytes, content_type: str) -> None:
         blobs.put_file(key, src, content_type)
 
 
-def make_container(w: World, blobs) -> Container:
+def make_container(w: World, blobs, limiter=None) -> Container:
     settings = Settings(app_env="test", app_origin="http://localhost:8000", database_url="x",
                         git_sha="t", cookie_secure=False)  # fmt: skip
     none = dict.fromkeys(("users", "queue", "media_info", "downloader"))
     return Container(**none, settings=settings, health_check=OkHealth(),
                      prober=FfprobeVideoProber(),
                      sessions=FakeSessions(w), videos=FakeVideos(w), jobs=FakeJobs(w),
-                     results=FakeResults(w), blobs=blobs)  # fmt: skip
+                     results=FakeResults(w), blobs=blobs, rate_limiter=limiter)  # fmt: skip
 
 
 def browser(app, token: str | None) -> TestClient:
@@ -196,5 +202,5 @@ def browser(app, token: str | None) -> TestClient:
     return client
 
 
-def make_app(w: World, blobs):
-    return create_app(make_container(w, blobs))
+def make_app(w: World, blobs, limiter=None):
+    return create_app(make_container(w, blobs, limiter))

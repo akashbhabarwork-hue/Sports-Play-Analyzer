@@ -74,6 +74,13 @@ ENCODE_PRESETS = ("ultrafast", "superfast", "veryfast", "faster", "fast", "mediu
 # Idle worker waits this long (±25 % jitter) before polling the queue again.
 WORKER_POLL_SECONDS = float(os.getenv("WORKER_POLL_SECONDS", "2"))
 HEARTBEAT_EVERY_FRAMES = int(os.getenv("HEARTBEAT_EVERY_FRAMES", "10"))
+
+# ---- submission limits (T-090) ----
+# Per user, across both submit endpoints; every attempt counts, refused ones don't.
+RATE_LIMIT_PER_MINUTE = int(os.getenv("RATE_LIMIT_PER_MINUTE", "10"))
+RATE_LIMIT_PER_HOUR = int(os.getenv("RATE_LIMIT_PER_HOUR", "30"))
+# Jobs a user may have queued or processing at once (protects the single worker).
+MAX_ACTIVE_JOBS_PER_USER = int(os.getenv("MAX_ACTIVE_JOBS_PER_USER", "3"))
 # Jersey-colour samples for the team split: every N sampled frames, at most M per player.
 TEAM_SAMPLE_EVERY = int(os.getenv("TEAM_SAMPLE_EVERY", "5"))
 TEAM_MAX_SAMPLES = int(os.getenv("TEAM_MAX_SAMPLES", "20"))
@@ -157,6 +164,9 @@ class Settings:
     encode_crf: int = 26
     encode_preset: str = "veryfast"
     worker_poll_seconds: float = 2.0
+    rate_limit_per_minute: int = 10
+    rate_limit_per_hour: int = 30
+    max_active_jobs_per_user: int = 3
     heartbeat_every_frames: int = 10
     team_sample_every: int = 5
     team_max_samples: int = 20
@@ -251,6 +261,10 @@ def validate_video_settings(settings: Settings) -> None:
         raise RuntimeError("HEARTBEAT_EVERY_FRAMES and TEAM_SAMPLE_EVERY must be >= 1")
     if settings.team_max_samples < 1:
         raise RuntimeError("TEAM_MAX_SAMPLES must be >= 1")
+    if not 1 <= settings.rate_limit_per_minute <= settings.rate_limit_per_hour:
+        raise RuntimeError("Need 1 <= RATE_LIMIT_PER_MINUTE <= RATE_LIMIT_PER_HOUR")
+    if settings.max_active_jobs_per_user < 1:
+        raise RuntimeError("MAX_ACTIVE_JOBS_PER_USER must be >= 1")
     if not 0.1 <= settings.worker_poll_seconds <= 60:
         raise RuntimeError("WORKER_POLL_SECONDS must be between 0.1 and 60")
 
@@ -309,6 +323,9 @@ def load_settings() -> Settings:
         encode_crf=ENCODE_CRF,
         encode_preset=ENCODE_PRESET,
         worker_poll_seconds=WORKER_POLL_SECONDS,
+        rate_limit_per_minute=RATE_LIMIT_PER_MINUTE,
+        rate_limit_per_hour=RATE_LIMIT_PER_HOUR,
+        max_active_jobs_per_user=MAX_ACTIVE_JOBS_PER_USER,
         heartbeat_every_frames=HEARTBEAT_EVERY_FRAMES,
         team_sample_every=TEAM_SAMPLE_EVERY,
         team_max_samples=TEAM_MAX_SAMPLES,

@@ -186,6 +186,14 @@ class DetectorParams:
 
 
 @dataclass(frozen=True, slots=True)
+class RateLimits:
+    """Submissions allowed per user (T-090); both windows apply."""
+
+    per_minute: int
+    per_hour: int
+
+
+@dataclass(frozen=True, slots=True)
 class PipelineParams:
     """Worker knobs for one processing pass (from Settings via wiring.pipeline_params)."""
 

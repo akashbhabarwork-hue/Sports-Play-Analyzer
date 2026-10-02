@@ -90,6 +90,10 @@ class JobRepo(Protocol):
 
     def get_with_video(self, user_id: UUID, job_id: UUID) -> JobWithVideo | None: ...
 
+    def count_active(self, user_id: UUID) -> int:
+        """This user's jobs still queued or processing (T-090 active-job cap)."""
+        ...
+
     def list_with_videos(self, user_id: UUID, limit: int = 50) -> list[JobWithVideo]: ...
 
     def get_for_worker(self, job_id: UUID) -> Job | None: ...
@@ -121,6 +125,12 @@ class JobQueue(Protocol):
     def fail(self, job_id: UUID, worker_id: str, error_code: str, message: str) -> bool: ...
 
     def sweep_dead(self) -> int: ...
+
+
+class RateLimiter(Protocol):
+    def hit(self, key: str) -> int:
+        """Record one attempt for `key`; 0 if allowed, else seconds until the next is allowed."""
+        ...
 
 
 class OAuthProvider(Protocol):

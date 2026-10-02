@@ -36,7 +36,12 @@ from ..services.read_job import (
     get_video,
     list_jobs,
 )
-from ..services.submit import UploadLimits, submit_upload_job, submit_url_job
+from ..services.submit import (
+    UploadLimits,
+    check_submit_allowed,
+    submit_upload_job,
+    submit_url_job,
+)
 from ..wiring import Container, build_container
 from .csrf import is_request_trusted
 from .limits import BodySizeLimitMiddleware, copy_capped
@@ -63,10 +68,14 @@ LOGIN_FAILED_URL = "/login?error=oauth_failed"
 
 
 def error_response(exc: AppError) -> JSONResponse:
-    return JSONResponse(
+    response = JSONResponse(
         status_code=exc.status_code,
         content={"error": {"code": exc.code, "message": str(exc)}},
     )
+    retry_after = getattr(exc, "retry_after", None)
+    if retry_after:  # 429 RATE_LIMITED (T-090)
+        response.headers["Retry-After"] = str(retry_after)
+    return response
 
 
 def create_app(container: Container | None = None) -> FastAPI:
@@ -353,6 +362,16 @@ def register_api_routes(app: FastAPI, container: Container) -> None:
     )
     tmp_root = container.settings.upload_tmp_dir or None
 
+    def allow_submit(user: User) -> None:
+        # T-090: rate limit + active-job cap before any work. (For uploads FastAPI has already
+        # received the ≤100 MB body by now; nothing is validated or stored when refused.)
+        check_submit_allowed(
+            container.rate_limiter,
+            container.jobs,
+            user.id,
+            container.settings.max_active_jobs_per_user,
+        )
+
     @jobs.post("/jobs/upload", status_code=202, response_model=JobAccepted)
     def upload_video(
         file: UploadFile,
@@ -360,6 +379,7 @@ def register_api_routes(app: FastAPI, container: Container) -> None:
         title: str | None = Form(default=None, max_length=1000),
         user: User = Depends(current_user),
     ) -> JobAccepted:
+        allow_submit(user)
         # Per-request temp dir, removed in every outcome (success, 4xx, crash).
         with tempfile.TemporaryDirectory(dir=tmp_root, prefix="upload-") as tmp:
             path = os.path.join(tmp, "source")
@@ -380,6 +400,7 @@ def register_api_routes(app: FastAPI, container: Container) -> None:
 
     @jobs.post("/jobs/url", status_code=202, response_model=JobAccepted)
     def submit_url(body: UrlSubmit, user: User = Depends(current_user)) -> JobAccepted:
+        allow_submit(user)
         job = submit_url_job(
             container.jobs,
             user.id,
