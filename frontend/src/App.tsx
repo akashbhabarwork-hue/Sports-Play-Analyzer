@@ -1,8 +1,10 @@
 import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-router-dom'
 import { AuthProvider, RequireAuth } from './auth'
 import { Layout } from './components/Layout'
+import { JobDetailPage } from './pages/JobDetailPage'
 import { JobsPage } from './pages/JobsPage'
 import { LoginPage } from './pages/LoginPage'
+import { NotFoundPage } from './pages/NotFoundPage'
 import { SubmitPage } from './pages/SubmitPage'
 import './App.css'
 
@@ -30,7 +32,10 @@ function App() {
           >
             <Route index element={<JobsPage />} />
             <Route path="submit" element={<SubmitPage />} />
+            <Route path="jobs/:jobId" element={<JobDetailPage />} />
+            <Route path="*" element={<NotFoundPage />} />
           </Route>
+          <Route path="*" element={<NotFoundPage />} />
         </Routes>
       </AuthProvider>
     </BrowserRouter>

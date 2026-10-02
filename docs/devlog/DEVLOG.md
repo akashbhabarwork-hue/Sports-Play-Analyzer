@@ -321,3 +321,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** none.
 **Explain-it-in-review:** "The list asks the server every two seconds, but only while something is still running, never twice at once, and not at all while the tab is in the background."
 **Next:** T-083 Job detail: video, stats, errors
+
+---
+
+## 2026-10-02 13:44 IST — T-083 Job detail: video, stats, errors (agent: frontend)
+**What changed:** `src/pages/JobDetailPage.tsx`, `src/pages/NotFoundPage.tsx`, `src/components/{ErrorBanner,StatsCards,VideoPlayer}.tsx`, `src/logic/results.ts` + tests (`errorHelp`, `summarize`), routes `/app/jobs/:jobId` and catch-all, styles.
+**Why:** A1 (annotated video plays, stats), A2 (readable failure), A3 ("Job not found" for another user's job).
+**Decisions:** the page shows the same "Job not found" for missing and foreign jobs because the API can't tell them apart (D-028); distance is shown in frame diagonals with a tooltip saying pixels aren't metres (D-022 limit); a polling error never replaces a job already on screen.
+**Verification:** lint, typecheck, `npm test` (32 passed), build ✓.
+**AI mistakes caught:** first version replaced the whole page with an error on any polling failure — fixed in self-review before commit.
+**Explain-it-in-review:** "If the job failed you get a plain headline, the server's message and the next step — for a YouTube block, a button to upload the file instead. If it isn't yours, you get exactly what you'd get for a job that doesn't exist."
+**Next:** T-084 Heatmap view + player selector

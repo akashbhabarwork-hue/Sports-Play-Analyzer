@@ -308,13 +308,13 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** manual + network tab
 - **Done notes:** `/app` jobs table (id link, submitted, status chip, progress bar + stage label, failure message), empty state. Polling = pure `logic/poller.ts` (wait 2 s *after* each response — no overlap; failed request retried next tick; paused while `document.hidden`, immediate refresh on return) wrapped by `hooks/usePolling.ts`, enabled only while any job is queued/processing. 9 new tests (27 total). Network-tab check with the preview server after T-084; live progress during a real job → Docker pass. List rows show a short id (the list API has no filename — F-009).
 
-### [ ] T-083 · Job detail: video, stats, errors — `MUST` `15m`
+### [x] T-083 · Job detail: video, stats, errors — `MUST` `15m`
 - **Agent:** frontend
 - **Depends on:** T-082
 - **Scope:** video player, stats cards, error banner incl. "Upload instead" for `YOUTUBE_BLOCKED`, 404 page.
 - **Acceptance:** A1 video plays + seeks; A3 shows "Job not found".
 - **Verify:** manual
-- **Done notes:** _
+- **Done notes:** `/app/jobs/:jobId`: header (filename/URL, submitted, status chip); active → progress + stage, polls every 2 s until done (a polling blip keeps the job on screen); failed → `ErrorBanner` (headline per code from `logic/results.ts`, server message, code, next-step button — "Upload the file instead" for `YOUTUBE_BLOCKED`/`DOWNLOAD_FAILED`); succeeded → `<video controls playsInline src=/api/jobs/{id}/video>` + 4 stats cards (players tracked, ball visible %, top possession, total distance in frame diagonals); API 404 → "Job not found" (A3); unknown routes → Not found. 5 new tests (32 total). Play/seek + A3 view in the S8 preview-server walkthrough.
 
 ### [ ] T-084 · Heatmap view + player selector — `MUST` `20m`
 - **Agent:** frontend
