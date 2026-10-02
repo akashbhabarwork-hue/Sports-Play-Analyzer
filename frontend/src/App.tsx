@@ -8,7 +8,6 @@ import { LoginPage } from './pages/LoginPage'
 import { NewAnalysisPage } from './pages/NewAnalysisPage'
 import { NotFoundPage } from './pages/NotFoundPage'
 import { SettingsPage } from './pages/SettingsPage'
-import './App.css'
 
 // Public pages: `/` (landing) and `/login`. Signed-in pages live under /app/… because /jobs/…
 // are API aliases (D-028). Old paths redirect so bookmarks keep working.

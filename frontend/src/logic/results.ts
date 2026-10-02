@@ -1,5 +1,3 @@
-import type { Stats } from '../types'
-
 export interface ErrorHelp {
   title: string
   action: { label: string; to: string } | null
@@ -29,25 +27,4 @@ const HELP: Record<string, ErrorHelp> = {
 
 export function errorHelp(code: string): ErrorHelp {
   return HELP[code] ?? { title: 'The analysis failed', action: { label: 'Try another video', to: UPLOAD } }
-}
-
-export interface Summary {
-  playersTracked: number
-  ballVisiblePct: number
-  topPossession: { playerId: number; pct: number } | null
-  totalDistanceRel: number
-}
-
-export function summarize(stats: Stats): Summary {
-  const top = stats.possession.by_player.reduce<{ playerId: number; pct: number } | null>(
-    (best, p) => (!best || p.pct > best.pct ? { playerId: p.player_id, pct: p.pct } : best),
-    null,
-  )
-  const total = stats.players.reduce((sum, p) => sum + p.distance_rel, 0)
-  return {
-    playersTracked: stats.players_tracked,
-    ballVisiblePct: stats.ball_visible_pct,
-    topPossession: top,
-    totalDistanceRel: Math.round(total * 100) / 100,
-  }
 }

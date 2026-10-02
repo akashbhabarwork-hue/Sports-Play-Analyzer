@@ -431,3 +431,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** none.
 **Explain-it-in-review:** "The stepper is a pure function of the job's status and stage, so it shows exactly what the worker reports — Fetching only appears for YouTube links."
 **Next:** T-097 Results tabs + smooth heatmaps
+
+---
+
+## 2026-10-02 14:54 IST — T-097 Results tabs + smooth heatmaps, and the S8b walkthrough (agent: frontend)
+**What changed:** `frontend/src/components/{ResultsView,SmoothHeatmap,PlayerStatsTable}.tsx` + `results.css`, `logic/{insights,smoothHeatmap}.ts` + tests, `JobDetailPage` → Processing or Results; removed `StatsCards`, `HeatmapPanel`, `HeatmapCanvas`, `PlayerSelector`, `logic/heatmap.ts`, `App.css`; polish: processing chip, toggle, heat fade-in, tab scrollbar; backend fix commit moves the video time stamp bottom-left.
+**Why:** brief screen 7 (results tabs, legend, key metrics, smooth heatmaps, pitch vs court by sport).
+**Decisions:** every number on the page comes from the stats JSON or the player row (no derived metrics); legend/toggles list only teams that exist; with no ball detected the possession card says so instead of showing zeros; heat rendered small and scaled by the browser for fast switching.
+**Verification:** lint, typecheck, `npm test` (72), build ✓. **Browser walkthrough** (scratchpad preview server, real YOLOX-S + two-pass pipeline, 8 s panning clip of `tests/fixtures/people.jpg`): processing page live (thumbnail, stepper, 53 %); results header/tabs/legend/metrics/footnote; annotated frame extracted: orange-kit player in Team A blue, grey-kit players in Team B red, legend top-right; team + player heatmaps with path; My videos; A2 corrupt upload → server message; A3 Bob → Job not found; landing; three 390 px iframes (no horizontal overflow, cards, menu button). Background-tab media/polling pauses observed and confirmed as Chrome throttling (`document.hidden`), not app bugs.
+**AI mistakes caught:** chained `&&` assertions silently skipped (lint + tsc caught it, AI_USAGE #12); six visual issues found and fixed in the walkthrough (AI_USAGE #13).
+**Explain-it-in-review:** "The results page only shows what the backend computed: the legend lists teams that exist, and if the ball was never seen it says so instead of a 0 % split. Heatmaps are the backend's grid, smoothed in the browser and drawn over a pitch or court depending on the sport the coach picked."
+**Next:** S8b stage summary; then S9 T-090 Rate limiting + active-job cap

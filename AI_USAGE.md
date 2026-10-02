@@ -81,6 +81,18 @@ Setup: project rules, specialist agent personas, skills and workflows in `.agent
 - **Fix:** `logic/session.signOut` always clears local state (regression test); heatmap opacity starts at 0.55 and the canvas is capped at 760 px wide. Two false alarms were ruled out with evidence, not assumed: the extension's network panel showed `503` for video range requests while the server log had `206`, and a 14.8 s "redraw" was Chrome throttling a background tab (`document.hidden = true`).
 - **Lesson:** Green checks don't cover UX; drive the real thing, and verify surprising measurements against a second source before acting on them.
 
+### 12. Assertions that never ran
+- **What it did:** In T-097 the agent wrote heatmap colour tests like `expect(r).toBeGreaterThan(200) && expect(g).toBeGreaterThan(150)`. `expect()` returns `undefined`, so everything after the first `&&` was never evaluated — the "yellow" and "red" checks were half-skipped while the suite reported green.
+- **How I caught it:** ESLint (`no-unused-expressions`) and `tsc` (testing `void` for truthiness) failed the build even though Vitest passed.
+- **Fix:** one assertion per line; the previously skipped checks now run (and pass).
+- **Lesson:** Keep lint and typecheck on test files too — they catch tests that look stronger than they are.
+
+### 13. Visual bugs in the redesign found by the walkthrough
+- **What it did:** In S8b: a 4:3 clip made the heatmap taller than the screen so the heat was off-view; a CSS-order clash wrapped the team toggle; the job-ID chip collapsed; interpolated heat edges jumped to 35 % opacity and drew a box around each blob; the video time stamp sat on top of the first player's id label; "Possession 0 % / 0 % / 0 %" was shown when the ball was never seen.
+- **How I caught it:** The S8b Chrome walkthrough on the real pipeline (preview server + YOLOX), plus a frame extracted from the annotated MP4.
+- **Fix:** height cap from the clip's aspect, more specific selector, `flex: none` on the chip, alpha fades in from 0 (regression test), time stamp bottom-left, an honest "ball not detected" note instead of zeros.
+- **Lesson:** Look at real output (a frame, a screenshot) — not just at the code that produces it.
+
 ## How I verified AI-generated code
 - Automated unit test suite with deterministic JSON fixtures (pure logic, no model dependency).
 - Integration tests against migrated Postgres schema with multi-user isolation checks.
