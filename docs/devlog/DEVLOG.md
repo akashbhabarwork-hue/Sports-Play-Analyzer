@@ -509,3 +509,12 @@ Stage summaries live in `docs/devlog/stages/`.
 **Verification:** all 7 secrets have 0 CR/LF bytes; live `client_id` clean; `/health` ok with the rotated password; worker started. Tests: 3 new pass (2 fail without the strip); unit 566 passed (+ known Windows-only failure); ruff, format, design ✓.
 **AI mistakes caught:** AI_USAGE #19.
 **Next:** owner signs in on prod + runs a job; merge dev→main (first CD run); T-102.
+
+---
+
+## 2026-10-02 14:26 IST — Fix: uploads failed on Google Cloud Storage (agent: backend-api)
+**What changed:** `adapters/blob_s3.py`: boto3 client sends/validates checksums only when required; `S3UploadFailedError` mapped to `ExternalServiceError` (502 envelope, not a 500). Tests: `test_blob_s3_failed_upload_is_a_storage_error_not_a_crash`, `test_s3_client_sends_checksums_only_when_required`.
+**Why:** live upload → "Something went wrong (ref 51c856ae)": GCS answered `SignatureDoesNotMatch` to boto3 1.43's default CRC upload checksums.
+**Verification:** direct probe on the real bucket — default config fails, fixed config passes upload / presigned GET / range / delete; blob tests 9 passed (2 new fail on the old code); unit 568 passed (+ known Windows-only failure); ruff, format, design ✓.
+**AI mistakes caught:** AI_USAGE #20.
+**Next:** hot-deploy this image, owner re-uploads; PR → dev → main.
