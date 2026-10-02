@@ -6,6 +6,7 @@ from collections.abc import Callable, Iterator
 from typing import Any, ParamSpec, TypeVar
 
 import boto3
+from boto3.exceptions import S3UploadFailedError
 from botocore.config import Config
 from botocore.exceptions import BotoCoreError, ClientError
 
@@ -31,8 +32,9 @@ def s3_errors(fn: Callable[P, R]) -> Callable[P, R]:
                 raise BlobNotFoundError("File not found") from e
             logger.error("object storage call failed", extra={"op": fn.__name__})
             raise ExternalServiceError("Storage operation failed") from e
-        except BotoCoreError as e:
-            # Never log the exception text: botocore can include endpoint and signing details.
+        except (BotoCoreError, S3UploadFailedError) as e:
+            # upload_file wraps the server error in boto3's S3UploadFailedError (not a
+            # ClientError). Never log the text: it can include endpoint and signing details.
             logger.error("object storage unavailable", extra={"op": fn.__name__})
             raise ExternalServiceError("Storage operation failed") from e
 
@@ -46,7 +48,15 @@ def make_s3_client(endpoint_url: str, region: str, access_key_id: str, secret_ac
         region_name=region or None,
         aws_access_key_id=access_key_id or None,
         aws_secret_access_key=secret_access_key or None,
-        config=Config(signature_version="s3v4", retries={"max_attempts": 3, "mode": "standard"}),
+        config=Config(
+            signature_version="s3v4",
+            retries={"max_attempts": 3, "mode": "standard"},
+            # boto3 >= 1.36 adds CRC checksums to every upload by default; that is AWS-only.
+            # Google Cloud Storage's S3 API rejects it (SignatureDoesNotMatch), as do other
+            # S3-compatible stores. Send checksums only when an operation requires them.
+            request_checksum_calculation="when_required",
+            response_checksum_validation="when_required",
+        ),
     )
 
 

@@ -129,6 +129,12 @@ Setup: project rules, specialist agent personas, skills and workflows in `.agent
 - **Fix:** deleted the file and rotated the DB password (secrets + DB user, old versions disabled, web + worker restarted); clean versions of the three secrets; `config.env()` now strips every setting at the source, with a regression test proven to fail without it.
 - **Lesson:** After one bad secret, check *all* of them; never point a tool at "-" unless you know it means stdout on that platform — and look at `git status` after any command that might write files.
 
+### 20. "S3-compatible" assumed, not tested, before going live
+- **What it did:** D-035 said to verify Cloud Storage's S3 API (upload, presigned GET) before relying on it; the agent deployed without that check. boto3 1.43 adds CRC checksums to every upload by default (an AWS-only feature), Google rejected them (`SignatureDoesNotMatch`), and boto3's `S3UploadFailedError` slipped past our error wrapper → the owner's first upload showed "Something went wrong (ref 51c856ae)".
+- **How I caught it:** the owner's screenshot; the ref led straight to the traceback in Cloud Logging; a direct probe against the bucket showed default config fails and `request_checksum_calculation="when_required"` passes upload, presigned GET, range read and delete.
+- **Fix:** checksums only when required (plus the response side); `S3UploadFailedError` → `ExternalServiceError`; two regression tests, both proven to fail on the old adapter.
+- **Lesson:** Run the planned smoke check against the real provider before handing the URL over — "compatible" APIs differ at the edges.
+
 ## How I verified AI-generated code
 - Automated unit test suite with deterministic JSON fixtures (pure logic, no model dependency).
 - Integration tests against migrated Postgres schema with multi-user isolation checks.

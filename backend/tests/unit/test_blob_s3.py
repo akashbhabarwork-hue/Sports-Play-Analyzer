@@ -79,3 +79,21 @@ def test_blob_s3_backend_errors_are_wrapped(store):
     store.bucket = "bucket-that-does-not-exist"
     with pytest.raises(ExternalServiceError):
         store.delete(KEY)  # NoSuchBucket is a backend failure, not "file not found"
+
+
+def test_blob_s3_failed_upload_is_a_storage_error_not_a_crash(store, tmp_path):
+    # Regression (live): upload_file raises boto3's S3UploadFailedError, which used to escape
+    # the wrapper and become a 500 "Something went wrong".
+    src = tmp_path / "clip.mp4"
+    src.write_bytes(b"data")
+    store.bucket = "bucket-that-does-not-exist"
+    with pytest.raises(ExternalServiceError):
+        store.put_file(KEY, str(src), "video/mp4")
+
+
+def test_s3_client_sends_checksums_only_when_required():
+    # Regression (live): Google Cloud Storage rejected boto3's default upload checksums with
+    # SignatureDoesNotMatch. Keep them opt-in for S3-compatible stores.
+    config = make_s3_client("https://storage.googleapis.com", "auto", "k", "s").meta.config
+    assert config.request_checksum_calculation == "when_required"
+    assert config.response_checksum_validation == "when_required"
