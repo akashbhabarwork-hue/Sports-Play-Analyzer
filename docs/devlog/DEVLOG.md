@@ -453,3 +453,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** the window-boundary test expected a hit exactly 60 s old to still count; the code (and `Retry-After`) treat it as expired — test expectation corrected.
 **Explain-it-in-review:** "Each user gets 10 submissions a minute and 30 an hour; the 11th gets a 429 with Retry-After telling them how long to wait. On top of that, nobody can have more than 3 videos queued or processing, so one person can't starve the worker."
 **Next:** T-091 Security headers + CORS + error audit
+
+---
+
+## 2026-10-02 15:55 IST — T-091 Security headers + CORS + error audit (agent: auth-security)
+**What changed:** new `core/security_headers.py` (pure CSP/headers/no-store rules); `api.py`: outermost `harden_responses` middleware (headers + last-resort 500 with ref id), optional `CORSMiddleware`, `RequestValidationError` and framework 404/405 → envelope, `serve_spa` realpath containment; `errors.py` `InternalError`, `MethodNotAllowedError`; `config.py` `CORS_ORIGINS`, `CSP_MEDIA_ORIGINS` + validation; `.env.example`, README env rows; tests `test_security_headers.py` (7), `test_headers_api.py` (14).
+**Why:** "restricted CORS, security headers"; closes F-001 (path traversal) and F-006 (validation errors outside the envelope).
+**Decisions:** D-033 (pure header builder + one function middleware, HSTS prod-only, fonts + S3 media origins in CSP, CORS off by default, catch crashes in the outermost middleware so 500s keep their headers).
+**Verification:** `pytest -q -k headers` → 21 passed; unit suite 560 passed, 1 failed (pre-existing Windows-only chmod); ruff, format, design checker ✓. Browser on the preview server under the real CSP: Inter fonts load, annotated video plays (readyState 4), canvas heatmap draws, thumbnail loads, 0 CSP console errors.
+**AI mistakes caught:** F-001 traversal in the original SPA route (regression test proven to read the secret without the fix); `/jobs` aliases missing from no-store; `caplog` assumption — see AI_USAGE #14.
+**Explain-it-in-review:** "Every response gets a strict CSP — only our own scripts, Google Fonts and our storage host for video — plus nosniff, frame-deny and HSTS in production. CORS is off because the SPA is same-origin. Every error, even a crash, comes back in the same JSON shape with no internals; a crash gives the user a reference id we can find in the logs."
+**Next:** T-092 Secret scanning in CI

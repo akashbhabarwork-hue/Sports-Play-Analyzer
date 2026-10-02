@@ -30,6 +30,9 @@ SESSION_TTL_DAYS = int(os.getenv("SESSION_TTL_DAYS", "7"))
 # Extra origins allowed to send unsafe requests (CSRF check), comma-separated. APP_ORIGIN is
 # always trusted; local dev adds the Vite server, e.g. http://localhost:5173.
 TRUSTED_ORIGINS = tuple(o.strip() for o in os.getenv("TRUSTED_ORIGINS", "").split(",") if o.strip())
+# CORS is off: the SPA is served from the same origin. Set exact origins (comma-separated) only
+# if another site must call the API with cookies; "*" is refused. They are CSRF-trusted too.
+CORS_ORIGINS = tuple(o.strip() for o in os.getenv("CORS_ORIGINS", "").split(",") if o.strip())
 
 # ---- storage ----
 # local: a directory (compose volume / dev). s3: Tigris, R2 or AWS — required in production
@@ -43,6 +46,11 @@ S3_BUCKET = os.getenv("S3_BUCKET", "")
 S3_REGION = os.getenv("S3_REGION", "")
 S3_ACCESS_KEY_ID = os.getenv("S3_ACCESS_KEY_ID", "")
 S3_SECRET_ACCESS_KEY = os.getenv("S3_SECRET_ACCESS_KEY", "")
+# Extra origins the browser may load video/thumbnails from (CSP), e.g. a CDN in front of the
+# bucket. The S3_ENDPOINT_URL origin (path- and virtual-hosted style) is always allowed.
+CSP_MEDIA_ORIGINS = tuple(
+    o.strip() for o in os.getenv("CSP_MEDIA_ORIGINS", "").split(",") if o.strip()
+)
 BLOB_BACKENDS = ("local", "s3")
 
 # ---- ingestion limits ----
@@ -147,6 +155,7 @@ class Settings:
     cookie_secure: bool = True
     session_ttl_days: int = 7
     trusted_origins: tuple[str, ...] = ()
+    cors_origins: tuple[str, ...] = ()
     blob_backend: str = "local"
     blob_local_dir: str = ""
     s3_endpoint_url: str = ""
@@ -154,6 +163,7 @@ class Settings:
     s3_region: str = ""
     s3_access_key_id: str = ""
     s3_secret_access_key: str = ""
+    csp_media_origins: tuple[str, ...] = ()
     max_upload_bytes: int = 100 * 1024 * 1024
     max_video_seconds: int = 60
     upload_tmp_dir: str = ""
@@ -201,7 +211,7 @@ class Settings:
 
     @property
     def csrf_trusted_origins(self) -> frozenset[str]:
-        origins = (self.app_origin, *self.trusted_origins)
+        origins = (self.app_origin, *self.trusted_origins, *self.cors_origins)
         return frozenset(o.rstrip("/").lower() for o in origins if o)
 
     @property
@@ -225,6 +235,7 @@ def validate_settings(settings: Settings) -> None:
             raise RuntimeError(
                 f"Missing required settings for BLOB_BACKEND=s3: {', '.join(missing_s3)}"
             )
+    validate_origin_settings(settings)
     validate_video_settings(settings)
     validate_tracker_settings(settings)
     validate_metrics_settings(settings)
@@ -240,6 +251,16 @@ def validate_settings(settings: Settings) -> None:
     missing = [name for name in REQUIRED_IN_PRODUCTION if not values[name]]
     if missing:
         raise RuntimeError(f"Missing required settings in production: {', '.join(missing)}")
+
+
+def validate_origin_settings(settings: Settings) -> None:
+    for name, origins in (
+        ("CORS_ORIGINS", settings.cors_origins),
+        ("CSP_MEDIA_ORIGINS", settings.csp_media_origins),
+    ):
+        for origin in origins:
+            if not origin.startswith(("https://", "http://")) or "*" in origin:
+                raise RuntimeError(f"{name} must list exact http(s) origins; '*' is not allowed")
 
 
 def validate_video_settings(settings: Settings) -> None:
@@ -306,6 +327,7 @@ def load_settings() -> Settings:
         cookie_secure=COOKIE_SECURE,
         session_ttl_days=SESSION_TTL_DAYS,
         trusted_origins=TRUSTED_ORIGINS,
+        cors_origins=CORS_ORIGINS,
         blob_backend=BLOB_BACKEND,
         blob_local_dir=BLOB_LOCAL_DIR,
         s3_endpoint_url=S3_ENDPOINT_URL,
@@ -313,6 +335,7 @@ def load_settings() -> Settings:
         s3_region=S3_REGION,
         s3_access_key_id=S3_ACCESS_KEY_ID,
         s3_secret_access_key=S3_SECRET_ACCESS_KEY,
+        csp_media_origins=CSP_MEDIA_ORIGINS,
         max_upload_bytes=MAX_UPLOAD_SIZE_BYTES,
         max_video_seconds=MAX_VIDEO_DURATION_SECONDS,
         upload_tmp_dir=UPLOAD_TMP_DIR,

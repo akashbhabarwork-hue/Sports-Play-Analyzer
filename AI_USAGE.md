@@ -93,6 +93,12 @@ Setup: project rules, specialist agent personas, skills and workflows in `.agent
 - **Fix:** height cap from the clip's aspect, more specific selector, `flex: none` on the chip, alpha fades in from 0 (regression test), time stamp bottom-left, an honest "ball not detected" note instead of zeros.
 - **Lesson:** Look at real output (a frame, a screenshot) — not just at the code that produces it.
 
+### 14. A path-traversal hole in AI-written SPA serving (F-001)
+- **What it did:** The original `serve_spa` (S1) joined the raw URL path onto the dist folder and served any file that existed, so `GET /..%2fsecret.txt` could read files outside it. In T-091 the agent's first `no-store` rule also forgot the `/jobs…` API aliases, and its crash test assumed pytest's `caplog` sees our JSON logger (it doesn't propagate).
+- **How I caught it:** F-001 came from the S7 review; the new regression test was run against the old code and did read `TOP-SECRET`. The alias gap came from a self-review against D-004; the log assertion failed on the first run.
+- **Fix:** realpath containment check; `/jobs` added to `needs_no_store`; the test reads stderr and checks the same `error_ref` appears in the log and the response.
+- **Lesson:** Prove a security test fails without the fix — otherwise it may not test anything.
+
 ## How I verified AI-generated code
 - Automated unit test suite with deterministic JSON fixtures (pure logic, no model dependency).
 - Integration tests against migrated Postgres schema with multi-user isolation checks.

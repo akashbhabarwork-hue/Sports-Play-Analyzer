@@ -38,6 +38,8 @@ Rollback: Actions → Rollback → enter previous sha. First-time setup: see [do
 | `COOKIE_SECURE` | `true` | `true`: session cookie `__Host-sid` (Secure); `false` for local http: cookie `sid` |
 | `SESSION_TTL_DAYS` | `7` | Session lifetime |
 | `TRUSTED_ORIGINS` | `""` | Extra origins (comma-separated) allowed to send unsafe requests; e.g. Vite `http://localhost:5173` |
+| `CORS_ORIGINS` | `""` | CORS stays off (same-origin SPA) unless exact origins are listed; `*` is refused |
+| `CSP_MEDIA_ORIGINS` | `""` | Extra origins for video/thumbnails in the CSP (e.g. a CDN); the `S3_ENDPOINT_URL` origin is always allowed |
 | `LEASE_SECONDS` | `60` | Worker lease on a claimed job, extended by heartbeats |
 | `BLOB_BACKEND` | `local` | `local` (directory) or `s3` (Tigris/R2/AWS); production requires `s3` |
 | `BLOB_LOCAL_DIR` | `<repo>/blobs` | Directory for `local` (Docker: `/app/blobs`) |

@@ -160,3 +160,15 @@ class YouTubeBlockedError(AppError):
 class DownloadFailedError(AppError):
     status_code = 422
     code = "DOWNLOAD_FAILED"
+
+
+class InternalError(AppError):
+    """An unexpected crash. The message carries only a reference id; details go to the logs."""
+
+    status_code = 500
+    code = "INTERNAL"
+
+
+class MethodNotAllowedError(AppError):
+    status_code = 405
+    code = "METHOD_NOT_ALLOWED"
