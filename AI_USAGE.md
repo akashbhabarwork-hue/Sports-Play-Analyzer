@@ -117,6 +117,12 @@ Setup: project rules, specialist agent personas, skills and workflows in `.agent
 - **Fix:** `aa5489c8…` (v3.0.1); `auth@7c6bc770…` (v3.0.0) re-verified the same way; the other pins are reused from the CI-proven `ci.yml`.
 - **Lesson:** Resolve a pin from the source before writing it, not after — a wrong SHA can look plausible.
 
+### 18. Two first-deploy failures: a hidden carriage return and the wrong port
+- **What it did:** (a) The DB password was generated in Git Bash on Windows (`openssl rand -base64 | tr -d '\n=/+'`). Windows line endings left a `\r` inside it, so `DATABASE_URL` and the real password disagreed → `password authentication failed for user "app"`. (b) The web service was deployed without `--port`; Cloud Run probes 8080, our image listens on 8000 → "startup probe timed out".
+- **How I caught it:** Cloud Logging for the migration job and the revision; the password secrets were compared by sha256 prefix (never printed), and a CR-byte count showed the stray `\r`.
+- **Fix:** a new letters-and-digits-only password (`tr -dc 'A-Za-z0-9' </dev/urandom`) set on the DB user and written to both secrets with `printf '%s'` (0 CR bytes verified), old versions disabled; `--port=8000` on the web deploy in `cd.yml` and `rollback.yml`.
+- **Lesson:** On Windows, generate secrets from a restricted alphabet and verify the stored bytes; read the platform's defaults (port, probes) instead of assuming the local compose setup carries over.
+
 ## How I verified AI-generated code
 - Automated unit test suite with deterministic JSON fixtures (pure logic, no model dependency).
 - Integration tests against migrated Postgres schema with multi-user isolation checks.

@@ -491,3 +491,12 @@ Stage summaries live in `docs/devlog/stages/`.
 **Verification:** unit 563 passed (+ known Windows-only failure); integration 107 collect (CI); ruff, format, design ✓; frontend lint/typecheck/73 tests/build ✓; browser on the preview server (no Google config): "Continue with Google" → login page with "Google sign-in is not available…" message.
 **AI mistakes caught:** AI_USAGE #16.
 **Next:** owner sets up the Google OAuth client + `.env` → Docker pass → deploy (Render).
+---
+
+## 2026-10-02 13:32 IST — T-014 / F-005 first deploy on Google Cloud + T-100/T-101 workflows (agent: devops)
+**What changed:** Google Cloud project `sports-play-analyzer` (`asia-south1`): Artifact Registry `sports-analyzer`; Cloud SQL Postgres 16 `sports-analyzer-db` (Enterprise, db-custom-1-3840) with DB `sports_analyzer` / user `app`; private bucket `sports-play-analyzer-media` (uniform access, public access prevention); runtime SA `sports-analyzer-run` (bucket objectAdmin, cloudsql.client, secretAccessor per secret); 7 Secret Manager secrets; Workload Identity pool `github-actions` limited to this repo → `github-deployer` SA. Image built with Cloud Build (`web:348b9fa`), migration job ran 0001+0002, web service `sports-analyzer-web` (min 1) and worker pool `sports-analyzer-worker` (1×2 vCPU/2 GiB) deployed. Repo: `cd.yml`, `rollback.yml`, D-035, ADR/README storage + host notes.
+**Why:** live URL is mandatory (T-014); CD/rollback (T-100/T-101).
+**Decisions:** D-035 (Google Cloud), S3_REGION=auto + storage.googleapis.com per Google's boto3 sample.
+**Verification:** `/health` → `{"status":"ok","db":"ok","version":"348b9fa"}`; GET / 200 with CSP, X-Frame-Options DENY, HSTS; `/auth/login` → Google with the run.app callback; worker log "worker started". Not yet: Google sign-in on prod (redirect URI to add), a full job (storage path), CD run on main.
+**AI mistakes caught:** AI_USAGE #17 (mislabeled action SHA), #18 (CR in DB password; port 8080 vs 8000). Also found and revoked: a GitHub token embedded in the local git remote URL → remote switched to SSH with a dedicated key.
+**Next:** owner adds prod redirect URI → sign-in + full job on prod → T-102.
