@@ -19,6 +19,7 @@ from .models import (
     Job,
     JobOutcome,
     JobResult,
+    JobWithVideo,
     MediaInfo,
     NewVideo,
     OAuthProfile,
@@ -75,6 +76,8 @@ class VideoRepo(Protocol):
         fps: float,
     ) -> None: ...
 
+    def set_thumbnail_for_worker(self, video_id: UUID, thumbnail_key: str) -> None: ...
+
 
 class JobRepo(Protocol):
     def create_with_video(
@@ -84,6 +87,10 @@ class JobRepo(Protocol):
     def get(self, user_id: UUID, job_id: UUID) -> Job | None: ...
 
     def list_for_user(self, user_id: UUID, limit: int = 50) -> list[Job]: ...
+
+    def get_with_video(self, user_id: UUID, job_id: UUID) -> JobWithVideo | None: ...
+
+    def list_with_videos(self, user_id: UUID, limit: int = 50) -> list[JobWithVideo]: ...
 
     def get_for_worker(self, job_id: UUID) -> Job | None: ...
 
@@ -180,6 +187,10 @@ class FrameAnnotator(Protocol):
         self, frame_bgr: np.ndarray, tracks: Sequence[Track], ball: Box | None, t_s: float
     ) -> np.ndarray:
         """Return a copy of the frame with player boxes + ids, the ball and a time stamp."""
+        ...
+
+    def thumbnail_jpeg(self, frame_bgr: np.ndarray, max_width: int) -> bytes:
+        """A small JPEG of the frame for lists and the processing page (T-086)."""
         ...
 
 

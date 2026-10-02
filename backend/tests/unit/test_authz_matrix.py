@@ -11,7 +11,7 @@ from app.adapters.blob_local import LocalBlobStore
 from tests.api_fakes import World, add_job, add_user, browser, make_app
 
 PREFIXES = ("/api/jobs", "/jobs")  # canonical + D-004 aliases: both must be locked down
-SUFFIXES = ("", "/stats", "/players/1", "/heatmap", "/heatmap?team=A", "/video")
+SUFFIXES = ("", "/stats", "/players/1", "/heatmap", "/heatmap?team=A", "/video", "/thumbnail")
 
 
 @pytest.fixture
@@ -44,7 +44,7 @@ def test_user_b_cannot_learn_user_a_unfinished_job_exists(two_users, prefix, suf
     path = f"{prefix}/{queued.id}{suffix}"
     missing = f"{prefix}/{uuid.uuid4()}{suffix}"
 
-    assert alice.get(path).status_code == (200 if suffix == "" else 409), path
+    assert alice.get(path).status_code == (200 if suffix in ("", "/thumbnail") else 409), path
     # Not 409: Bob must not be able to tell "someone else's job" from "no such job".
     assert bob.get(path).json() == bob.get(missing).json()
     assert bob.get(path).status_code == 404, path

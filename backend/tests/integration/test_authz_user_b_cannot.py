@@ -13,7 +13,7 @@ from tests.integration.test_api_read import seed_succeeded_job
 pytestmark = pytest.mark.integration
 
 PREFIXES = ("/api/jobs", "/jobs")
-SUFFIXES = ("", "/stats", "/players/1", "/heatmap", "/heatmap?team=A", "/video")
+SUFFIXES = ("", "/stats", "/players/1", "/heatmap", "/heatmap?team=A", "/video", "/thumbnail")
 
 
 @pytest.fixture

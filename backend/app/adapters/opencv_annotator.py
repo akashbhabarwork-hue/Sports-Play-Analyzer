@@ -25,7 +25,20 @@ def _pt(x: float, y: float) -> tuple[int, int]:
     return int(round(x)), int(round(y))
 
 
+THUMBNAIL_QUALITY = 80
+
+
 class OpenCvFrameAnnotator:
+    def thumbnail_jpeg(self, frame_bgr: np.ndarray, max_width: int) -> bytes:
+        height, width = frame_bgr.shape[:2]
+        if width > max_width:
+            size = (max_width, max(1, round(height * max_width / width)))
+            frame_bgr = cv2.resize(frame_bgr, size, interpolation=cv2.INTER_AREA)
+        ok, buf = cv2.imencode(".jpg", frame_bgr, [cv2.IMWRITE_JPEG_QUALITY, THUMBNAIL_QUALITY])
+        if not ok:
+            raise ValueError("could not encode thumbnail")
+        return buf.tobytes()
+
     def draw(
         self, frame_bgr: np.ndarray, tracks: Sequence[Track], ball: Box | None, t_s: float
     ) -> np.ndarray:

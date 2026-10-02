@@ -71,6 +71,9 @@ class FakeVideos:
         self.video = Video(VIDEO_ID, USER_ID, "url", self.video.source_url, None, key, size,
                            duration_s, width, height, fps, NOW)  # fmt: skip
 
+    def set_thumbnail_for_worker(self, video_id, key):
+        self.video = replace(self.video, thumbnail_key=key)
+
 
 class FailingBlobs(LocalBlobStore):
     """Disk store whose upload of the annotated video fails (storage outage)."""
@@ -146,6 +149,20 @@ def test_job_succeeds_with_stats_tracks_and_playable_video(tmp_path, tiny_clip):
         2, abs=0.3
     )
     assert h.queue.failed is None
+
+
+def test_first_frame_thumbnail_is_saved_as_a_small_jpeg(tmp_path, tiny_clip):
+    h = Harness(tmp_path, tiny_clip)
+    h.run()
+
+    key = h.videos.video.thumbnail_key
+    assert key == f"videos/{VIDEO_ID}/thumbnail.jpg"
+    out = tmp_path / "thumb.jpg"
+    h.blobs.get_to_path(key, str(out))
+    data = out.read_bytes()
+    assert data[:3] == b"\xff\xd8\xff"  # JPEG magic
+    probe = FfprobeVideoProber().probe(str(out))  # ffprobe reads JPEGs as a 1-frame image
+    assert probe.width == 160  # the clip is 160 px wide, under the 320 px cap
 
 
 def test_progress_goes_fetching_analysing_saving_and_only_rises(tmp_path, tiny_clip):

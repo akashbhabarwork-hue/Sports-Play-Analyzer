@@ -150,3 +150,20 @@ def test_sessions_lookup_expiry_and_logout_all(repos, two_users):
     assert repos["sessions"].delete_all_for_user(a.id) == 1
     assert repos["sessions"].get_user_by_token(b"live-2") is None
     assert repos["sessions"].get_user_by_token(b"other") == b
+
+
+def test_jobs_with_videos_are_joined_and_user_scoped(repos, two_users):
+    """T-086: list/detail read job + video in one JOIN, never crossing users."""
+    a, b = two_users
+    url = NewVideo(source_type="url", source_url="https://youtu.be/x", sport="basketball",
+                   title="Semi final")  # fmt: skip
+    job = repos["jobs"].create_with_video(a.id, url, {})
+    repos["videos"].set_thumbnail_for_worker(job.video_id, f"videos/{job.video_id}/thumbnail.jpg")
+
+    (item,) = repos["jobs"].list_with_videos(a.id)
+    assert item.job.id == job.id and item.video.id == job.video_id
+    assert (item.video.sport, item.video.title) == ("basketball", "Semi final")
+    assert item.video.thumbnail_key == f"videos/{job.video_id}/thumbnail.jpg"
+    assert repos["jobs"].get_with_video(a.id, job.id) == item
+    assert repos["jobs"].list_with_videos(b.id) == []
+    assert repos["jobs"].get_with_video(b.id, job.id) is None

@@ -336,13 +336,13 @@ Scope added by the owner after S8: full visual/UX brief. Backend first so the UI
 - **Verify:** `pytest -q -k "submit_rules or sport_title"`; CI `-m integration -k "migration or sport"`
 - **Done notes:** Plan approved. Migration 0002 expand-only with working downgrade; `db_tables.py` mirrors it (+ `SPORTS` tuple kept equal to `core.submit_rules.SPORTS` by a test). `clean_title` (control chars → space, collapse, ≤120, empty → None), `check_sport` (case-insensitive, default football). New `ValidationError` (422) and `InvalidSportError` (422). Cheap checks run before ffprobe. 18 local tests; migration/CHECK tests CI-only.
 
-### [ ] T-086 · Job read model with video info + thumbnail — `MUST` `25m`
+### [x] T-086 · Job read model with video info + thumbnail — `MUST` `25m`
 - **Agent:** backend-api + cv-pipeline
 - **Depends on:** T-085
 - **Scope:** list/detail return `{id, title, sport, source_type, status, progress, stage, duration_s, size_bytes, thumbnail_url, error, created_at, …}` (job JOIN video, user-scoped); worker saves first-frame JPEG thumbnail; ownership-checked `GET /api/jobs/{id}/thumbnail` (+ alias). Closes F-009.
 - **Acceptance:** shapes match the brief's contract; foreign thumbnail → 404; A3 matrix includes `/thumbnail`.
 - **Verify:** `pytest -q -k "read_api or thumbnail or user_b_cannot"`
-- **Done notes:** _
+- **Done notes:** `JobRepo.get_with_video` / `list_with_videos` (one JOIN, both tables filtered on `user_id`) → `JobWithVideo`; list/detail items now carry `title, sport, source_type, original_filename, source_url, duration_s, size_bytes, thumbnail_url` (detail keeps the nested `video` for the S8 UI until T-095/T-097). Worker saves frame 0 as a ≤320 px JPEG at `videos/{video_id}/thumbnail.jpg` (deterministic key) + `set_thumbnail_for_worker`. `GET /api/jobs/{id}/thumbnail` (+ alias): ownership-first 404, presigned 302 on S3 or streamed `image/jpeg` with `Cache-Control: private, max-age=3600`. A3 matrix (unit + CI) includes `/thumbnail`. Local 74 tests in the touched files; Postgres JOIN/scoping + thumbnail round-trip CI-only. Closes F-009.
 
 ### [ ] T-087 · Two-pass render: team-coloured boxes + honest stages — `MUST` `30m` `[review-plan]`
 - **Agent:** cv-pipeline
@@ -495,5 +495,5 @@ Scope added by the owner after S8: full visual/UX brief. Backend first so the UI
 - [ ] **F-005** (devops, before T-100) Finish T-014: Fly app (web+worker), Neon, bucket, first deploy, `/health` live; re-run the YouTube spike from the prod worker (`fly ssh console`) and update D-010. Pick the mitigation (none / cookies / proxy) for A1.
 - [x] **F-004** (T-020) Remove the "exit 5 = ok" allowance from the CI integration step once integration tests exist.
 - [ ] **F-007** (backend-api) Snapshot the full pipeline config into `jobs.config` at submit time (today only `max_video_seconds`; `stats.config` already records the effective values per result — D-026).
-- [ ] **F-009** (backend-api + frontend) Include the video's filename / URL in `GET /api/jobs` rows (join `videos`, user-scoped) so the jobs table can show "match.mp4" instead of a short id.
+- [x] **F-009** (backend-api + frontend, done in T-086) Include the video's filename / URL in `GET /api/jobs` rows (join `videos`, user-scoped) so the jobs table can show "match.mp4" instead of a short id.
 - [ ] **F-008** (frontend, with F-002) Upgrade Vite 5 → current and Vitest 3 → matching major together: `npm audit` reports 1 high + 3 moderate advisories, all in dev-server/test tooling (`npm audit --omit=dev` = 0). Also pin the remaining `^` ranges in `package.json`.

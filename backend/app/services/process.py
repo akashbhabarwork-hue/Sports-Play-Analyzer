@@ -19,10 +19,11 @@ import tempfile
 from collections.abc import Iterator
 from dataclasses import dataclass
 from typing import Any
+from uuid import UUID
 
 import numpy as np
 
-from ..core.blob_keys import annotated_key
+from ..core.blob_keys import annotated_key, thumbnail_key
 from ..core.metrics import build_stats
 from ..core.models import (
     FrameObservation,
@@ -85,6 +86,7 @@ FINAL_ERRORS = (
     ModelError,
 )
 LEASE_LOST_MESSAGE = "This job is now owned by another worker."
+THUMBNAIL_MAX_WIDTH = 320
 
 
 @dataclass(frozen=True, slots=True)
@@ -192,6 +194,17 @@ def _run(job: Job, ports: PipelinePorts, cfg: ProcessConfig, worker_id: str) -> 
         raise LeaseLostError(LEASE_LOST_MESSAGE)
 
 
+def _save_thumbnail(ports: PipelinePorts, video_id: UUID, frame: np.ndarray, tmp: str) -> None:
+    """First decoded frame → small JPEG for lists/processing page. Deterministic key, so a
+    retry overwrites it (T-086)."""
+    path = os.path.join(tmp, "thumbnail.jpg")
+    with open(path, "wb") as f:
+        f.write(ports.annotator.thumbnail_jpeg(frame, THUMBNAIL_MAX_WIDTH))
+    key = thumbnail_key(video_id)
+    ports.blobs.put_file(key, path, "image/jpeg")
+    ports.videos.set_thumbnail_for_worker(video_id, key)
+
+
 def _annotated_frames(
     job: Job,
     ports: PipelinePorts,
@@ -212,6 +225,8 @@ def _annotated_frames(
     for idx, frame in enumerate(ports.frames.frames(src, size, p.sample_fps, p.max_seconds)):
         if idx % p.heartbeat_every_frames == 0:
             _beat(ports, job, worker_id, cfg, progress_pct(idx, expected), "analysing")
+        if idx == 0:
+            _save_thumbnail(ports, job.video_id, frame, os.path.dirname(src))
         dets = ports.detector.detect(frame)
         players = player_detections(dets, size.width, size.height, cfg.tracker)
         ball = pick_ball(dets)

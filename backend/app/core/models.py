@@ -76,6 +76,14 @@ class Job:
 
 
 @dataclass(frozen=True, slots=True)
+class JobWithVideo:
+    """A job and its video, read together (one JOIN) for the job list and detail (T-086)."""
+
+    job: Job
+    video: Video
+
+
+@dataclass(frozen=True, slots=True)
 class JobResult:
     job_id: UUID
     stats: dict[str, Any]

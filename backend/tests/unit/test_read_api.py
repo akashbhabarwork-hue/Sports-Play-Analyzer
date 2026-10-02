@@ -4,6 +4,7 @@ import pytest
 
 from app.adapters.blob_local import LocalBlobStore
 from tests.api_fakes import (
+    THUMB_BYTES,
     VIDEO_BYTES,
     PresigningBlobs,
     World,
@@ -45,6 +46,37 @@ def test_read_api_list_is_newest_first_with_status_and_errors(setup, prefix):
     assert jobs[0]["error"] == {"code": "DECODE_ERROR", "message": "We couldn't decode frames."}
     assert jobs[1]["status"] == "queued" and jobs[1]["error"] is None
     assert {"progress", "stage", "created_at", "finished_at"} <= jobs[1].keys()
+
+
+def test_read_api_list_items_carry_video_info_and_thumbnail_url(setup):
+    client, done, *_ = setup
+    item = next(j for j in client.get("/api/jobs").json()["jobs"] if j["id"] == str(done.id))
+    assert item["title"] == "Clip 1" and item["sport"] == "football"
+    assert (item["source_type"], item["original_filename"], item["source_url"]) == (
+        "upload",
+        "match.mp4",
+        None,
+    )
+    assert (item["duration_s"], item["size_bytes"]) == (12.5, 100)
+    assert item["thumbnail_url"] == f"/api/jobs/{done.id}/thumbnail"
+
+
+@pytest.mark.parametrize("prefix", ["/api", ""])
+def test_read_api_thumbnail_is_a_private_jpeg(setup, prefix):
+    client, _, queued, _ = setup  # available while processing too: saved from the first frame
+    r = client.get(f"{prefix}/jobs/{queued.id}/thumbnail")
+    assert r.status_code == 200 and r.content == THUMB_BYTES
+    assert r.headers["content-type"] == "image/jpeg"
+    assert r.headers["cache-control"].startswith("private")
+
+
+def test_read_api_thumbnail_missing_is_404_and_url_null(world, blobs):
+    alice, token = add_user(world, "alice")
+    job = add_job(world, None, alice, "queued")  # no blobs → worker hasn't saved one yet
+    client = browser(make_app(world, blobs), token)
+    assert client.get(f"/api/jobs/{job.id}").json()["thumbnail_url"] is None
+    r = client.get(f"/api/jobs/{job.id}/thumbnail")
+    assert r.status_code == 404 and r.json()["error"]["code"] == "NOT_FOUND"
 
 
 def test_read_api_detail_includes_video_info(setup):

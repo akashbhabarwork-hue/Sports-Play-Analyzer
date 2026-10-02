@@ -16,7 +16,7 @@ from fastapi.testclient import TestClient
 from app.adapters.blob_local import LocalBlobStore
 from app.adapters.ffprobe import FfprobeVideoProber
 from app.config import Settings
-from app.core.models import Job, JobResult, PlayerTrack, User, Video
+from app.core.models import Job, JobResult, JobWithVideo, PlayerTrack, User, Video
 from app.core.sessions import hash_token
 from app.entrypoints.api import create_app
 from app.wiring import Container
@@ -24,6 +24,7 @@ from app.wiring import Container
 NOW = datetime(2026, 10, 2, 12, 0, tzinfo=UTC)
 GRID = {"w": 2, "h": 1, "counts": [3, 1], "max": 3}
 VIDEO_BYTES = bytes(range(256)) * 40  # 10,240 bytes: big enough to range over
+THUMB_BYTES = b"\xff\xd8\xff\xe0fake-jpeg\xff\xd9"
 
 
 class OkHealth:
@@ -73,6 +74,17 @@ class FakeJobs:
     def list_for_user(self, user_id, limit=50):
         mine = [j for j in self.w.jobs.values() if j.user_id == user_id]
         return sorted(mine, key=lambda j: j.created_at, reverse=True)[:limit]
+
+    def _pair(self, job):
+        video = self.w.videos.get(job.video_id)
+        return JobWithVideo(job, video) if video and video.user_id == job.user_id else None
+
+    def get_with_video(self, user_id, job_id):
+        job = self.get(user_id, job_id)
+        return self._pair(job) if job else None
+
+    def list_with_videos(self, user_id, limit=50):
+        return [p for j in self.list_for_user(user_id, limit) if (p := self._pair(j))]
 
 
 class FakeVideos:
@@ -128,6 +140,10 @@ def add_job(w: World, blobs, owner: User, status: str = "succeeded", minute: int
               NOW)  # fmt: skip
     if status == "failed":
         job = replace(job, error_code="DECODE_ERROR", error_message="We couldn't decode frames.")
+    if blobs is not None:  # every seeded job has a first-frame thumbnail (T-086)
+        thumb = f"videos/{video.id}/thumbnail.jpg"
+        _put_blob(blobs, thumb, THUMB_BYTES, "image/jpeg")
+        video = replace(video, thumbnail_key=thumb, title=f"Clip {minute}")
     w.videos[video.id] = video
     w.jobs[job.id] = job
     if status == "succeeded":
@@ -151,16 +167,16 @@ def add_job(w: World, blobs, owner: User, status: str = "succeeded", minute: int
         w.tracks[(job.id, 1)] = PlayerTrack(job.id, 1, "A", 10, 50.0, 0.25, 4, GRID,
                                             [[0.0, 0.1, 0.9], [0.2, 0.2, 0.9]])  # fmt: skip
         if blobs is not None:
-            _put_video(blobs, key)
+            _put_blob(blobs, key, VIDEO_BYTES, "video/mp4")
     return job
 
 
-def _put_video(blobs, key: str) -> None:
+def _put_blob(blobs, key: str, data: bytes, content_type: str) -> None:
     with tempfile.TemporaryDirectory() as tmp:
-        src = os.path.join(tmp, "annotated.mp4")
+        src = os.path.join(tmp, "blob")
         with open(src, "wb") as f:
-            f.write(VIDEO_BYTES)
-        blobs.put_file(key, src, "video/mp4")
+            f.write(data)
+        blobs.put_file(key, src, content_type)
 
 
 def make_container(w: World, blobs) -> Container:

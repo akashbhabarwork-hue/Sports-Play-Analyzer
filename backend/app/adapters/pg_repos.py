@@ -17,7 +17,7 @@ from sqlalchemy.dialects.postgresql import insert as pg_insert
 from sqlalchemy.engine import RowMapping
 from sqlalchemy.exc import SQLAlchemyError
 
-from ..core.models import Job, JobResult, NewVideo, PlayerTrack, User, Video
+from ..core.models import Job, JobResult, JobWithVideo, NewVideo, PlayerTrack, User, Video
 from ..errors import ExternalServiceError
 from .db_tables import job_results, jobs, player_tracks, sessions, users, videos
 
@@ -163,6 +163,12 @@ class PostgresVideoRepo:
         with self.engine.begin() as conn:
             conn.execute(stmt)
 
+    @db_errors
+    def set_thumbnail_for_worker(self, video_id: UUID, thumbnail_key: str) -> None:
+        stmt = update(videos).where(videos.c.id == video_id).values(thumbnail_key=thumbnail_key)
+        with self.engine.begin() as conn:
+            conn.execute(stmt)
+
 
 class PostgresJobRepo:
     def __init__(self, engine: Engine):
@@ -220,12 +226,48 @@ class PostgresJobRepo:
         with self.engine.connect() as conn:
             return rows_to(Job, conn.execute(stmt).mappings().all())
 
+    def _with_video(self, user_id: UUID):
+        # Both tables are filtered on user_id: a job can only point at its owner's video, and
+        # repeating the filter keeps that true even if a bug ever broke the FK pairing.
+        cols = [c.label(f"j_{c.name}") for c in jobs.c] + [c.label(f"v_{c.name}") for c in videos.c]
+        return (
+            select(*cols)
+            .join(videos, videos.c.id == jobs.c.video_id)
+            .where(jobs.c.user_id == user_id, videos.c.user_id == user_id)
+        )
+
+    @db_errors
+    def get_with_video(self, user_id: UUID, job_id: UUID) -> JobWithVideo | None:
+        stmt = self._with_video(user_id).where(jobs.c.id == job_id)
+        with self.engine.connect() as conn:
+            row = conn.execute(stmt).mappings().first()
+        return _job_with_video(row) if row else None
+
+    @db_errors
+    def list_with_videos(self, user_id: UUID, limit: int = 50) -> list[JobWithVideo]:
+        # Same index as list_for_user (ix_jobs_user_created); the join is by primary key.
+        stmt = (
+            self._with_video(user_id)
+            .order_by(jobs.c.created_at.desc(), jobs.c.id.desc())
+            .limit(limit)
+        )
+        with self.engine.connect() as conn:
+            return [_job_with_video(r) for r in conn.execute(stmt).mappings().all()]
+
     @db_errors
     def get_for_worker(self, job_id: UUID) -> Job | None:
         with self.engine.connect() as conn:
             return row_to(
                 Job, conn.execute(select(jobs).where(jobs.c.id == job_id)).mappings().first()
             )
+
+
+def _prefixed(cls: type[T], row: RowMapping, prefix: str) -> T:
+    return cls(**{f.name: row[f"{prefix}{f.name}"] for f in fields(cls)})
+
+
+def _job_with_video(row: RowMapping) -> JobWithVideo:
+    return JobWithVideo(job=_prefixed(Job, row, "j_"), video=_prefixed(Video, row, "v_"))
 
 
 class PostgresResultRepo:

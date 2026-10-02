@@ -354,3 +354,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** title test expected control characters to be deleted, code replaces them with a space (safer — no glued words) → test expectation fixed; shared test container lacked a prober → upload test crashed before validation → fixed in the fakes.
 **Explain-it-in-review:** "Sport and title are just two more video columns, added with a migration that only adds — the old app version keeps working against the new schema, which keeps rollback safe. Both are cleaned and checked in pure functions before we even look at the file."
 **Next:** T-086 Job read model with video info + thumbnail
+
+---
+
+## 2026-10-02 14:09 IST — T-086 Job read model with video info + thumbnail (agents: backend-api + cv-pipeline)
+**What changed:** `JobWithVideo` model; `JobRepo.get_with_video` / `list_with_videos` (labelled-column JOIN, `user_id` on both tables); `VideoRepo.set_thumbnail_for_worker`; `FrameAnnotator.thumbnail_jpeg` (OpenCV resize ≤320 px + JPEG q80); `core/blob_keys.thumbnail_key`; worker saves frame 0 in `services/process.py`; `read_job.get_job` now returns `JobWithVideo`, new `get_thumbnail`; response schemas carry title/sport/source/duration/size/`thumbnail_url`; `GET /api/jobs/{id}/thumbnail` (+ alias) via a small `blob_response`; tests extended (read API, A3 matrix, process_job thumbnail, repo JOIN scoping, Postgres thumbnail round-trip).
+**Why:** the redesigned list/processing pages show title, sport, duration, size and a thumbnail; without this the UI would have to fake them (D-030). Closes F-009.
+**Decisions:** one JOIN instead of N+1 lookups; repeat the `user_id` filter on the joined table (defence in depth); the thumbnail is readable as soon as the worker has decoded the first frame (any status), ownership checked first like everything else.
+**Verification:** touched-file tests 74 passed locally; full unit suite 515 passed, 1 failed (pre-existing Windows-only chmod); ruff, format, design checker ✓; 106 Postgres tests collect. **Not run locally:** JOIN/scoping + thumbnail SQL tests (CI).
+**AI mistakes caught:** none.
+**Explain-it-in-review:** "The job list is one query that joins each job with its video, filtered by your user id on both sides. The worker saves the first frame as a small JPEG; it's served through the same ownership check as the video, so another user gets 404 for it too."
+**Next:** T-087 Two-pass render: team-coloured boxes + honest stages `[review-plan]` (covered by the approved S8b plan)

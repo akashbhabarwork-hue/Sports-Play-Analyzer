@@ -15,7 +15,7 @@ from starlette.middleware.sessions import SessionMiddleware
 
 from ..config import Settings, load_settings
 from ..core.http_range import parse_range
-from ..core.models import Job, User
+from ..core.models import JobWithVideo, User
 from ..errors import (
     AppError,
     CsrfRejectedError,
@@ -26,13 +26,13 @@ from ..errors import (
 )
 from ..services.auth import login_user, logout, user_for_token
 from ..services.read_job import (
-    JobView,
     PlayerView,
     VideoAccess,
     get_heatmap,
     get_job,
     get_player,
     get_stats,
+    get_thumbnail,
     get_video,
     list_jobs,
 )
@@ -251,10 +251,19 @@ def make_current_user(container: Container):
     return current_user
 
 
-def job_summary(job: Job) -> dict:
+def job_summary(item: JobWithVideo) -> dict:
+    job, v = item.job, item.video
     error = {"code": job.error_code, "message": job.error_message} if job.error_code else None
     return {
         "id": job.id,
+        "title": v.title,
+        "sport": v.sport,
+        "source_type": v.source_type,
+        "original_filename": v.original_filename,
+        "source_url": v.source_url,
+        "duration_s": v.duration_s,
+        "size_bytes": v.size_bytes,
+        "thumbnail_url": f"/api/jobs/{job.id}/thumbnail" if v.thumbnail_key else None,
         "status": job.status,
         "progress": job.progress,
         "stage": job.stage,
@@ -264,24 +273,29 @@ def job_summary(job: Job) -> dict:
     }
 
 
-def job_detail(view: JobView) -> JobDetail:
-    v = view.video
-    video = (
-        VideoInfo(
-            source_type=v.source_type,
-            original_filename=v.original_filename,
-            source_url=v.source_url,
-            duration_s=v.duration_s,
-        )
-        if v
-        else None
+def job_detail(item: JobWithVideo) -> JobDetail:
+    v = item.video
+    video = VideoInfo(
+        source_type=v.source_type,
+        original_filename=v.original_filename,
+        source_url=v.source_url,
+        duration_s=v.duration_s,
     )
     return JobDetail(
-        **job_summary(view.job),
-        started_at=view.job.started_at,
-        attempts=view.job.attempts,
+        **job_summary(item),
+        started_at=item.job.started_at,
+        attempts=item.job.attempts,
         video=video,
     )
+
+
+def blob_response(container: Container, access: VideoAccess, media_type: str):
+    """Small blobs (thumbnails): 302 to a short-lived storage URL, or stream them whole."""
+    if access.url is not None:
+        return RedirectResponse(access.url, status_code=302, headers={"Cache-Control": "no-store"})
+    body = container.blobs.open_range(access.key, 0, None)
+    headers = {"Cache-Control": "private, max-age=3600", "Content-Length": str(access.size)}
+    return StreamingResponse(body, media_type=media_type, headers=headers)
 
 
 def player_detail(view: PlayerView) -> PlayerDetail:
@@ -384,7 +398,12 @@ def register_api_routes(app: FastAPI, container: Container) -> None:
 
     @jobs.get("/jobs/{job_id}", response_model=JobDetail)
     def job_get(job_id: UUID, user: User = Depends(current_user)) -> JobDetail:
-        return job_detail(get_job(container.jobs, container.videos, user.id, job_id))
+        return job_detail(get_job(container.jobs, user.id, job_id))
+
+    @jobs.get("/jobs/{job_id}/thumbnail")
+    def job_thumbnail(job_id: UUID, user: User = Depends(current_user)):
+        access = get_thumbnail(container.jobs, container.blobs, user.id, job_id)
+        return blob_response(container, access, "image/jpeg")
 
     @jobs.get("/jobs/{job_id}/stats")
     def job_stats(job_id: UUID, user: User = Depends(current_user)) -> StatsResponse:
