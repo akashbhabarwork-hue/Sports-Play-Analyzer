@@ -30,10 +30,10 @@ probe → stream frames → detect/track/metrics → encode → persist in one t
 | Teams | Jersey colour (HSV cone, torso crop) + deterministic 2-means; `unknown` when kits are too similar (D-023) | No training data, pure numpy, testable on synthetic frames | Referees/goalkeepers join the nearest team; similar kits → `unknown` |
 | Queue | Postgres SKIP LOCKED + lease | Zero extra infra (Redis/RabbitMQ), ACID consistency with job records | DB polling load (mitigated by exponential/jittered backoff) |
 | Sessions | Server-side `sessions` table, `__Host-sid` httpOnly Secure SameSite=Lax | Immediate revocation, immune to XSS token theft | DB query on authenticated requests (cached per-request) |
-| Storage | BlobStore protocol: local disk (dev) / S3-compatible Tigris or R2 (prod) | Single abstraction, zero cloud lock-in | Presigned URL expiration handling |
+| Storage | BlobStore protocol: local disk (dev) / Google Cloud Storage via its S3-compatible XML API + HMAC keys (prod) — "S3" = protocol, no AWS (D-035) | Single abstraction, zero cloud lock-in; R2/MinIO = config change only | Presigned URL expiration handling |
 | Read API & authz | Every read looks the job up with the session `user_id` first → 404 (never 403) for missing *or* foreign, then 409 if unfinished; video = 302 to ≤5-min presigned URL (S3) or Range streaming (local); `/jobs…` aliases + SPA under `/app/…` (D-028) | Other users can't even learn a job exists (A3); `<video>` can seek | Two URL prefixes to keep in sync (one router mounted twice) |
 | Frontend | React SPA: public `/` + `/login`, app under `/app/…`; identity only via `GET /api/me` (httpOnly cookie, nothing in web storage); 2 s polling only while a job is active, paused in hidden tabs; smooth canvas heatmaps over pitch/court by sport; only backend-provided numbers shown; pure logic unit-tested with Vitest (D-029, D-030) | Same-origin, no tokens in JS; idle tabs cost nothing | Polling, not push (SSE is BONUS T-B03) |
-| Host | Fly.io (web + worker process groups) + Neon Postgres | Free/cheap tier, process group separation in one image | Machine sleep / cold start latency |
+| Host | Google Cloud `asia-south1`: Cloud Run service (web, min 1 instance) + Cloud Run worker pool (worker) + Cloud SQL Postgres 16; one image, two commands (D-035) | One provider paid from trial credits; worker pools fit our pull-based queue; built-in revisions | More IAM setup; trial credits expire after 90 days; datacenter IP still blocked by YouTube |
 | Platform security | Per-user 10/min + 30/h submit limit (in-memory sliding window, 429 + `Retry-After`) and ≤3 active jobs; strict CSP (self + Google Fonts + storage origin, no `unsafe-inline`), nosniff, frame DENY, HSTS in prod; CORS off unless exact `CORS_ORIGINS`; one error envelope incl. 422/404/405 and a 500 with only a reference id (D-032, D-033) | One user can't flood the single worker; XSS/clickjacking surface minimal; no internals leak | Limiter counts per web process (shared counter is BONUS T-B05); new third-party origins need a CSP change |
 | SSRF | Host allowlist + DNS IP validation + manual redirect checks | Protects internal networks & cloud metadata endpoints | Residual: DNS rebinding during multi-step hops |
 | YouTube blocking | Graceful `YOUTUBE_BLOCKED` error + upload fallback | Datacenter IPs frequently challenged by YouTube anti-bot | User must upload file if cloud IP is blocked |
@@ -58,8 +58,8 @@ Source of truth: `backend/app/adapters/db_tables.py`; revision `0001`. UUID PKs,
 
 ## 6. CI/CD & rollback
 - GitHub Actions CI (lint, test, build) on push/PR, plus a gitleaks scan of the full git history (pinned v8.30.1, sha256-verified, redacted output; D-034).
-- CD on `main` merge: GHCR container build → Alembic migrate → deploy → `/health` check.
-- Rollback: Manual workflow redeploying target immutable image tag.
+- CD on `main` merge (`cd.yml`): Workload Identity Federation (no stored key, deployer SA limited to this repo) → build → Artifact Registry → Alembic migration as a one-shot Cloud Run job → web service + worker pool → `/health` must report the new git sha. Secrets come from Secret Manager.
+- Rollback (`rollback.yml`, manual): redeploys a previous image sha to web + worker, never runs migrations (schema changes are expand-only, so older code still runs).
 
 ## 7. What I cut and why
 - Real-time video streaming (WebRTC) — unnecessary complexity for offline asynchronous tactical analysis.
