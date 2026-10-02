@@ -5,6 +5,7 @@ testpaths = ["tests"]
 markers = [
     "integration: needs a real Postgres (TEST_DATABASE_URL)",
     "model: needs the ONNX model weights",
+    "ffmpeg: runs the real ffmpeg/ffprobe binaries (installed in CI and the image)",
 ]
 
 [tool.ruff]

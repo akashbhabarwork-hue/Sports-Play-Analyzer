@@ -120,6 +120,19 @@ class VideoProbe:
     width: int
     height: int
     fps: float | None
+    rotation: int = 0  # display rotation in degrees; ffmpeg applies it when decoding
+
+
+@dataclass(frozen=True, slots=True)
+class FrameSize:
+    """Size of the decoded BGR frames we stream (always even, so H.264 yuv420p accepts it)."""
+
+    width: int
+    height: int
+
+    @property
+    def frame_bytes(self) -> int:
+        return self.width * self.height * 3
 
 
 @dataclass(frozen=True, slots=True)

@@ -5,12 +5,15 @@ Authorization rule (A3): every method that reads a user's videos, jobs or result
 `tests/unit/test_ports.py` enforces this. "Not found" and "not yours" both return None.
 """
 
-from collections.abc import Iterator
+from collections.abc import Iterable, Iterator
 from datetime import datetime
 from typing import Any, Protocol
 from uuid import UUID
 
+import numpy as np
+
 from .models import (
+    FrameSize,
     Job,
     JobOutcome,
     JobResult,
@@ -150,6 +153,22 @@ class BlobStore(Protocol):
 class VideoProber(Protocol):
     def probe(self, path: str) -> VideoProbe:
         """Read container/stream metadata; raises CorruptFileError if unreadable."""
+        ...
+
+
+class FrameReader(Protocol):
+    def frames(
+        self, path: str, size: FrameSize, sample_fps: float, max_seconds: int
+    ) -> Iterator[np.ndarray]:
+        """Yield read-only HxWx3 BGR frames one at a time; raises DecodeError if none decode."""
+        ...
+
+
+class VideoEncoder(Protocol):
+    def encode(
+        self, frames: Iterable[np.ndarray], out_path: str, size: FrameSize, fps: float
+    ) -> int:
+        """Write browser-playable H.264 MP4 from the frames as they arrive; returns the count."""
         ...
 
 

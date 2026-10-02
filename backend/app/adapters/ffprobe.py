@@ -21,6 +21,17 @@ def _fps(rate: str | None) -> float | None:
         return None
 
 
+def _rotation(stream: dict) -> int:
+    """Display rotation from the display-matrix side data (new ffmpeg) or the rotate tag (old)."""
+    for side in stream.get("side_data_list") or []:
+        if "rotation" in side:
+            return int(float(side["rotation"])) % 360
+    try:
+        return int(float((stream.get("tags") or {}).get("rotate", 0))) % 360
+    except ValueError:
+        return 0
+
+
 class FfprobeVideoProber:
     def __init__(self, binary: str = "ffprobe"):
         self.binary = binary
@@ -55,6 +66,7 @@ class FfprobeVideoProber:
                 width=int(stream["width"]),
                 height=int(stream["height"]),
                 fps=_fps(stream.get("avg_frame_rate")) or _fps(stream.get("r_frame_rate")),
+                rotation=_rotation(stream),
             )
         except (ValueError, KeyError, IndexError, TypeError) as e:
             # No video stream, or output we cannot interpret.
