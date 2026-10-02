@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react'
 import type { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { ApiError, api } from './api'
+import { signOut } from './logic/session'
 import { AuthContext, useAuth } from './useAuth'
 import type { AuthState } from './useAuth'
 
@@ -27,13 +28,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   }, [])
 
-  const logout = useCallback(async () => {
-    try {
-      await api.logout()
-    } finally {
-      setState({ status: 'anonymous' })
-    }
-  }, [])
+  const logout = useCallback(
+    () => signOut(api.logout, () => setState({ status: 'anonymous' })),
+    [],
+  )
 
   return <AuthContext.Provider value={{ state, logout }}>{children}</AuthContext.Provider>
 }
