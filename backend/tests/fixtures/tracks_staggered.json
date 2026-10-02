@@ -1,0 +1,18 @@
+{"frames": [
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}, {"box": [400, 200, 440, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}, {"box": [400, 200, 440, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}, {"box": [400, 200, 440, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}, {"box": [400, 200, 440, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}, {"box": [400, 200, 440, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}, {"box": [400, 200, 440, 300], "score": 0.9, "cls": "player"}, {"box": [700, 200, 740, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}, {"box": [400, 200, 440, 300], "score": 0.9, "cls": "player"}, {"box": [700, 200, 740, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}, {"box": [400, 200, 440, 300], "score": 0.9, "cls": "player"}, {"box": [700, 200, 740, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}, {"box": [400, 200, 440, 300], "score": 0.9, "cls": "player"}, {"box": [700, 200, 740, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}, {"box": [400, 200, 440, 300], "score": 0.9, "cls": "player"}, {"box": [700, 200, 740, 300], "score": 0.9, "cls": "player"}],
+  [{"box": [100, 200, 140, 300], "score": 0.9, "cls": "player"}, {"box": [400, 200, 440, 300], "score": 0.9, "cls": "player"}, {"box": [700, 200, 740, 300], "score": 0.9, "cls": "player"}]
+]}

@@ -188,14 +188,14 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 
 ## S5 · Tracking & metrics core — pure, no model (55 m)
 
-### [ ] T-050 · Tracker (ByteTrack-style) + fixture tests — `MUST` `25m`
+### [x] T-050 · Tracker (ByteTrack-style) + fixture tests — `MUST` `25m`
 - **Agent:** cv-pipeline
 - **Depends on:** T-010
 - **Why:** "Track players across frames with stable IDs (IoU or ByteTrack-style)"; "Unit tests for the tracking… using fixture detections".
 - **Scope:** `core/models.py` types, `core/tracking.py` (`iou_matrix`, `associate`, `update`), fixtures `tracks_*.json`, the 8 tests listed in skill `player-tracking`.
 - **Acceptance:** all 8 tests pass in < 1 s; params come from `TrackerParams` built from Settings.
 - **Verify:** `pytest -q backend/tests/unit -k track`
-- **Done notes:** _
+- **Done notes:** `Box`/`Detection`/`Track`/`TrackerParams`/`TrackerState` in `core/models.py`; `core/tracking.py` (`iou_matrix`, `associate` via Hungarian, `predict`, `update`, `player_detections`, `pick_ball`); tracker settings + range validation in `config.py`, `wiring.tracker_params`. 7 fixtures from `tests/fixtures/make_track_fixtures.py`. 33 tests in ~0.1 s (the 8 from the skill + exact-max-age boundary, low boxes can't start or grow tracks, optimal-vs-greedy matching, min_hits=1, tiny-box filter, settings flow + 8 bad-setting cases). 7 mutations caught (no stage 2, no prediction, tentative kept on miss, max-age off-by-one, tentative in stage 2, minimised IoU, no IoU floor). `TRACKER_MAX_AGE` default 30 → 10. numpy + scipy pinned. See D-021.
 
 ### [ ] T-051 · Metrics: distance, heatmaps, ball %, possession — `MUST` `20m`
 - **Agent:** cv-pipeline
@@ -230,7 +230,7 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Agent:** cv-pipeline
 - **Depends on:** T-060
 - **Why:** "Detect players and the ball"; "Use pretrained models only"; licence justification.
-- **Scope:** Dockerfile model download with verified URL + sha256; `adapters/onnx_detector.py` (letterbox, decode, NMS, class filter, one ball); output-shape assert; `FakeDetector`; pure NMS/decode tests.
+- **Scope:** Dockerfile model download with verified URL + sha256; `adapters/onnx_detector.py` (letterbox, decode, NMS, class filter, one ball; keep player boxes down to `TRACKER_LOW_THRESH` for tracker stage 2, see D-021); output-shape assert; `FakeDetector`; pure NMS/decode tests.
 - **Acceptance:** sample frame → persons detected (manual/`model` marker test); unit tests pass without the model.
 - **Verify:** `pytest -q -k "nms or decode"`; `pytest -q -m model` locally
 - **Done notes:** _
