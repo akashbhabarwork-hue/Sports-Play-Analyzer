@@ -81,6 +81,11 @@ HEATMAP_GRID_H = int(os.getenv("HEATMAP_GRID_H", "18"))
 POSSESSION_DIST_RATIO = float(os.getenv("POSSESSION_DIST_RATIO", "0.5"))
 POSSESSION_MIN_FRAMES = int(os.getenv("POSSESSION_MIN_FRAMES", "3"))
 
+# ---- teams (core/teams.py) ----
+# Distance between the two jersey-colour cluster centres (HSV cone units, 0..~2) below which
+# the kits are considered indistinguishable and every player is labelled "unknown".
+TEAM_MIN_SEPARATION = float(os.getenv("TEAM_MIN_SEPARATION", "0.2"))
+
 REQUIRED_IN_PRODUCTION = ("GOOGLE_CLIENT_ID", "GOOGLE_CLIENT_SECRET", "SESSION_SECRET")
 
 
@@ -123,6 +128,7 @@ class Settings:
     heatmap_grid_h: int = 18
     possession_dist_ratio: float = 0.5
     possession_min_frames: int = 3
+    team_min_separation: float = 0.2
 
     @property
     def oauth_configured(self) -> bool:
@@ -193,6 +199,8 @@ def validate_metrics_settings(settings: Settings) -> None:
         raise RuntimeError("HEATMAP_GRID_W and HEATMAP_GRID_H must be between 1 and 256")
     if settings.possession_dist_ratio <= 0 or settings.possession_min_frames < 1:
         raise RuntimeError("POSSESSION_DIST_RATIO must be > 0 and POSSESSION_MIN_FRAMES >= 1")
+    if settings.team_min_separation < 0:
+        raise RuntimeError("TEAM_MIN_SEPARATION must be >= 0")
 
 
 def load_settings() -> Settings:
@@ -234,6 +242,7 @@ def load_settings() -> Settings:
         heatmap_grid_h=HEATMAP_GRID_H,
         possession_dist_ratio=POSSESSION_DIST_RATIO,
         possession_min_frames=POSSESSION_MIN_FRAMES,
+        team_min_separation=TEAM_MIN_SEPARATION,
     )
     validate_settings(settings)
     return settings

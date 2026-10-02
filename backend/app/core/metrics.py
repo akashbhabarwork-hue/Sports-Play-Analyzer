@@ -16,9 +16,9 @@ from uuid import UUID
 from .heatmap import build_heatmap, sum_heatmaps
 from .models import FrameObservation, MatchMetrics, MetricsParams, PlayerTrack
 from .possession import count_possession, feet_point
+from .teams import TEAM_A, TEAM_B, UNKNOWN
 
-TEAMS = ("A", "B")
-UNKNOWN_TEAM = "unknown"
+TEAMS = (TEAM_A, TEAM_B)
 
 # (frame_idx, t_s, x_px, y_px) of a player's feet in one frame.
 Sample = tuple[int, float, float, float]
@@ -90,7 +90,7 @@ def build_stats(
             PlayerTrack(
                 job_id=job_id,
                 track_id=pid,
-                team=teams.get(pid, UNKNOWN_TEAM),
+                team=teams.get(pid, UNKNOWN),
                 frames_visible=len(samples),
                 distance_px=round(dist, 1),
                 distance_rel=round(dist / diag, 3),

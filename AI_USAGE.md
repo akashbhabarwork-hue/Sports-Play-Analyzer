@@ -39,6 +39,12 @@ Setup: project rules, specialist agent personas, skills and workflows in `.agent
 - **Fix:** Use a value Postgres rejects (`\u0000` in jsonb), then temporarily split the method into two transactions to confirm the test goes red (orphan video row).
 - **Lesson:** Mutation-check new safety tests: break the code on purpose and watch the test fail.
 
+### 5. Following its own spec too literally
+- **What it did:** The metrics skill (written by the agent at kickoff) said to skip feet movements under `JITTER_PX` and to cluster teams on hue + saturation. Implemented literally, a player walking 1 px per sampled frame covers zero distance, white and black kits (both unsaturated) look identical, and red shirts at hue 359° and 1° land in different teams.
+- **How I caught it:** Writing edge-case tests before trusting the formulas (slow walker, white-vs-black, red wrap-around), then mutation runs to check each test could fail.
+- **Fix:** Distance measured from the last counted position with a dead-band; colour feature `(s·cos h, s·sin h, v)` with medians (D-022, D-023).
+- **Lesson:** A spec written by the same assistant isn't a source of truth; test its edge cases like any other code.
+
 ## How I verified AI-generated code
 - Automated unit test suite with deterministic JSON fixtures (pure logic, no model dependency).
 - Integration tests against migrated Postgres schema with multi-user isolation checks.
