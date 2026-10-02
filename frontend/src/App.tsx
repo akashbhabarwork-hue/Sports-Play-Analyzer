@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes, useLocation } from 'react-route
 import { AuthProvider, RequireAuth } from './auth'
 import { Layout } from './components/Layout'
 import { LoginPage } from './pages/LoginPage'
+import { SubmitPage } from './pages/SubmitPage'
 import './App.css'
 
 // Pages live under /app/… because /jobs/… are API aliases (D-028).
@@ -27,6 +28,7 @@ function App() {
             }
           >
             <Route index element={<p className="muted">Your jobs will appear here.</p>} />
+            <Route path="submit" element={<SubmitPage />} />
           </Route>
         </Routes>
       </AuthProvider>

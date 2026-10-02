@@ -299,3 +299,14 @@ Stage summaries live in `docs/devlog/stages/`.
 **AI mistakes caught:** test helper typed errors as `unknown` (strict TS caught it) → `failure()` helper; fast-refresh lint warning → context/hook moved to `useAuth.ts`; helpers first placed in `src/lib/`, which the root `.gitignore` (`lib/`) silently excluded from the commit → renamed to `src/logic/`, unpushed commit amended (AI_USAGE #10). Also corrected earlier advice: `.claude/` is *meant* to be untracked (the repo tracks `.agent/`), so the owner's local `ci.yml` path edit must not be committed — the CI change was staged on top of HEAD's file only.
 **Explain-it-in-review:** "The page never sees the session token — it's an httpOnly cookie. The app asks /api/me who you are; if that's a 401 you're sent to the login page, and logging out is a POST so another site can't trigger it."
 **Next:** T-081 Submit page (upload + URL)
+
+---
+
+## 2026-10-02 13:28 IST — T-081 Submit page (upload + URL) (agent: frontend)
+**What changed:** `src/pages/SubmitPage.tsx` (tabs, file input + link input, inline server errors, navigate on 202), `src/logic/precheck.ts` + tests, route `/app/submit`, form/tab styles.
+**Why:** both input paths from the brief; scenario A2 needs the server's "corrupt file" message shown cleanly.
+**Decisions:** pre-checks are UX only and never stricter than the server (unknown MIME types like `.mkv` are allowed through; the server sniffs bytes) — part of D-029.
+**Verification:** lint, typecheck, `npm test` (18 passed), build ✓. A2 click-through deferred to the S8 preview-server walkthrough.
+**AI mistakes caught:** none.
+**Explain-it-in-review:** "The browser checks size and length first so nobody waits for a 100 MB upload to be refused, but the server decides: if the file is corrupt, its exact message appears under the form."
+**Next:** T-082 Job list with live status

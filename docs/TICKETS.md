@@ -292,13 +292,13 @@ Estimates are *your hands-on time* with the agent writing code and you reviewing
 - **Verify:** manual + `npm run build`
 - **Done notes:** S8 plan approved (Vitest + CI step). Routes under `/app/…` (`/`→`/app`, `/login`→`/app/login`); `AuthProvider` (GET /api/me), `RequireAuth` → `/app/login`, `Layout` header (Jobs, New analysis, user, Log out = POST /auth/logout → login); `LoginPage` ("Continue with Google" → `/auth/login`, known `?error=` codes only); typed `api` client + `types.ts`; app styles with light/dark tokens; Vitest 3.2.7 + `npm test` in CI. lint, typecheck, 10 tests, build ✓. Browser walkthrough with the S8 preview server after T-084. See D-029.
 
-### [ ] T-081 · Submit page (upload + URL) — `MUST` `15m`
+### [x] T-081 · Submit page (upload + URL) — `MUST` `15m`
 - **Agent:** frontend
 - **Depends on:** T-080, T-041, T-042
 - **Scope:** tabs, client pre-checks, server error messages inline, navigate to job on 202.
 - **Acceptance:** corrupt file shows server message (A2); URL submit navigates instantly.
 - **Verify:** manual A2 run locally
-- **Done notes:** _
+- **Done notes:** `/app/submit` with Upload | YouTube link tabs (`?tab=url`), pure `logic/precheck.ts` (size ≤100 MB, empty, non-video type, duration ≤60 s via detached `<video>` metadata, link shape — UX only, server is authority), server `ApiError.message` shown inline in `role="alert"` (A2), navigate to `/app/jobs/:id` on 202. 8 new tests (18 total). A2 browser run with the preview server after T-084.
 
 ### [ ] T-082 · Job list with live status — `MUST` `10m`
 - **Agent:** frontend
