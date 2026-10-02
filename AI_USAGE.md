@@ -135,6 +135,12 @@ Setup: project rules, specialist agent personas, skills and workflows in `.agent
 - **Fix:** checksums only when required (plus the response side); `S3UploadFailedError` → `ExternalServiceError`; two regression tests, both proven to fail on the old adapter.
 - **Lesson:** Run the planned smoke check against the real provider before handing the URL over — "compatible" APIs differ at the edges.
 
+### 21. A workflow flag that only exists for some commands
+- **What it did:** `cd.yml` ran `gcloud run jobs deploy … --add-cloudsql-instances`. That flag exists for services and worker pools but not for jobs (jobs only have `--set-cloudsql-instances`). The agent's manual migration had used the right flag; the workflow was written separately and never run before the first merge to `main`.
+- **How I caught it:** the first CD run failed at the migration step (`unrecognized arguments`). Auth, build and push had passed, and nothing was deployed, so production was unaffected.
+- **Fix:** `--set-cloudsql-instances` for the job; then every flag in `cd.yml` and `rollback.yml` was checked against `gcloud <command> --help`, and the checker itself was shown to flag the old bad flag.
+- **Lesson:** Copy the command that actually ran into the workflow, or validate the workflow's commands mechanically before the first real run.
+
 ## How I verified AI-generated code
 - Automated unit test suite with deterministic JSON fixtures (pure logic, no model dependency).
 - Integration tests against migrated Postgres schema with multi-user isolation checks.
