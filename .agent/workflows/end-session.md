@@ -1,5 +1,5 @@
 ---
-description: End the work session — close the session log row, summarise what was done and why, make sure devlog and tickets are current, and commit.
+description: End the work session, close the session log row, summarise what was done and why, make sure devlog and tickets are current, and commit.
 ---
 
 # /end-session

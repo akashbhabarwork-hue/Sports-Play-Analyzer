@@ -50,7 +50,7 @@ def main() -> int:
         print("RESULT        : OK")
         return 0
     except AppError as e:
-        print(f"RESULT        : {e.code} — {e}")
+        print(f"RESULT        : {e.code}: {e}")
         return 1
 
 

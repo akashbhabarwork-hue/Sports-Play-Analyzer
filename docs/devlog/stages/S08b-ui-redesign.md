@@ -1,4 +1,4 @@
-# Stage S8b — UI redesign (owner's brief)
+# Stage S8b - UI redesign (owner's brief)
 
 **Dates:** 2026-10-02 13:55 → 15:00 IST · **Hours:** not tracked separately (session 2 log still open) · **Tickets:** T-085, T-086, T-087 (backend), T-088, T-089, T-094, T-095, T-096, T-097 (frontend)
 
@@ -58,17 +58,17 @@ sequenceDiagram
 - Frontend: `format`, `user`, `videos`, `stepper`, `insights`, `smoothHeatmap` (incl. fade-in regression), API sport/title.
 
 ## AI corrections during this stage
-- Assertions chained with `&&` silently never ran (lint + tsc caught it) — AI_USAGE #12.
-- Six visual issues found only in the browser walkthrough — AI_USAGE #13.
+- Assertions chained with `&&` silently never ran (lint + tsc caught it), AI_USAGE #12.
+- Six visual issues found only in the browser walkthrough, AI_USAGE #13.
 - Title test expectation (control characters become a space) and a test container without a prober (T-085 devlog).
 
 ## Known gaps / tech debt
 - Postgres-backed tests for this stage are CI-only (Docker deferred); the real Google login is untested locally.
 - Inter is loaded from Google Fonts → T-091's CSP must allow `fonts.googleapis.com` / `fonts.gstatic.com`.
 - The time budget is exceeded (D-030); S9 security, S10 deploy and S11 live acceptance are still open.
-- Distances remain in frame-relative units (no pitch calibration — BONUS T-B01).
+- Distances remain in frame-relative units (no pitch calibration, BONUS T-B01).
 
-## Interview prep — questions you may get about this stage
+## Interview prep - questions you may get about this stage
 1. **Q:** Why does the worker decode the video twice?
    **A:** Teams are only known after seeing the whole clip, but frames are never kept in memory. Pass 1
    records boxes, pass 2 redraws them in team colours (`backend/app/services/process.py::_rendered_frames`).
@@ -78,7 +78,7 @@ sequenceDiagram
    `teamsPresent` hides empty teams, and the possession card says "ball not detected" when `ball_visible_pct` is 0.
 3. **Q:** Where does the thumbnail come from and who can see it?
    **A:** The worker JPEG-encodes the first decoded frame to `videos/{video_id}/thumbnail.jpg`; it's served by
-   `GET /api/jobs/{id}/thumbnail`, which runs the same ownership check as everything else — the A3 matrix includes it.
+   `GET /api/jobs/{id}/thumbnail`, which runs the same ownership check as everything else, the A3 matrix includes it.
 4. **Q:** How do the smooth heatmaps work?
    **A:** The backend keeps an integer grid; `logic/smoothHeatmap.ts` samples it bilinearly into a 320 px RGBA
    buffer with a blue→green→yellow→red ramp (alpha 0 at zero), the browser scales it up, and pitch or court lines

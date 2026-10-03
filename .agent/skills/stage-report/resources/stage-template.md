@@ -1,4 +1,4 @@
-# Stage S-xx — <name>
+# Stage S-xx - <name>
 
 **Dates:** <start> → <end> · **Hours:** <x.x> · **Tickets:** T-…, T-…
 
@@ -28,7 +28,7 @@ file → what behaviour it proves.
 ## Known gaps / tech debt
 -
 
-## Interview prep — questions you may get about this stage
+## Interview prep - questions you may get about this stage
 1. Q: … A: …
 2. Q: … A: …
 3. Q: … A: …

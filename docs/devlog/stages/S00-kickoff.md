@@ -1,4 +1,4 @@
-# Stage S00 — Kickoff & decisions
+# Stage S00 - Kickoff & decisions
 
 **Dates:** 2026-09-30 → 2026-09-30 · **Hours:** 0.5 · **Tickets:** T-001, T-002
 
@@ -42,7 +42,7 @@ N/A (Project scaffold only)
 ## Known gaps / tech debt
 - `docker` and `ffmpeg` are missing from the local environment; need to be installed before building the worker pipeline.
 
-## Interview prep — questions you may get about this stage
+## Interview prep - questions you may get about this stage
 1. Q: Why did you pick YOLOX instead of standard YOLOv8?
    A: YOLOv8 has an AGPL license, which can limit commercial usage. YOLOX provides similar speed on CPUs and is under a clean Apache-2.0 license.
 2. Q: Why use server-side sessions instead of JWTs for a React app?

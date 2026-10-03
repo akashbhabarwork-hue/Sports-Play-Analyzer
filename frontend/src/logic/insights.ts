@@ -18,7 +18,7 @@ export function keyMetrics(stats: Stats) {
   }
 }
 
-/** Teams that actually have players — the legend and toggles never show an empty team. */
+/** Teams that actually have players: the legend and toggles never show an empty team. */
 export function teamsPresent(stats: Stats): TeamId[] {
   return (['A', 'B'] as const).filter((t) => (stats.teams?.[t]?.players?.length ?? 0) > 0)
 }

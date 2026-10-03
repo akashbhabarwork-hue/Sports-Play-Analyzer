@@ -1,6 +1,6 @@
 ---
 name: ffmpeg-frame-streaming
-description: Streams video frames through ffmpeg subprocess pipes without loading the whole video into memory — ffprobe metadata, sampled decode at a configurable FPS to raw BGR frames, annotated re-encode to browser-playable H.264 MP4, rotation handling, deadlock-free pipes and error mapping. Use for decoding, frame sampling, drawing and encoding in the worker.
+description: Streams video frames through ffmpeg subprocess pipes without loading the whole video into memory, ffprobe metadata, sampled decode at a configurable FPS to raw BGR frames, annotated re-encode to browser-playable H.264 MP4, rotation handling, deadlock-free pipes and error mapping. Use for decoding, frame sampling, drawing and encoding in the worker.
 ---
 
 # Streaming frames with ffmpeg pipes
@@ -32,7 +32,7 @@ while True:
     yield frame
 rc = dec.wait(timeout=30)
 ```
-- Write stderr to a temp file (not `PIPE`) — an unread stderr pipe can fill and deadlock.
+- Write stderr to a temp file (not `PIPE`), an unread stderr pipe can fill and deadlock.
 - `rc != 0` or zero frames yielded → `DecodeError` → job `DECODE_ERROR` with a friendly message.
 - Always `kill()` + `wait()` both processes in `finally` (no zombies when detection throws).
 - Memory: one frame (~2.7 MB at 1280×720) + detector tensors. Never collect frames in a list.
@@ -47,7 +47,7 @@ enc = subprocess.Popen(enc_cmd, stdin=subprocess.PIPE, stderr=err_file2, shell=F
 enc.stdin.write(annotated.tobytes()) ...; enc.stdin.close(); enc.wait(timeout=120)
 ```
 - `yuv420p` + `+faststart` = plays in every browser and starts before fully downloaded.
-- Output runs at SAMPLE_FPS (e.g. 5 fps) — choppy but honest: each frame shows real detections.
+- Output runs at SAMPLE_FPS (e.g. 5 fps), choppy but honest: each frame shows real detections.
   "More time" idea: decode at native fps, run detection every k-th frame, interpolate boxes.
 
 ## Drawing (adapter, OpenCV)

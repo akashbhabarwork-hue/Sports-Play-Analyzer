@@ -1,9 +1,9 @@
 ---
 name: python-backend-design
-description: Enforces ONE consistent design style (layered architecture with a functional core) for any Python backend code — data/ML/AI pipelines, ETL jobs, batch scripts, workers, and web APIs (FastAPI, Flask). Use this skill whenever the user asks to write, scaffold, refactor, extend, or review Python backend code, a pipeline, a service, an API, a worker, or a multi-file Python project, even if they don't mention "design" or "architecture". Also use it when adding a feature to an existing Python backend, so new code doesn't introduce a second design style.
+description: Enforces ONE consistent design style (layered architecture with a functional core) for any Python backend code, data/ML/AI pipelines, ETL jobs, batch scripts, workers, and web APIs (FastAPI, Flask). Use this skill whenever the user asks to write, scaffold, refactor, extend, or review Python backend code, a pipeline, a service, an API, a worker, or a multi-file Python project, even if they don't mention "design" or "architecture". Also use it when adding a feature to an existing Python backend, so new code doesn't introduce a second design style.
 ---
 
-# Python Backend Design — One Way To Build It
+# Python Backend Design - One Way To Build It
 
 The main risk in a growing Python backend is not bad patterns. It is *too many* patterns: one module uses ABC hierarchies, another uses factories, a third uses a singleton, and a fourth uses free functions with globals. Each choice is defensible on its own, but together they make the codebase hard to read, test, and extend.
 
@@ -142,7 +142,7 @@ Only `config.py` touches the environment. Tests build `Settings(...)` directly.
 ## Project adaptations (Sports Play Analyzer)
 
 - DB access uses SQLAlchemy **Core** `Table` objects in `adapters/db_tables.py` (no ORM
-  declarative classes — they require inheritance). Alembic `env.py` imports that `MetaData`.
+  declarative classes, they require inheritance). Alembic `env.py` imports that `MetaData`.
 - FastAPI middleware is written as functions (`@app.middleware("http")`), not
   `BaseHTTPMiddleware` subclasses, so the checker stays clean.
 - The worker is a second entrypoint (`entrypoints/worker.py`) calling the same services.

@@ -19,7 +19,7 @@ def test_retry_after_is_at_least_one_second():
 
 
 def test_prune_drops_hits_older_than_the_window():
-    # A hit exactly window_s ago has just expired — the same instant Retry-After points to.
+    # A hit exactly window_s ago has just expired, the same instant Retry-After points to.
     assert prune([1.0, 50.0, 51.0, 100.0], now=110.0, window_s=60) == [51.0, 100.0]
 
 

@@ -22,7 +22,7 @@ def check_video_limits(probe: VideoProbe, max_duration_s: int) -> None:
         )
 
 
-CORRUPT_MESSAGE = "We couldn't read this video — it may be corrupted. Try re-exporting it as MP4."
+CORRUPT_MESSAGE = "We couldn't read this video. It may be corrupted. Try re-exporting it as MP4."
 UNSUPPORTED_MESSAGE = "Only MP4, MOV, WebM, MKV or AVI videos are supported."
 
 

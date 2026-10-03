@@ -1,4 +1,4 @@
-# ADR — Sports Play Analyzer
+# ADR - Sports Play Analyzer
 
 Status: Proposed · Date: 2026-09-30 · Author: Antigravity & User
 
@@ -30,7 +30,7 @@ probe → stream frames → detect/track/metrics → encode → persist in one t
 | Teams | Jersey colour (HSV cone, torso crop) + deterministic 2-means; `unknown` when kits are too similar (D-023) | No training data, pure numpy, testable on synthetic frames | Referees/goalkeepers join the nearest team; similar kits → `unknown` |
 | Queue | Postgres SKIP LOCKED + lease | Zero extra infra (Redis/RabbitMQ), ACID consistency with job records | DB polling load (mitigated by exponential/jittered backoff) |
 | Sessions | Server-side `sessions` table, `__Host-sid` httpOnly Secure SameSite=Lax | Immediate revocation, immune to XSS token theft | DB query on authenticated requests (cached per-request) |
-| Storage | BlobStore protocol: local disk (dev) / Google Cloud Storage via its S3-compatible XML API + HMAC keys (prod) — "S3" = protocol, no AWS (D-035) | Single abstraction, zero cloud lock-in; R2/MinIO = config change only | Presigned URL expiration handling |
+| Storage | BlobStore protocol: local disk (dev) / Google Cloud Storage via its S3-compatible XML API + HMAC keys (prod), "S3" = protocol, no AWS (D-035) | Single abstraction, zero cloud lock-in; R2/MinIO = config change only | Presigned URL expiration handling |
 | Read API & authz | Every read looks the job up with the session `user_id` first → 404 (never 403) for missing *or* foreign, then 409 if unfinished; video = 302 to ≤5-min presigned URL (S3) or Range streaming (local); `/jobs…` aliases + SPA under `/app/…` (D-028) | Other users can't even learn a job exists (A3); `<video>` can seek | Two URL prefixes to keep in sync (one router mounted twice) |
 | Frontend | React SPA: public `/` + `/login`, app under `/app/…`; identity only via `GET /api/me` (httpOnly cookie, nothing in web storage); 2 s polling only while a job is active, paused in hidden tabs; smooth canvas heatmaps over pitch/court by sport; only backend-provided numbers shown; pure logic unit-tested with Vitest (D-029, D-030) | Same-origin, no tokens in JS; idle tabs cost nothing | Polling, not push (SSE is BONUS T-B03) |
 | Host | Google Cloud `asia-south1`: Cloud Run service (web, min 1 instance) + Cloud Run worker pool (worker) + Cloud SQL Postgres 16; one image, two commands (D-035) | One provider paid from trial credits; worker pools fit our pull-based queue; built-in revisions | More IAM setup; trial credits expire after 90 days; datacenter IP still blocked by YouTube |
@@ -44,7 +44,7 @@ Source of truth: `backend/app/adapters/db_tables.py`; revision `0001`. UUID PKs,
 - `sessions`: `token_hash` (sha256 of cookie, PK), user_id, expires_at (Index: `ix_sessions_user`).
 - `videos`: user_id, source_type `upload|url` (url required iff `url`), storage_key, size/duration/width/height/fps.
 - `jobs`: user_id NOT NULL, video_id, status `queued|processing|succeeded|failed`, progress 0–100, stage, error_code (required when failed) + message, attempts/max_attempts, locked_by, lease_expires_at, config JSONB (Indexes: partial `ix_jobs_claimable`, composite `ix_jobs_user_created`).
-- `job_results`: job_id (PK/FK — one result per job), stats JSONB, annotated_key.
+- `job_results`: job_id (PK/FK, one result per job), stats JSONB, annotated_key.
 - `player_tracks`: PK (job_id, track_id) so retries replace rows; team `A|B|unknown`, distances, possession_frames, heatmap + track JSONB.
 - Index justification with EXPLAIN evidence: decisions D-011.
 
@@ -62,9 +62,9 @@ Source of truth: `backend/app/adapters/db_tables.py`; revision `0001`. UUID PKs,
 - Rollback (`rollback.yml`, manual): redeploys a previous image sha to web + worker, never runs migrations (schema changes are expand-only, so older code still runs).
 
 ## 7. What I cut and why
-- Real-time video streaming (WebRTC) — unnecessary complexity for offline asynchronous tactical analysis.
-- Live model fine-tuning — out of scope; pretrained COCO models satisfy player/ball detection.
-- Deep appearance re-ID neural networks — too heavy for CPU worker constraints; ByteTrack + jersey color clustering satisfies requirement.
+- Real-time video streaming (WebRTC), unnecessary complexity for offline asynchronous tactical analysis.
+- Live model fine-tuning, out of scope; pretrained COCO models satisfy player/ball detection.
+- Deep appearance re-ID neural networks, too heavy for CPU worker constraints; ByteTrack + jersey color clustering satisfies requirement.
 - Over budget, by choice (D-030): after the working S8 UI the owner added a full UI redesign plus the backend data it needs (sport/title, thumbnails, team-coloured two-pass render). That pushed security hardening, deploy and live acceptance later than the ≈10 h plan.
 
 ## 8. With more time

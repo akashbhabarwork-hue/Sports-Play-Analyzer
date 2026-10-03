@@ -16,7 +16,7 @@ export function LoginPage() {
     <main className="signin">
       <div className="card signin-card">
         <Link to="/" className="signin-logo" aria-label="Sports Play Analyzer home">
-          <Logo />
+          <Logo height={44} />
         </Link>
         <div>
           <h1>Sign in to continue</h1>

@@ -45,7 +45,7 @@ TRUSTED_ORIGINS = tuple(o.strip() for o in env("TRUSTED_ORIGINS", "").split(",")
 CORS_ORIGINS = tuple(o.strip() for o in env("CORS_ORIGINS", "").split(",") if o.strip())
 
 # ---- storage ----
-# local: a directory (compose volume / dev). s3: Tigris, R2 or AWS — required in production
+# local: a directory (compose volume / dev). s3: Tigris, R2 or AWS, required in production
 # because web and worker run on different machines and cannot share a disk.
 BLOB_BACKEND = env("BLOB_BACKEND", "local")
 BLOB_LOCAL_DIR = env(

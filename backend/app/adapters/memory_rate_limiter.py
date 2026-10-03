@@ -1,7 +1,7 @@
 """Per-user submission limiter kept in the web process's memory (T-090, D-032).
 
 Fine for one web machine (the deployment we have). Several web machines would each count
-separately — a shared Postgres-backed counter is BONUS T-B05. Restarting the process resets
+separately; a shared Postgres-backed counter is BONUS T-B05. Restarting the process resets
 the counts, which only ever makes the limit more lenient.
 """
 

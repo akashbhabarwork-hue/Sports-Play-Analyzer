@@ -1,8 +1,8 @@
 """CSRF defence for cookie-authenticated requests, on top of SameSite=Lax (pure, no I/O).
 
 An unsafe request is trusted only if it carries our custom header (which a cross-site HTML
-form cannot send, and which forces a CORS preflight for scripts) AND its Origin — or, when
-a browser omits Origin, the Referer's origin — is one of ours. Neither present → rejected.
+form cannot send, and which forces a CORS preflight for scripts) AND its Origin (or, when
+a browser omits Origin, the Referer's origin) is one of ours. Neither present → rejected.
 """
 
 from urllib.parse import urlsplit

@@ -1,6 +1,6 @@
 ---
 name: ssrf-safe-url-fetch
-description: Safely fetches YouTube videos server-side with yt-dlp and an SSRF-guarded HTTP downloader — host allowlist, DNS resolution with private/internal IP blocking, manual redirect re-validation, duration and byte caps, argument-array subprocess calls, and graceful YOUTUBE_BLOCKED errors with upload fallback. Use for the URL submission path.
+description: Safely fetches YouTube videos server-side with yt-dlp and an SSRF-guarded HTTP downloader, host allowlist, DNS resolution with private/internal IP blocking, manual redirect re-validation, duration and byte caps, argument-array subprocess calls, and graceful YOUTUBE_BLOCKED errors with upload fallback. Use for the URL submission path.
 ---
 
 # SSRF-safe YouTube fetch
@@ -16,7 +16,7 @@ redirects. Also: command injection via crafted URLs, and resource abuse via huge
    - Host (lower-cased, trailing dot stripped, IDNA-encoded) ∈
      `{"youtube.com","www.youtube.com","m.youtube.com","youtu.be"}`.
    - Extract/normalise the video id (11 chars `[A-Za-z0-9_-]`); rebuild a canonical URL
-     `https://www.youtube.com/watch?v=<id>` — we never pass the raw user string onward.
+     `https://www.youtube.com/watch?v=<id>`: we never pass the raw user string onward.
    - Reject playlists/channels/shorts-with-params if you can't normalise → `URL_NOT_ALLOWED`.
 2. **Network check at fetch time (`core/net_rules.py` pure + adapter resolves)**
 ```python
@@ -39,7 +39,7 @@ if settings.ytdlp_proxy: cmd[1:1] = ["--proxy", settings.ytdlp_proxy]
 if cookies_path: cmd[1:1] = ["--cookies", cookies_path]
 proc = subprocess.run(cmd, capture_output=True, text=True, timeout=45, shell=False)
 ```
-   ⚠ Verify every flag against the installed version (`yt-dlp --help`) — flags change and AI
+   ⚠ Verify every flag against the installed version (`yt-dlp --help`), flags change and AI
    often invents them. Log a correction in AI_USAGE.md if one was wrong.
    - `duration` > `MAX_VIDEO_SECONDS` → `DURATION_EXCEEDED` (clear message with actual length).
    - `is_live` true → reject. Missing duration → reject.
@@ -53,7 +53,7 @@ proc = subprocess.run(cmd, capture_output=True, text=True, timeout=45, shell=Fal
    - Then `ffprobe` the file and still apply the 60 s cap; ffmpeg decode also uses `-t 60`.
 5. **Residual risk (ADR):** DNS rebinding between our check and httpx's connect. Mitigated because
    both allowlisted domains are Google-controlled (attacker can't change their DNS). Full fix =
-   connect to the vetted IP with SNI/Host pinning — listed under "more time".
+   connect to the vetted IP with SNI/Host pinning, listed under "more time".
 
 ## YouTube blocking datacenter IPs (required in ADR)
 Symptoms in yt-dlp stderr: "Sign in to confirm you’re not a bot", HTTP Error 403/429,
@@ -66,7 +66,7 @@ Mitigations (optional, env-driven, never committed):
 - `YTDLP_COOKIES_B64`: base64 Netscape cookies file from a throwaway account; worker writes it to a
   0600 temp file per job and deletes it afterwards.
 - `YTDLP_PROXY`: residential/egress proxy URL.
-- Keep yt-dlp updated (pin, but bump often) — YouTube changes break old versions.
+- Keep yt-dlp updated (pin, but bump often), YouTube changes break old versions.
 **Test the URL path from the deployed host on day 1** (T-006 spike). Acceptance #1 uses a YouTube
 URL, so if prod is blocked you need a mitigation or must explain the fallback clearly.
 

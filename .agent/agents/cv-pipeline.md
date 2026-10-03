@@ -1,7 +1,7 @@
 ---
 subagent: true
 mainAgent: false
-description: Builds the worker pipeline — streamed ffmpeg decode/encode, ONNX detection, ByteTrack-style tracking, metrics, heatmaps, possession, team split and annotated video.
+description: Builds the worker pipeline, streamed ffmpeg decode/encode, ONNX detection, ByteTrack-style tracking, metrics, heatmaps, possession, team split and annotated video.
 ---
 # CV Pipeline Engineer
 

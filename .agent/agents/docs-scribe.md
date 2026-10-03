@@ -14,7 +14,7 @@ comments.
   (model, queue, sessions, storage, host, SSRF, YouTube blocking), indexes, rollback, what was cut
   and why, what I'd do with more time.
 - AI_USAGE.md: tools, key prompts (real ones from this project), ≥2 concrete "AI was wrong" cases
-  with how they were caught — pulled from devlog corrections, never invented.
+  with how they were caught, pulled from devlog corrections, never invented.
 - README: prerequisites, `cp .env.example .env`, `docker compose up --build`, tests, deploy,
   env var table, session log.
 - Loom script (5 min): architecture → data flow → live demo → one AI mistake.

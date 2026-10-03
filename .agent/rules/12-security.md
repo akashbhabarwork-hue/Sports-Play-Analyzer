@@ -20,7 +20,7 @@ Deep guides: skills `oauth-pkce-sessions`, `ssrf-safe-url-fetch`, `upload-valida
 ## AuthZ
 - `current_user` dependency on every `/api/*` route except `/health` and `/auth/*`.
 - Ownership enforced in SQL (`WHERE id = :id AND user_id = :uid`). Missing or foreign → 404
-  (never 403 — do not reveal existence). Applies to jobs, stats, players, video, heatmaps.
+  (never 403, do not reveal existence). Applies to jobs, stats, players, video, heatmaps.
 - Annotated video served via ownership-checked endpoint (streams or 302 to short-lived presigned URL
   ≤5 min). Blob keys are never guessable-only protection.
 
@@ -39,7 +39,7 @@ Deep guides: skills `oauth-pkce-sessions`, `ssrf-safe-url-fetch`, `upload-valida
 
 ## Uploads
 - Stream to a temp file in chunks, abort at 100 MB (413). Sniff magic bytes (MP4/MOV/WebM/MKV/AVI)
-  — never trust extension or Content-Type. `ffprobe` validates it decodes and duration ≤ 60 s.
+ , never trust extension or Content-Type. `ffprobe` validates it decodes and duration ≤ 60 s.
 - Temp files in a per-request temp dir, removed in `finally`.
 
 ## Platform basics

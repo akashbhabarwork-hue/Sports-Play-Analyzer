@@ -3,10 +3,11 @@ import type { KeyboardEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ApiError, api } from '../api'
 import { formatDateTime, formatDuration } from '../logic/format'
+import { aiSteps } from '../logic/aiSummary'
 import { keyMetrics, settingsNote, teamName, teamsPresent } from '../logic/insights'
 import { jobTitle, sportLabel } from '../logic/videos'
 import type { JobDetail, PlayerDetail, Stats } from '../types'
-import { BackIcon, CheckIcon, CopyIcon, DownloadIcon, InfoIcon } from './icons'
+import { BackIcon, CheckIcon, CopyIcon, DownloadIcon, InfoIcon, SparkleIcon } from './icons'
 import { PlayerStatsTable, TeamDot } from './PlayerStatsTable'
 import { SmoothHeatmap } from './SmoothHeatmap'
 import { StatusChip } from './StatusChip'
@@ -20,7 +21,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'teams', label: 'Team heatmaps' },
   { id: 'player', label: 'Player heatmaps' },
 ]
-const DISTANCE_HELP = 'Distance measured in frame-relative units — 1.0 ≈ one frame diagonal; camera movement affects this.'
+const DISTANCE_HELP = 'Distance measured in frame-relative units: 1.0 ≈ one frame diagonal; camera movement affects this.'
 
 export function ResultsView({ job, stats }: { job: JobDetail; stats: Stats }) {
   const [params, setParams] = useSearchParams()
@@ -81,6 +82,8 @@ export function ResultsView({ job, stats }: { job: JobDetail; stats: Stats }) {
         </div>
       </header>
 
+      <AiSummary stats={stats} />
+
       <div className="tabs" role="tablist" aria-label="Results">
         {TABS.map((t) => (
           <button key={t.id} ref={(el) => (tabRefs.current[t.id] = el)} type="button" role="tab" id={`rt-${t.id}`}
@@ -102,6 +105,32 @@ export function ResultsView({ job, stats }: { job: JobDetail; stats: Stats }) {
   )
 }
 
+/** "AI analysis complete" strip: what the pipeline did, with numbers from this job's stats. */
+function AiSummary({ stats }: { stats: Stats }) {
+  return (
+    <section className="ai-summary" aria-label="How this video was analysed">
+      <div className="ai-summary-head">
+        <span className="ai-orb" aria-hidden="true">
+          <SparkleIcon size={18} />
+        </span>
+        <div>
+          <strong>AI analysis complete</strong>
+          <span className="muted small"> · computer vision on every sampled frame</span>
+        </div>
+      </div>
+      <ol className="ai-steps">
+        {aiSteps(stats).map((s) => (
+          <li key={s.label}>
+            <CheckIcon size={14} />
+            <span className="ai-step-label">{s.label}</span>
+            <span className="muted">{s.detail}</span>
+          </li>
+        ))}
+      </ol>
+    </section>
+  )
+}
+
 function Overview({ job, stats }: { job: JobDetail; stats: Stats }) {
   const m = keyMetrics(stats)
   const teams = teamsPresent(stats)
@@ -119,7 +148,7 @@ function Overview({ job, stats }: { job: JobDetail; stats: Stats }) {
           <li>
             <span className="ball-dot" aria-hidden="true" /> Ball
           </li>
-          {teams.length === 0 && <li className="muted">Teams couldn't be told apart in this clip — boxes are grey.</li>}
+          {teams.length === 0 && <li className="muted">Teams couldn't be told apart in this clip, so boxes are grey.</li>}
         </ul>
       </div>
 

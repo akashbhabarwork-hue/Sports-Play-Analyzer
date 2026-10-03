@@ -3,7 +3,7 @@
 ## Install
 Copy `.agent/` and `docs/` into the root of your (empty) project repo and open the folder in
 Antigravity. Restart the agent session so rules, skills and workflows are detected.
-`.agent/` is read for backward compatibility; newer Antigravity versions default to `.agents/` —
+`.agent/` is read for backward compatibility; newer Antigravity versions default to `.agents/`;
 rename the folder if your version doesn't pick it up (nothing inside depends on the name except
 paths like `.agent/skills/...` in rules/workflows; search-replace them if you rename).
 
@@ -25,7 +25,7 @@ paths like `.agent/skills/...` in rules/workflows; search-replace them if you re
 6. `/end-session`
 
 ## Where to see what the agent did and why
-- Chat: Plan brief before each ticket, `▶ step — reason` narration, `⚠ Correction` notes
+- Chat: Plan brief before each ticket, `▶ step, reason` narration, `⚠ Correction` notes
 - `docs/devlog/DEVLOG.md`: per-ticket what/why/decisions/verification/review notes
 - `docs/devlog/stages/`: per-stage summaries with diagrams and interview Q&A
 - `docs/decisions.md` → promoted into `docs/ADR.md`

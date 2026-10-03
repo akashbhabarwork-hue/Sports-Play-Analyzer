@@ -95,7 +95,7 @@ def error_response(exc: AppError) -> JSONResponse:
 def validation_message(errors: list[dict]) -> str:
     """First FastAPI/Pydantic error as one readable line, e.g. "url: Field required" (F-006).
 
-    Only the field path and Pydantic's message are used — never the submitted value."""
+    Only the field path and Pydantic's message are used, never the submitted value."""
     if not errors:
         return "Invalid request."
     first = errors[0]

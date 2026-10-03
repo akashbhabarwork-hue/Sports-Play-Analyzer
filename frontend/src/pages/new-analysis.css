@@ -197,3 +197,52 @@
     animation-duration: 2s;
   }
 }
+
+/* Sport cards: a preview of the pitch/court the heatmaps will use, plus the ball */
+.sport-options {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 11rem));
+  gap: 0.75rem;
+}
+
+.sport-option {
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.6rem;
+  border-radius: var(--radius);
+  transition: border-color 0.15s, box-shadow 0.15s;
+}
+
+.sport-option.active {
+  box-shadow: 0 0 0 3px var(--primary-soft);
+}
+
+.sport-field-art {
+  width: 100%;
+  aspect-ratio: 3 / 2;
+  object-fit: contain;
+}
+
+.sport-option:not(.active) .sport-field-art {
+  opacity: 0.7;
+  filter: saturate(0.6);
+}
+
+.sport-option-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.sport-ball {
+  object-fit: contain;
+}
+
+.sport-option:focus-within {
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+}
+
+@media (max-width: 480px) {
+  .sport-options { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}

@@ -203,3 +203,19 @@ table.videos tr:last-child td {
     text-align: left;
   }
 }
+
+.empty-art {
+  object-fit: contain;
+  filter: drop-shadow(0 8px 18px rgb(79 70 229 / 22%));
+}
+
+.sport-cell {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.sport-cell img {
+  object-fit: contain;
+  flex: none;
+}

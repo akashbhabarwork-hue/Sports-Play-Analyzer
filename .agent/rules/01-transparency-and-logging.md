@@ -12,7 +12,7 @@ Post a short **Plan brief** in chat (under ~12 lines):
 ```
 🎯 Ticket: T-xxx <title>   🤖 Agent: <persona from .agent/agents>
 What: <1–2 lines>
-Why: <requirement it satisfies — quote the assignment bullet if possible>
+Why: <requirement it satisfies, quote the assignment bullet if possible>
 Files: <create/modify list>
 Approach: <key technique, e.g. "FOR UPDATE SKIP LOCKED claim + lease">
 Risks / alternatives considered: <1–2 lines>
@@ -23,7 +23,7 @@ approval before executing when the ticket is tagged `[review-plan]` or touches a
 migrations or CI/CD.
 
 ## While working
-- Narrate each meaningful step in one line: `▶ step — reason`. Don't dump big code blocks into
+- Narrate each meaningful step in one line: `▶ step, reason`. Don't dump big code blocks into
   chat; the diff is the code.
 - When choosing between options, state which and why in one sentence and append it to
   `docs/decisions.md` (format below).
@@ -35,7 +35,7 @@ migrations or CI/CD.
 1. Run the ticket's verification commands and report the result (pass/fail counts).
 2. Append to `docs/devlog/DEVLOG.md`:
 ```
-## <YYYY-MM-DD HH:MM IST> — T-xxx <title>  (agent: <persona>)
+## <YYYY-MM-DD HH:MM IST> - T-xxx <title>  (agent: <persona>)
 **What changed:** files + purpose
 **Why:** requirement / reasoning
 **Decisions:** chosen vs rejected (link D-xxx)
@@ -61,4 +61,4 @@ blocking, what was cut) are promoted into `docs/ADR.md` by the docs agent.
 
 ## Tone
 Plain English, short sentences, no hype. Explain jargon the first time it appears
-(e.g. "PKCE — a one-time secret proving the client that started login is the one finishing it").
+(e.g. "PKCE, a one-time secret proving the client that started login is the one finishing it").

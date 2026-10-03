@@ -19,7 +19,7 @@ Deep guide: skill `postgres-job-queue`.
 - `users`, `sessions`, `videos`, `jobs`, `job_results`, `player_tracks`.
 - UUID primary keys (`gen_random_uuid()`), `timestamptz` everywhere, `created_at default now()`.
 - Foreign keys with explicit `ON DELETE` (children `CASCADE` to their job/user).
-- `jobs.user_id NOT NULL` — every job belongs to a user.
+- `jobs.user_id NOT NULL`: every job belongs to a user.
 - `jobs.status` constrained by CHECK: `queued | processing | succeeded | failed`.
 - Idempotency keys: `player_tracks PRIMARY KEY (job_id, track_id)`, `job_results PRIMARY KEY (job_id)`.
 

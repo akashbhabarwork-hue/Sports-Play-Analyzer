@@ -12,5 +12,5 @@ description: Run a read-only code and security review of the current diff or a g
    `grep -rn "argparse\|sys.argv" backend`, and a query scan for job/video/result reads missing
    `user_id`.
 5. Output the findings table + "Questions a reviewer may ask" with answers.
-6. Offer: "Fix blockers now via /implement-ticket?" — create follow-up tickets (T-F01…) in
+6. Offer: "Fix blockers now via /implement-ticket?", create follow-up tickets (T-F01…) in
    TICKETS.md under "Follow-ups" if the user agrees.

@@ -1,5 +1,5 @@
 ---
-description: Start a timed work session — log start time in the README session log, show hours used and the next tickets.
+description: Start a timed work session, log start time in the README session log, show hours used and the next tickets.
 ---
 
 # /start-session
