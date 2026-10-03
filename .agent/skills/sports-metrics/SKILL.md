@@ -1,6 +1,6 @@
 ---
 name: sports-metrics
-description: Computes tactical metrics from tracks as pure functions — players tracked, per-player distance in pixels and frame-relative units with jitter filtering, per-player and per-team heatmap grids, ball-visible percentage, ball-near-player possession with hysteresis, k-means team split by jersey colour, the stats JSON contract, and optional homography for pitch-normalised distance. Use when implementing or testing metrics, heatmaps, possession or the stats/players API payloads.
+description: Computes tactical metrics from tracks as pure functions, players tracked, per-player distance in pixels and frame-relative units with jitter filtering, per-player and per-team heatmap grids, ball-visible percentage, ball-near-player possession with hysteresis, k-means team split by jersey colour, the stats JSON contract, and optional homography for pitch-normalised distance. Use when implementing or testing metrics, heatmaps, possession or the stats/players API payloads.
 ---
 
 # Sports metrics (pure core, tested with fixtures)
@@ -9,14 +9,14 @@ description: Computes tactical metrics from tracks as pure functions — players
 `MetricsState` (frozen) updated per frame via `accumulate(state, frame_idx, t_s, confirmed_tracks,
 ball, frame_w, frame_h, params) -> MetricsState`; `finalize(state) -> JobStats`. Tuples/dicts
 replaced functionally; fine for ≤300 frames × ≤30 players.
-(If profiling shows it's slow, a mutable accumulator *inside the service* is acceptable — record it.)
+(If profiling shows it's slow, a mutable accumulator *inside the service* is acceptable, record it.)
 
 ## Definitions
 - **Anchor** = feet point `((x1+x2)/2, y2)`; store normalised `(x/W, y/H)` for tracks/heatmaps.
 - **Distance**: per track, sum of Euclidean distance between consecutive anchors in pixels,
   skipping steps < `JITTER_PX` (detector wobble) and steps across gaps > `TRACK_MAX_AGE` frames.
   `distance_rel = distance_px / hypot(W, H)` → "fraction of the frame diagonal"; 1.0 ≈ crossed the
-  screen corner to corner. Camera pans inflate/deflate this — state in ADR.
+  screen corner to corner. Camera pans inflate/deflate this, state in ADR.
 - **Players tracked** = confirmed tracks with `hits >= TRACK_MIN_HITS`.
 - **Heatmap**: grid `HEATMAP_GRID_W × HEATMAP_GRID_H` (default 32×18). Cell =
   `(min(int(nx*GW), GW-1), min(int(ny*GH), GH-1))`. Store `counts` as flat list row-major + `max`.
@@ -30,7 +30,7 @@ replaced functionally; fine for ≤300 frames × ≤30 players.
 - **Teams**: for each confirmed track sample up to 10 torso crops (middle 40 % width, 20–50 %
   height of box), compute median HSV hue/sat → feature; k-means k=2 (numpy, fixed seed, 20 iters).
   If cluster centres are closer than `TEAM_MIN_SEPARATION`, label all `unknown`. Referee/goalie
-  mislabels are expected — ADR note. (Crop extraction = adapter; clustering = pure core.)
+  mislabels are expected, ADR note. (Crop extraction = adapter; clustering = pure core.)
 
 ## Stats JSON contract (GET /api/jobs/{id}/stats)
 ```json

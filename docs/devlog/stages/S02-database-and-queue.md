@@ -1,4 +1,4 @@
-# Stage S02 — Database & job queue
+# Stage S02 - Database & job queue
 
 **Dates:** 2026-10-01 → 2026-10-01 · **Tickets:** T-020, T-021, T-022
 
@@ -22,16 +22,16 @@ sequenceDiagram
   W->>Q: claim(worker_id, lease)
   Q->>DB: CTE … FOR UPDATE SKIP LOCKED → processing, attempts+1
   loop while processing
-    W->>Q: heartbeat(progress, stage) — guarded by locked_by
+    W->>Q: heartbeat(progress, stage), guarded by locked_by
   end
   alt success
-    W->>Q: finish(outcome) — lock, delete tracks, insert, upsert result, succeeded
+    W->>Q: finish(outcome), lock, delete tracks, insert, upsert result, succeeded
   else handled error
-    W->>Q: fail(code, message) — final
+    W->>Q: fail(code, message), final
   else worker dies
     DB-->>Q: lease lapses → reclaimed (≤3 attempts) → sweep → failed/WORKER_CRASHED
   end
-  API->>R: get(user_id, job_id) — None if not yours → 404
+  API->>R: get(user_id, job_id), None if not yours → 404
 ```
 
 ## Key decisions (and why)
@@ -58,15 +58,15 @@ pytest -q -m integration -k "migration or repo or queue"
 - Mutation-checked: each safety guard was removed once and a test went red.
 
 ## AI corrections during this stage
-- Imported a non-existent `sqlalchemy.Real` (it is `REAL`) — caught by the first DDL compile.
-- An atomicity test that could not fail (`config=None` is stored as JSON `null`) — replaced with a value Postgres rejects and mutation-checked (AI_USAGE #4).
+- Imported a non-existent `sqlalchemy.Real` (it is `REAL`), caught by the first DDL compile.
+- An atomicity test that could not fail (`config=None` is stored as JSON `null`), replaced with a value Postgres rejects and mutation-checked (AI_USAGE #4).
 
 ## Known gaps / tech debt
 - No API routes use the repos yet (S4/S7); the worker loop that drives the queue is T-063.
 - F-003: `pydantic` still unpinned. F-005: deploy + prod YouTube re-check still open (T-014 partial).
 - `videos.user_id` / `jobs.video_id` FKs are deliberately unindexed (only cascading deletes touch them).
 
-## Interview prep — questions you may get about this stage
+## Interview prep - questions you may get about this stage
 1. Q: How do two workers avoid processing the same job?
    A: `claim` is a single statement (`backend/app/adapters/pg_queue.py`, `CLAIM_SQL`): a CTE selects the oldest claimable row `FOR UPDATE SKIP LOCKED LIMIT 1` and the outer `UPDATE … RETURNING` takes it. A row locked by one transaction is skipped by the others; `test_concurrent_claims_get_distinct_jobs` runs 8 threads over 20 jobs.
 2. Q: What happens if a worker crashes mid-job?

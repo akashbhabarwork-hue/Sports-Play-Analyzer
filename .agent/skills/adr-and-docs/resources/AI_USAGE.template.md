@@ -10,7 +10,7 @@ Setup: project rules, skills and workflows in `.agent/` (personas per area, tick
 every change logged in `docs/devlog/`).
 
 ## Key prompts
-1. `<prompt>` — why / what it produced
+1. `<prompt>`: why / what it produced
 2.
 3.
 

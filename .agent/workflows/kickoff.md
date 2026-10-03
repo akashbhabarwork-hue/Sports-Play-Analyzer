@@ -1,5 +1,5 @@
 ---
-description: One-time project kickoff — verify the agent stack, create doc skeletons, confirm open decisions with the user, and prepare stage S0.
+description: One-time project kickoff, verify the agent stack, create doc skeletons, confirm open decisions with the user, and prepare stage S0.
 ---
 
 # /kickoff

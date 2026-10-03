@@ -45,14 +45,14 @@ def check_submit_allowed(
 ) -> None:
     """Runs first on every submission (T-090): rate limit, then the active-job cap.
 
-    Every attempt counts — also ones later rejected for a bad file — so validation can't be
+    Every attempt counts (also ones later rejected for a bad file), so validation can't be
     used to hammer the server. `limiter` is None only in tests that don't exercise limits.
     """
     if limiter is not None:
         wait = limiter.hit(str(user_id))
         if wait:
             raise RateLimitedError(
-                f"Too many submissions — please try again in {wait} s.", retry_after=wait
+                f"Too many submissions. Please try again in {wait} s.", retry_after=wait
             )
     if jobs.count_active(user_id) >= max_active:
         raise TooManyActiveJobsError(

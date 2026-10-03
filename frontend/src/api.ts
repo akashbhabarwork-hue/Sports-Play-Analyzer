@@ -27,7 +27,7 @@ type ErrorEnvelope = { error?: { code?: string; message?: string } }
 
 const FRIENDLY: Record<number, string> = {
   413: 'That file is larger than 100 MB.',
-  429: 'Too many submissions — please try again in a minute.',
+  429: 'Too many submissions. Please try again in a minute.',
 }
 
 export async function toApiError(res: Response): Promise<ApiError> {

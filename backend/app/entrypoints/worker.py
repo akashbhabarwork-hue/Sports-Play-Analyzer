@@ -9,7 +9,7 @@ deterministic, so a rerun never duplicates rows. After max_attempts the sweep ma
 WORKER_CRASHED, so no job stays "processing" forever.
 
 SIGTERM/SIGINT: finish the current job, then exit. If the platform kills us first, the
-lease lapses and the job is retried — the same path as a crash.
+lease lapses and the job is retried: the same path as a crash.
 """
 
 import logging

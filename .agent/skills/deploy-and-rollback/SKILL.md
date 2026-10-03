@@ -5,7 +5,7 @@ description: Plans and executes hosting for the analyzer on a cheap host (defaul
 
 # Deploy & rollback
 
-## Target topology (default — confirm in T-003, record D-xxx)
+## Target topology (default - confirm in T-003, record D-xxx)
 ```
 Fly app "spa-<name>":  process group web (1 machine, 512 MB) | worker (1 machine, 1–2 GB, shared-cpu-2x)
 Neon Postgres (free tier, TLS, reachable from GitHub Actions for migrations)
@@ -13,10 +13,10 @@ Object storage: Fly Tigris (S3 API) or Cloudflare R2 → BLOB_BACKEND=s3
 Image: ghcr.io/<owner>/<repo>:<sha>
 ```
 Why separate storage: web and worker run on different machines, so a local disk isn't shared.
-GHCR pull by Fly: simplest is making the GHCR package **public** (image holds no secrets) —
+GHCR pull by Fly: simplest is making the GHCR package **public** (image holds no secrets) -
 otherwise configure registry auth. Record the choice.
 Alternatives to mention in ADR: Render (background workers are paid), Railway (usage-based),
-AWS free tier (more setup). Free tiers change — check current pricing on day 1.
+AWS free tier (more setup). Free tiers change, check current pricing on day 1.
 
 ## Dockerfile (multi-stage sketch)
 ```dockerfile
@@ -73,7 +73,7 @@ CD smoke test checks `status` and that `version` equals the deployed sha.
   (`fly ssh console -s -C "…"`) to learn whether YouTube blocks the host. Record outcome in ADR.
 
 ## Rollback path (ADR section)
-1. Code: run `Rollback` workflow with the last good sha (images are immutable per sha) — or
+1. Code: run `Rollback` workflow with the last good sha (images are immutable per sha), or
    `flyctl deploy --image ghcr.io/<owner>/<repo>:<sha>`. ~2 min.
 2. Schema: migrations are expand/contract, so the previous image runs on the new schema; we do
    not auto-downgrade. If a migration itself is bad: `alembic downgrade -1` manually after

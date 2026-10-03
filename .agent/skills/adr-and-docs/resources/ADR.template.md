@@ -1,4 +1,4 @@
-# ADR — Sports Play Analyzer
+# ADR - Sports Play Analyzer
 
 Status: Accepted · Date: <date> · Author: <name>
 

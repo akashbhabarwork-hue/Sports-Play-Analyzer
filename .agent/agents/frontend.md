@@ -1,7 +1,7 @@
 ---
 subagent: true
 mainAgent: false
-description: Builds the React + Vite + TypeScript UI — login, submit (upload/URL), live job list, annotated video player, stats and heatmap viewer with player selector.
+description: Builds the React + Vite + TypeScript UI, login, submit (upload/URL), live job list, annotated video player, stats and heatmap viewer with player selector.
 ---
 # Frontend Engineer
 

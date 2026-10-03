@@ -97,7 +97,7 @@ export function LandingPage() {
             <h1>Turn Game Clips into Tactical Insights</h1>
             <p className="hero-sub">
               Upload a short football or basketball clip and get player tracking, possession,
-              heatmaps and key stats — with an annotated video you can scrub through.
+              heatmaps and key stats, with an annotated video you can scrub through.
             </p>
             <a className="btn btn-primary btn-lg" href="/auth/login">
               <span className="google-chip">
@@ -157,7 +157,7 @@ export function LandingPage() {
           <LogoMark size={26} />
         </span>
         <span>
-          <strong className="footer-name">Sports Play Analyzer</strong> — pretrained detection, no training on your videos.
+          <strong className="footer-name">Sports Play Analyzer</strong>: pretrained detection, no training on your videos.
         </span>
         <span className="footer-rule" aria-hidden="true" />
       </footer>

@@ -21,7 +21,7 @@ const TABS: { id: Tab; label: string }[] = [
   { id: 'teams', label: 'Team heatmaps' },
   { id: 'player', label: 'Player heatmaps' },
 ]
-const DISTANCE_HELP = 'Distance measured in frame-relative units — 1.0 ≈ one frame diagonal; camera movement affects this.'
+const DISTANCE_HELP = 'Distance measured in frame-relative units: 1.0 ≈ one frame diagonal; camera movement affects this.'
 
 export function ResultsView({ job, stats }: { job: JobDetail; stats: Stats }) {
   const [params, setParams] = useSearchParams()
@@ -148,7 +148,7 @@ function Overview({ job, stats }: { job: JobDetail; stats: Stats }) {
           <li>
             <span className="ball-dot" aria-hidden="true" /> Ball
           </li>
-          {teams.length === 0 && <li className="muted">Teams couldn't be told apart in this clip — boxes are grey.</li>}
+          {teams.length === 0 && <li className="muted">Teams couldn't be told apart in this clip, so boxes are grey.</li>}
         </ul>
       </div>
 

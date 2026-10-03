@@ -1,4 +1,4 @@
-# Stage S-09 — Security hardening
+# Stage S-09 - Security hardening
 
 **Dates:** 2026-10-02 → 2026-10-02 · **Hours:** inside session 2 (still open in the README session log) · **Tickets:** T-090, T-091, T-092 (+ follow-ups F-001, F-006 closed)
 
@@ -72,7 +72,7 @@ sequenceDiagram
 - The `secrets` CI job and the `count_active` Postgres test run for the first time on the S9 PR.
 - CSP `media-src` covers the S3 endpoint in both URL styles; a CDN needs `CSP_MEDIA_ORIGINS`. Verified only with local storage so far (S3 checked in S10 deploy).
 
-## Interview prep — questions you may get about this stage
+## Interview prep - questions you may get about this stage
 1. **Q: Why is the rate limiter in memory, not Redis?** A: One web machine and a ~10 h budget; the port (`core/ports.RateLimiter`) means a Postgres-backed version can replace `adapters/memory_rate_limiter.py` without touching routes. Restarts only make it more lenient.
 2. **Q: How does your CSP allow React's inline styles without `unsafe-inline`?** A: React sets `style={{…}}` through the CSSOM (`element.style.x = …`), which CSP doesn't block; only `style="…"` in HTML markup and `<style>` blocks are blocked. Checked in the browser: 0 violations (`core/security_headers.py`).
 3. **Q: Why catch exceptions in middleware instead of an `Exception` handler?** A: Starlette runs the generic 500 handler in `ServerErrorMiddleware`, outside our middleware, so that response would lose the security headers. `harden_responses` in `entrypoints/api.py` catches, logs the traceback with a ref, and returns the envelope.

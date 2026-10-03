@@ -1,7 +1,7 @@
 """Crash mid-job → retry → same rows; attempts exhausted → failed (T-063, real Postgres).
 
 A "crash" is a detector that blows up partway through the video: the worker logs it, writes
-nothing, and the job keeps its lease until it lapses — exactly what happens when a worker
+nothing, and the job keeps its lease until it lapses, exactly what happens when a worker
 process dies.
 """
 

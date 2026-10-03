@@ -1,6 +1,6 @@
 ---
 name: player-tracking
-description: Implements a pure, unit-testable ByteTrack-style multi-object tracker for players — IoU matrix, Hungarian assignment, two-stage high/low confidence association, constant-velocity prediction, tentative/confirmed/lost track lifecycle, contiguous stable IDs and fixture-based tests. Use for tracking players across frames with stable IDs.
+description: Implements a pure, unit-testable ByteTrack-style multi-object tracker for players, IoU matrix, Hungarian assignment, two-stage high/low confidence association, constant-velocity prediction, tentative/confirmed/lost track lifecycle, contiguous stable IDs and fixture-based tests. Use for tracking players across frames with stable IDs.
 ---
 
 # ByteTrack-style tracker (pure core)
@@ -11,7 +11,7 @@ match predictions to detections by overlap (IoU) using the Hungarian algorithm (
 ByteTrack's trick: first match confident detections; then give leftover tracks a second chance with
 low-confidence detections (often an occluded player), instead of throwing those away. Unmatched
 tracks survive `TRACK_MAX_AGE` frames as "lost" so a briefly hidden player keeps their ID.
-New tracks are "tentative" until seen `TRACK_MIN_HITS` times — this filters one-frame false
+New tracks are "tentative" until seen `TRACK_MIN_HITS` times, this filters one-frame false
 positives, and we only hand out a public ID on confirmation so IDs are 1..N without gaps.
 
 ## Types (core/models.py)
@@ -37,7 +37,7 @@ class TrackerState:
     tracks: tuple[Track, ...] = (); next_internal: int = 1; next_public: int = 1
 ```
 
-## Core functions (core/tracking.py) — all pure
+## Core functions (core/tracking.py) - all pure
 ```python
 def iou_matrix(a: np.ndarray, b: np.ndarray) -> np.ndarray:        # (N,4),(M,4) -> (N,M)
     if len(a) == 0 or len(b) == 0: return np.zeros((len(a), len(b)))
@@ -68,22 +68,22 @@ def update(state: TrackerState, dets: list[Detection], p: TrackerParams) -> tupl
     #    (after 1 miss) and any track with misses > max_age
     # 6. unmatched HIGH dets -> new tentative tracks (low dets never start tracks)
 ```
-Players only — the ball is not tracked with this (one ball, pick highest score per frame).
+Players only, the ball is not tracked with this (one ball, pick highest score per frame).
 Ignore tiny boxes (`MIN_BOX_AREA_REL`, e.g. 0.0005 of frame area) and optionally audience/bench by
 a crude y-band later (BONUS).
 
 ## Fixture-driven tests (backend/tests/fixtures/tracks_*.json)
 Format: `{"frames": [[{"box":[x1,y1,x2,y2],"score":0.9,"cls":"player"}, ...], ...]}`.
 Must-have cases:
-1. `test_single_player_keeps_id_while_moving` — box moves 5 px/frame for 20 frames → one public id.
-2. `test_track_id_stable_when_player_briefly_occluded` — missing for 3 frames (< max_age) → same id.
-3. `test_track_dropped_after_max_age` — missing max_age+1 frames → new id when reappearing.
-4. `test_low_confidence_detection_keeps_track_alive` — score 0.3 in middle frames (ByteTrack stage 2).
-5. `test_two_players_crossing_keep_ids` — linear paths crossing; velocity prediction keeps ids.
-6. `test_one_frame_false_positive_never_confirmed` — lone detection → no public id.
-7. `test_public_ids_are_contiguous` — 3 players appear at different times → ids 1,2,3.
+1. `test_single_player_keeps_id_while_moving`: box moves 5 px/frame for 20 frames → one public id.
+2. `test_track_id_stable_when_player_briefly_occluded`: missing for 3 frames (< max_age) → same id.
+3. `test_track_dropped_after_max_age`: missing max_age+1 frames → new id when reappearing.
+4. `test_low_confidence_detection_keeps_track_alive`: score 0.3 in middle frames (ByteTrack stage 2).
+5. `test_two_players_crossing_keep_ids`: linear paths crossing; velocity prediction keeps ids.
+6. `test_one_frame_false_positive_never_confirmed`: lone detection → no public id.
+7. `test_public_ids_are_contiguous`: 3 players appear at different times → ids 1,2,3.
 8. `iou_matrix` table tests: identical=1, disjoint=0, half-overlap=1/3, empty inputs.
-Tests call `update` in a loop — no model, no video, milliseconds.
+Tests call `update` in a loop, no model, no video, milliseconds.
 
 ## Known limits (ADR)
 IoU-only association struggles with fast motion at low SAMPLE_FPS and with identical kits

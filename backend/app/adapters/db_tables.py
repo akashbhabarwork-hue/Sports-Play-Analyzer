@@ -1,4 +1,4 @@
-"""SQLAlchemy Core table definitions — the single source of truth for the schema.
+"""SQLAlchemy Core table definitions: the single source of truth for the schema.
 
 Alembic revisions are written to match these; `tests/integration/test_migrations.py`
 fails if the two drift. Never call `metadata.create_all()` in app code.

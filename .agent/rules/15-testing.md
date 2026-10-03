@@ -15,7 +15,7 @@ Deep guide: skill `testing-strategy`.
   SKIP LOCKED two-worker claim.
 - Authorization test (required): user A creates a job; user B gets 404 on `/api/jobs/{id}`,
   `/stats`, `/players/{pid}`, video endpoint, and A's job is absent from B's list.
-- Tests create users/sessions directly through repositories — never real Google login.
+- Tests create users/sessions directly through repositories, never real Google login.
 - Every bug fix gets a regression test first.
 - Name tests by behaviour: `test_track_id_stable_when_player_briefly_occluded`.
 - Run: `pytest -q backend/tests/unit` (every change) and `pytest -q backend/tests/integration`

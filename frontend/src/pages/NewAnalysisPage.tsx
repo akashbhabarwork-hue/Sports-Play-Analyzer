@@ -257,7 +257,7 @@ export function NewAnalysisPage() {
             <InfoIcon /> Tips for best results
           </h2>
           <ul>
-            <li>Use clear footage — sharp, well-lit, not too zoomed in.</li>
+            <li>Use clear footage: sharp, well-lit, not too zoomed in.</li>
             <li>Keep clips to 60 seconds or less.</li>
             <li>Show the whole pitch or court where possible; wide shots track best.</li>
             <li>Game footage or drills both work.</li>

@@ -1,6 +1,6 @@
 ---
 name: stage-report
-description: Produces human-readable progress reporting — per-ticket devlog entries, per-stage summary documents with data flow, decisions, demo steps, known gaps and likely interview questions, and short chat status reports. Use when a ticket or stage completes, when the user asks "what did you do / why / where are we", or at session end.
+description: Produces human-readable progress reporting, per-ticket devlog entries, per-stage summary documents with data flow, decisions, demo steps, known gaps and likely interview questions, and short chat status reports. Use when a ticket or stage completes, when the user asks "what did you do / why / where are we", or at session end.
 ---
 
 # Stage & progress reporting
@@ -16,7 +16,7 @@ Use `resources/stage-template.md`. Fill from the devlog entries of that stage + 
 
 ## Status report (on request or `/status`)
 ```
-📍 Stage S-xx <name> — n/m tickets done   ⏱ hours used: X.X / 10
+📍 Stage S-xx <name>, n/m tickets done   ⏱ hours used: X.X / 10
 ✅ Done since last report: T-…, T-…
 🔨 In progress: T-… (what's left)
 ⛔ Blocked/risks: …

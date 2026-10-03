@@ -1,6 +1,6 @@
-# Stage S7 — Read API
+# Stage S7 - Read API
 
-**Dates:** 2026-10-02 12:45 → 13:02 IST · **Hours:** not tracked separately (session 2 log still open — see README) · **Tickets:** T-070, T-071
+**Dates:** 2026-10-02 12:45 → 13:02 IST · **Hours:** not tracked separately (session 2 log still open, see README) · **Tickets:** T-070, T-071
 
 ## What was built (plain English)
 - A coach can now read back everything the worker produced: the list of their jobs, one job's
@@ -10,7 +10,7 @@
   (HTTP Range), or, on cloud storage, hands the browser a link that expires within 5 minutes.
 - The brief's short URLs (`/jobs/{id}`, `/jobs/{id}/stats`, …) work exactly like the
   `/api/jobs/…` ones. The React pages will live under `/app/…` so they never clash.
-- Another user's job looks exactly like a job that doesn't exist: always 404, on every URL —
+- Another user's job looks exactly like a job that doesn't exist: always 404, on every URL -
   this is scenario A3, and there is a test that proves it and was shown to fail when the user
   filter is removed.
 
@@ -54,7 +54,7 @@ sequenceDiagram
 ## How to demo / verify
 - Local, no DB: `cd backend && pytest -q -k "http_range or read_api or user_b_cannot"` → 72 passed
   (Postgres cases skip).
-- CI: `pytest -q -m integration -k "api_read or user_b_cannot"` (first real run — Docker deferred).
+- CI: `pytest -q -m integration -k "api_read or user_b_cannot"` (first real run, Docker deferred).
 - With the app running (Docker pass / deploy): log in as A, submit, wait for `succeeded`, then
   `GET /jobs/{id}`, `/jobs/{id}/stats`, `/jobs/{id}/players/1`; open `/api/jobs/{id}/video` and
   seek. Log in as B in a private window → every one of those URLs is 404.
@@ -85,12 +85,12 @@ sequenceDiagram
 - `?team=` validation errors use FastAPI's default 422 body, not our envelope (F-006 → T-091).
 - No rate limiting on reads yet (T-090 covers submit endpoints).
 
-## Interview prep — questions you may get about this stage
+## Interview prep - questions you may get about this stage
 1. **Q:** Why does user B get 404 rather than 403 for A's job?
    **A:** 403 would confirm the id exists. Every read calls `JobRepo.get(user_id, job_id)`
    (`backend/app/services/read_job.py::_own_job`), whose SQL has `WHERE user_id = :uid`, so
    "not yours" and "doesn't exist" are the same `None` → `NotFoundError`.
-2. **Q:** A's job is still processing — what does B see on `/stats`?
+2. **Q:** A's job is still processing, what does B see on `/stats`?
    **A:** 404, identical to a random id. Ownership is checked before readiness; only the owner
    gets `409 JOB_NOT_READY` (`tests/integration/test_authz_user_b_cannot.py::
    test_user_b_cannot_tell_user_a_queued_job_from_a_missing_one`).

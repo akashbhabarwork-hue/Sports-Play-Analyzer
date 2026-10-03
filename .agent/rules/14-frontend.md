@@ -15,7 +15,7 @@ Deep guide: skill `react-job-dashboard`.
 - Screens: Login, Submit (upload tab + URL tab), Job list (live status/progress), Job detail
   (annotated video, stats cards, heatmap with player selector + team toggle).
 - Live status: poll `GET /api/jobs` every 2 s while any job is `queued|processing`; stop otherwise.
-- Client-side pre-checks (size ≤100 MB, duration ≤60 s via `<video>` metadata) are UX only — the
+- Client-side pre-checks (size ≤100 MB, duration ≤60 s via `<video>` metadata) are UX only, the
   server is the authority.
 - Heatmap: draw the grid on a `<canvas>` over a neutral pitch/court background; include a legend.
 - Error states are first-class: corrupt file, YouTube blocked (show "Upload instead" button),

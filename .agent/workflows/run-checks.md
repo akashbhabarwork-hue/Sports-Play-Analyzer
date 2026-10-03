@@ -1,5 +1,5 @@
 ---
-description: Run the full local quality gate — backend lint, design checker, unit and integration tests, frontend lint/typecheck/build and docker build — and report a compact pass/fail table.
+description: Run the full local quality gate, backend lint, design checker, unit and integration tests, frontend lint/typecheck/build and docker build, and report a compact pass/fail table.
 ---
 
 # /run-checks

@@ -1,7 +1,7 @@
 const UNITS = ['B', 'KB', 'MB', 'GB']
 
 export function formatBytes(bytes: number | null | undefined): string {
-  if (bytes == null || !Number.isFinite(bytes)) return '—'
+  if (bytes == null || !Number.isFinite(bytes)) return '-'
   if (bytes < 1024) return `${bytes} B`
   let value = bytes
   let unit = 0
@@ -13,7 +13,7 @@ export function formatBytes(bytes: number | null | undefined): string {
 }
 
 export function formatDuration(seconds: number | null | undefined): string {
-  if (seconds == null || !Number.isFinite(seconds)) return '—'
+  if (seconds == null || !Number.isFinite(seconds)) return '-'
   const total = Math.round(seconds)
   const m = Math.floor(total / 60)
   const s = total % 60

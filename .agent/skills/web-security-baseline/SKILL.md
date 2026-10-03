@@ -1,6 +1,6 @@
 ---
 name: web-security-baseline
-description: Adds platform security basics to the FastAPI app — per-user rate limiting on submit endpoints, restricted CORS, security headers (CSP, HSTS, nosniff, frame-deny), Origin-check CSRF defence, safe error responses and secret handling. Use when configuring middleware, headers, CORS, rate limits or env secrets.
+description: Adds platform security basics to the FastAPI app, per-user rate limiting on submit endpoints, restricted CORS, security headers (CSP, HSTS, nosniff, frame-deny), Origin-check CSRF defence, safe error responses and secret handling. Use when configuring middleware, headers, CORS, rate limits or env secrets.
 ---
 
 # Web security baseline
@@ -8,7 +8,7 @@ description: Adds platform security basics to the FastAPI app — per-user rate 
 ## Rate limiting
 - Submit endpoints (`POST /api/jobs/upload`, `POST /api/jobs/url`): `RATE_LIMIT_SUBMIT` default
   `"10/minute;30/hour"` keyed by `user.id` (fallback client IP).
-- Simple option: `slowapi` (in-memory) — fine for one web instance; state it in the ADR.
+- Simple option: `slowapi` (in-memory), fine for one web instance; state it in the ADR.
   Stronger option (if time): Postgres fixed-window counter table so multiple instances share limits.
 - Response: 429 + `Retry-After` + envelope `{"error":{"code":"RATE_LIMITED","message":"Too many
   submissions, try again in a minute."}}`.
