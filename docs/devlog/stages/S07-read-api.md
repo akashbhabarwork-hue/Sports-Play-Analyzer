@@ -10,7 +10,7 @@
   (HTTP Range), or, on cloud storage, hands the browser a link that expires within 5 minutes.
 - The brief's short URLs (`/jobs/{id}`, `/jobs/{id}/stats`, …) work exactly like the
   `/api/jobs/…` ones. The React pages will live under `/app/…` so they never clash.
-- Another user's job looks exactly like a job that doesn't exist: always 404, on every URL -
+- Another user's job looks exactly like a job that doesn't exist: always 404, on every URL;
   this is scenario A3, and there is a test that proves it and was shown to fail when the user
   filter is removed.
 

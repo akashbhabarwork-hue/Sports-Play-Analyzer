@@ -13,7 +13,7 @@ Object storage: Fly Tigris (S3 API) or Cloudflare R2 → BLOB_BACKEND=s3
 Image: ghcr.io/<owner>/<repo>:<sha>
 ```
 Why separate storage: web and worker run on different machines, so a local disk isn't shared.
-GHCR pull by Fly: simplest is making the GHCR package **public** (image holds no secrets) -
+GHCR pull by Fly: simplest is making the GHCR package **public** (image holds no secrets);
 otherwise configure registry auth. Record the choice.
 Alternatives to mention in ADR: Render (background workers are paid), Railway (usage-based),
 AWS free tier (more setup). Free tiers change, check current pricing on day 1.

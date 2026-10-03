@@ -62,7 +62,7 @@ process in `build_container`.
 class Detector(Protocol):
     def detect(self, frame_bgr: np.ndarray) -> list[Detection]: ...
 ```
-`FakeDetector(fixtures: dict[int, list[Detection]])` returns fixture detections per frame index -
+`FakeDetector(fixtures: dict[int, list[Detection]])` returns fixture detections per frame index,
 used by unit/integration tests and the CI pipeline test (no model download in CI unit job).
 
 ## Tests
