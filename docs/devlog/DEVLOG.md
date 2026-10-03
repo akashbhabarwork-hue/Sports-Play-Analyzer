@@ -527,3 +527,12 @@ Stage summaries live in `docs/devlog/stages/`.
 **Verification:** every flag in `cd.yml` and `rollback.yml` checked against `gcloud <command> --help` (no missing flags; checker flags the old one). Real proof = next CD run.
 **AI mistakes caught:** AI_USAGE #21.
 **Next:** PR → dev → main; watch CD go green end to end.
+
+---
+
+## 2026-10-03 05:29 IST — YouTube URLs on Cloud Run: cookies (agent: auth-security)
+**What changed:** Secret `ytdlp-cookies-b64` (runtime SA access only); worker deploy in `cd.yml`/`rollback.yml` gets `YTDLP_COOKIES_B64`; live worker updated (rev 00006, same image abc4e7b); README refresh runbook; D-036; ADR row; `scripts/fetch_check.py` prints UTF-8.
+**Why:** every URL job failed `YOUTUBE_BLOCKED` in production; scenario 1 depends on it.
+**Verification:** cause reproduced from Cloud Run without cookies (bot check), video fetched fine locally (and is 981 s → would be DURATION_EXCEEDED anyway). With cookies, from Cloud Run: metadata OK; full fetch metadata → download → ffprobe OK (mp4, 18.9 s). Cookies file checked by names/counts only, never printed. Pending: owner submits a ≤60 s YouTube clip in the app.
+**AI mistakes caught:** none new (fetch_check emoji crash fixed).
+**Next:** owner test in app; T-102.
