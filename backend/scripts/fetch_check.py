@@ -29,6 +29,7 @@ MAX_BYTES = 100 * 1024 * 1024
 
 
 def main() -> int:
+    sys.stdout.reconfigure(encoding="utf-8")  # Windows consoles crash on emoji in titles
     try:
         ref = canonicalize_youtube_url(URL)
         print(f"canonical url : {ref.url}")
