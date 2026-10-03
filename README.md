@@ -51,6 +51,17 @@ point at **Google Cloud Storage** (`S3_ENDPOINT_URL=https://storage.googleapis.c
 `S3_REGION=auto`, HMAC keys from our Google project) through Cloud Storage's S3-compatible
 XML API. No AWS account is involved.
 
+### Refreshing the YouTube cookies (when URL jobs start failing with "YouTube blocked")
+YouTube blocks Google Cloud's addresses unless the worker sends a signed-in session (D-036).
+1. Chrome Incognito, signed in to the **throwaway** account only → open
+   `https://www.youtube.com/robots.txt` in the same tab → export with *Get cookies.txt LOCALLY*
+   (Netscape format) → close the window **without signing out**.
+2. Store it (never paste the contents anywhere):
+   `base64 -w0 www.youtube.com_cookies.txt | gcloud secrets versions add ytdlp-cookies-b64 --data-file=-`
+3. Restart the worker so it reads the new version:
+   `gcloud run worker-pools update sports-analyzer-worker --region=asia-south1 --update-secrets=YTDLP_COOKIES_B64=ytdlp-cookies-b64:latest`
+4. Delete the local cookies file.
+
 ## Configuration
 | Variable | Default | Meaning |
 |---|---|---|
@@ -96,7 +107,7 @@ XML API. No AWS account is involved.
 | `MAX_VIDEO_DURATION_SECONDS` | `60` | Maximum allowed duration for processing |
 | `MAX_UPLOAD_SIZE_BYTES` | `104857600` | Maximum upload size (100 MB); enforced before and while the body is read |
 | `UPLOAD_TMP_DIR` | system temp | Parent dir for per-request upload temp dirs (always removed) |
-| `YTDLP_COOKIES_B64` | `""` | Optional: base64 cookies.txt (throwaway account) if YouTube blocks the server — secret |
+| `YTDLP_COOKIES_B64` | `""` | Optional: base64 cookies.txt (throwaway account) if YouTube blocks the server — secret. Production: Secret Manager `ytdlp-cookies-b64`, worker only (D-036) |
 | `YTDLP_PROXY` | `""` | Optional: proxy for yt-dlp and the media download |
 
 ## API
