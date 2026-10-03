@@ -61,7 +61,7 @@ jobs:
           fi
 
           {
-            echo "## YouTube spike — $VARIANT: **$verdict**"
+            echo "## YouTube spike: $VARIANT: **$verdict**"
             echo "- URL: $URL"
             echo "- metadata exit code: $meta_rc"
             if [ "$meta_rc" -eq 0 ]; then

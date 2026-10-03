@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { Link } from 'react-router-dom'
+import { artFor, brand } from '../assets/brand'
 import { formatBytes, formatDuration } from '../logic/format'
 import { stageLabel } from '../logic/jobs'
 import { errorHelp } from '../logic/results'
@@ -10,24 +11,12 @@ import { AlertIcon, BackIcon, CheckIcon, CopyIcon, VideoIcon } from './icons'
 import { StatusChip } from './StatusChip'
 import './processing.css'
 
-/** Original abstract figure (no likeness): a runner made of simple strokes + motion arcs. */
-function PlayerArt() {
+/** The clip's sport as a moving player silhouette (brand art) on a soft circle. */
+function PlayerArt({ sport }: { sport: string | null | undefined }) {
   return (
-    <svg className="processing-art" viewBox="0 0 160 140" aria-hidden="true">
-      <circle cx="80" cy="70" r="62" fill="var(--primary-soft)" />
-      <path d="M40 112c22-8 58-8 80 0" stroke="var(--border)" strokeWidth="3" fill="none" strokeLinecap="round" />
-      <g stroke="var(--primary)" strokeWidth="6" strokeLinecap="round" strokeLinejoin="round" fill="none">
-        <circle cx="92" cy="34" r="9" fill="var(--primary)" stroke="none" />
-        <path d="M88 46 78 74l16 14 6 22" />
-        <path d="M78 74 62 92 48 92" />
-        <path d="M86 54l18 10 12-8" />
-        <path d="M84 52 66 58 58 70" />
-      </g>
-      <g stroke="var(--team-b)" strokeWidth="3" strokeLinecap="round" opacity="0.6">
-        <path d="M30 48h18M24 62h20M32 76h14" />
-      </g>
-      <circle cx="116" cy="104" r="7" fill="var(--ball)" />
-    </svg>
+    <div className="processing-art" aria-hidden="true">
+      <img src={artFor(sport).player} alt="" />
+    </div>
   )
 }
 
@@ -74,13 +63,16 @@ export function ProcessingView({ job }: { job: JobDetail }) {
       <div className="processing-grid">
         <div className="processing-main">
           <div className="card source-card">
-            {job.thumbnail_url ? (
-              <img className="source-thumb" src={job.thumbnail_url} alt="" />
-            ) : (
-              <span className="source-thumb placeholder">
-                <VideoIcon />
-              </span>
-            )}
+            {/* While the job runs, a scan line sweeps the thumbnail: the frames are being analysed. */}
+            <span className={failed ? 'thumb-wrap' : 'thumb-wrap scanning'}>
+              {job.thumbnail_url ? (
+                <img className="source-thumb" src={job.thumbnail_url} alt="" />
+              ) : (
+                <span className="source-thumb placeholder">
+                  <VideoIcon />
+                </span>
+              )}
+            </span>
             <div className="source-info">
               <strong className="ellipsis">{jobTitle(job)}</strong>
               {job.source_url && <span className="muted small ellipsis">{job.source_url}</span>}
@@ -93,7 +85,7 @@ export function ProcessingView({ job }: { job: JobDetail }) {
 
           {failed && job.error ? (
             <div className="card error-card" role="alert">
-              <AlertIcon size={28} />
+              <img className="error-art" src={brand.iconError} alt="" width={56} height={56} />
               <h2>{job.error.message ?? help?.title}</h2>
               {help && job.error.message && <p className="muted">{help.title}</p>}
               <code className="error-code">{job.error.code}</code>
@@ -140,7 +132,7 @@ export function ProcessingView({ job }: { job: JobDetail }) {
             })}
           </ol>
         </div>
-        <PlayerArt />
+        <PlayerArt sport={job.sport} />
       </div>
     </section>
   )

@@ -19,7 +19,7 @@ Full guide + templates + checker: skill `python-backend-design`. Summary of what
 - `wiring.py`: `build_container(settings) -> Container` constructs adapters once.
 - `entrypoints/`: `api.py` (FastAPI), `schemas.py` (Pydantic, boundary only), `worker.py` (loop).
 
-## Config — variables, not argument parsers
+## Config - variables, not argument parsers
 `backend/app/config.py` holds UPPERCASE variables read from env with safe defaults, collected into
 a frozen `Settings` dataclass via `load_settings()`. Only `config.py` touches `os.environ`.
 Never use argparse / click / typer / sys.argv. Secrets use `os.environ["NAME"]` (no default) so a
@@ -40,7 +40,7 @@ DI frameworks, metaclasses, SQLAlchemy ORM declarative classes (use Core `Table`
 ## Sync by default
 FastAPI routes are plain `def`. Worker is a synchronous loop. No `asyncio` in services/core/adapters.
 Documented exceptions (record as a decision): the two OAuth routes (Authlib's Starlette client is
-async — keep them thin and call sync services via `run_in_threadpool`) and `@app.middleware("http")`
+async, keep them thin and call sync services via `run_in_threadpool`) and `@app.middleware("http")`
 functions, which FastAPI requires to be `async def`.
 
 ## Errors → HTTP

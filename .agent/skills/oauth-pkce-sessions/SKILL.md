@@ -44,12 +44,12 @@ def build_google_oauth(client_id: str, client_secret: str) -> OAuth:
 ```
 Note: Authlib's Starlette client is async (`await oauth.google.authorize_redirect(...)`,
 `await oauth.google.authorize_access_token(request)`). These two routes are the single documented
-exception to "sync routes": keep them `async def` and thin — they only call Authlib, then call the
+exception to "sync routes": keep them `async def` and thin, they only call Authlib, then call the
 sync `services.auth.login_user(...)` via `fastapi.concurrency.run_in_threadpool`. Record this as a
-decision (D-xxx) — it's a good review talking point.
+decision (D-xxx), it's a good review talking point.
 
 `SessionMiddleware(secret_key=SESSION_SECRET, same_site="lax", https_only=COOKIE_SECURE,
-max_age=600, session_cookie="oauth_tx")` — used ONLY for OAuth transaction data.
+max_age=600, session_cookie="oauth_tx")`, used ONLY for OAuth transaction data.
 
 ## Our session cookie
 ```python
@@ -79,7 +79,7 @@ def get_job_for_user(repo: JobRepo, job_id: UUID, user_id: UUID) -> Job:
     if job is None: raise NotFoundError("Job not found")
     return job
 ```
-Invalid UUID in path → 404 as well (don't 422-leak format info on job ids — optional nicety).
+Invalid UUID in path → 404 as well (don't 422-leak format info on job ids, optional nicety).
 
 ## Second test user for acceptance #3
 Reviewers log in with two Google accounts. While the OAuth consent screen is in "Testing" mode only

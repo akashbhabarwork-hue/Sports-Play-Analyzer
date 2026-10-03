@@ -48,4 +48,4 @@ results are reproducible.
 ## Failure codes (worker → jobs.error_code)
 `CORRUPT_FILE, UNSUPPORTED_FORMAT, DURATION_EXCEEDED, YOUTUBE_BLOCKED, URL_NOT_ALLOWED,
 DOWNLOAD_FAILED, DECODE_ERROR, MODEL_ERROR, WORKER_CRASHED, INTERNAL`. Message must be human
-readable and suggest the fix (e.g. "YouTube blocked our server — please upload the file instead").
+readable and suggest the fix (e.g. "YouTube blocked our server, please upload the file instead").

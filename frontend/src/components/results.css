@@ -359,3 +359,118 @@
     grid-template-columns: minmax(0, 1fr);
   }
 }
+
+/* ---- AI look: analysis summary, badge and one-time scan sweep on the video ---- */
+.ai-summary {
+  display: grid;
+  gap: 0.75rem;
+  margin-bottom: 1rem;
+  padding: 1rem 1.25rem;
+  border-radius: var(--radius);
+  background:
+    linear-gradient(var(--surface), var(--surface)) padding-box,
+    linear-gradient(120deg, var(--primary), var(--team-a) 45%, var(--team-b)) border-box;
+  border: 1.5px solid transparent;
+  box-shadow: var(--shadow);
+}
+
+.ai-summary-head {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.ai-orb {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  color: #fff;
+  background: radial-gradient(circle at 30% 30%, #a5b4fc, var(--primary) 60%, #312e81);
+  box-shadow: 0 0 0 4px var(--primary-soft);
+}
+
+.ai-steps {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.ai-steps li {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  padding: 0.3rem 0.65rem;
+  border-radius: 999px;
+  background: var(--primary-soft);
+  font-size: 0.85rem;
+}
+
+.ai-steps li svg {
+  color: var(--primary);
+}
+
+.ai-step-label {
+  font-weight: 600;
+}
+
+.player-frame {
+  position: relative;
+  border-radius: var(--radius);
+  overflow: hidden;
+  background: #000;
+}
+
+.player-frame .player {
+  display: block;
+}
+
+/* Top centre: the video itself uses top-left (HUD), top-right (legend) and bottom-left. */
+.ai-badge {
+  position: absolute;
+  top: 0.6rem;
+  left: 50%;
+  transform: translateX(-50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 0.3rem;
+  padding: 0.25rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: #fff;
+  background: rgb(17 24 39 / 70%);
+  backdrop-filter: blur(4px);
+  pointer-events: none;
+}
+
+.scan-sweep {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  opacity: 0;
+}
+
+.player-frame.loaded .scan-sweep {
+  background: linear-gradient(90deg, transparent, rgb(129 140 248 / 35%) 48%, rgb(199 210 254 / 70%) 50%, transparent 52%);
+  background-size: 300% 100%;
+  animation: video-scan 1.4s ease-out 1 forwards;
+}
+
+@keyframes video-scan {
+  0% { opacity: 1; background-position: 100% 0; }
+  90% { opacity: 1; }
+  100% { opacity: 0; background-position: 0 0; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .player-frame.loaded .scan-sweep { animation: none; }
+}
+
+@media (max-width: 640px) {
+  .ai-steps li { font-size: 0.8rem; }
+}

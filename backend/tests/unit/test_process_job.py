@@ -171,9 +171,9 @@ class SpyAnnotator:
     def thumbnail_jpeg(self, frame, max_width):
         return self.real.thumbnail_jpeg(frame, max_width)
 
-    def draw(self, frame, tracks, ball, t_s, teams):
+    def draw(self, frame, tracks, ball, t_s, teams, ball_trail=()):
         self.teams_seen.append(dict(teams))
-        return self.real.draw(frame, tracks, ball, t_s, teams)
+        return self.real.draw(frame, tracks, ball, t_s, teams, ball_trail)
 
 
 def test_rendering_pass_draws_every_frame_with_the_final_team_split(tmp_path, tiny_clip):

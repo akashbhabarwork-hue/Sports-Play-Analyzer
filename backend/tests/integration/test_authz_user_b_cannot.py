@@ -1,5 +1,5 @@
 """Required authorization test (T-071, scenario A3) against real Postgres: user B gets 404 on
-every one of user A's job endpoints — canonical /api/jobs… and the /jobs… aliases — and A's
+every one of user A's job endpoints (canonical /api/jobs… and the /jobs… aliases), and A's
 jobs never appear in B's list. Ownership is enforced in SQL (`WHERE user_id = :uid`).
 """
 

@@ -1,6 +1,6 @@
 ---
 name: react-job-dashboard
-description: Builds the React + Vite + TypeScript frontend for the analyzer — login page, upload/URL submit form with client-side pre-checks, live-polling job list with progress, job detail with annotated video player, stats cards and a canvas heatmap with player selector and team toggle, plus error states (corrupt file, YouTube blocked, rate limit, not found). Use for any UI work.
+description: Builds the React + Vite + TypeScript frontend for the analyzer, login page, upload/URL submit form with client-side pre-checks, live-polling job list with progress, job detail with annotated video player, stats cards and a canvas heatmap with player selector and team toggle, plus error states (corrupt file, YouTube blocked, rate limit, not found). Use for any UI work.
 ---
 
 # React job dashboard
@@ -59,5 +59,5 @@ Optionally overlay the player's track polyline (toggle).
 - 429 → "Too many submissions, try again in a minute."
 
 ## Checks before finishing
-`npm run lint && npm run typecheck && npm run build` — all green. Manual pass through acceptance
+`npm run lint && npm run typecheck && npm run build`: all green. Manual pass through acceptance
 flow in the browser; note it in the devlog.

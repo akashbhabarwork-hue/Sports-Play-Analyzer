@@ -1,4 +1,4 @@
-# Stage S04 — Ingestion
+# Stage S04 - Ingestion
 
 **Dates:** 2026-10-02 → 2026-10-02 · **Tickets:** T-040, T-041, T-042, T-043
 
@@ -61,18 +61,18 @@ Live: `POST /api/jobs/upload` with a valid clip → 202; a renamed text file →
 
 ## Tests added
 - `test_blob_*` (41): key table (`..`, absolute, backslash, `%2e`, NUL), local round trip/range/symlink escape, S3 via moto incl. presign expiry.
-- `test_upload*` (31): ffmpeg-generated fixtures — valid 202, fake 415, corrupt/truncated 422, 61 s 422, oversize 413 (header and chunked), nothing left in temp dir/blobs/DB after a rejection.
+- `test_upload*` (31): ffmpeg-generated fixtures, valid 202, fake 415, corrupt/truncated 422, 61 s 422, oversize 413 (header and chunked), nothing left in temp dir/blobs/DB after a rejection.
 - `test_url_rules` / `test_url_submit` (72): accepted forms and SSRF tricks; endpoint 202 median < 100 ms.
 - `test_net_rules`, `test_fetch_*`, `test_ytdlp_classifier` (103): IP table incl. mapped/6to4/Teredo, redirect to 169.254.169.254 blocked before contact, 5-hop limit, byte cap, yt-dlp argv, cookie file 0600 and always deleted, classifier on real stderr.
 - Every security guard was mutation-checked (removed once, a test went red).
 
 ## AI corrections during this stage
-- The first S3 test client lacked SigV4, so the presign TTL assertion failed — tests now build the client through the production `make_s3_client`.
-- An assertion that the upload stream was cut off early could never hold (`TestClient` buffers the body) — moved to ASGI-level unit tests.
-- The size cap would have been turned into a 400 by FastAPI's form-parse handling — the middleware now sends 413 itself.
-- `python-multipart` was never in requirements (only present locally) — pinned.
+- The first S3 test client lacked SigV4, so the presign TTL assertion failed, tests now build the client through the production `make_s3_client`.
+- An assertion that the upload stream was cut off early could never hold (`TestClient` buffers the body), moved to ASGI-level unit tests.
+- The size cap would have been turned into a 400 by FastAPI's form-parse handling, the middleware now sends 413 itself.
+- `python-multipart` was never in requirements (only present locally), pinned.
 - A classifier test expected a private video to be `YOUTUBE_BLOCKED`; it is `DOWNLOAD_FAILED`.
-- An IPv6-unwrapping mutation survived because Python's `ipaddress` already blocks those ranges — added a direct `unwrap_ipv4` test.
+- An IPv6-unwrapping mutation survived because Python's `ipaddress` already blocks those ranges, added a direct `unwrap_ipv4` test.
 
 ## Known gaps / tech debt
 - Real-URL fetch check (`scripts/fetch_check.py`) still to be run on the owner's machine; this session cannot reach YouTube.
@@ -80,7 +80,7 @@ Live: `POST /api/jobs/upload` with a valid clip → 202; a renamed text file →
 - F-006: `/jobs/...` aliases and validation errors in the `{error:{code,message}}` envelope.
 - DNS rebinding between our lookup and connect remains (allowed domains are Google-controlled); full fix is connecting to the vetted IP with SNI pinning.
 
-## Interview prep — questions you may get about this stage
+## Interview prep - questions you may get about this stage
 1. Q: How do you know an upload is really a video?
    A: The extension and Content-Type are ignored. `core/file_sniff.py` checks magic bytes (ISO-BMFF `ftyp`, EBML, `RIFF…AVI`), then `ffprobe` must find a decodable video stream within the duration and size limits (`core/video_rules.py`).
 2. Q: How do you stop a 10 GB upload?

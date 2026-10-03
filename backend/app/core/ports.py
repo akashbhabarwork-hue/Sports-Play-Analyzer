@@ -200,9 +200,11 @@ class FrameAnnotator(Protocol):
         ball: Box | None,
         t_s: float,
         teams: Mapping[int, str],
+        ball_trail: Sequence[tuple[float, float]] = (),
     ) -> np.ndarray:
-        """Return a copy of the frame with boxes coloured by team (public id → "A"/"B"/
-        "unknown"), ids, the ball, a time stamp and a legend of what is drawn."""
+        """Return a copy of the frame with players marked in team colours (public id → "A"/
+        "B"/"unknown") with ids, the ball and its recent path (oldest first), a HUD with the
+        time and a legend of what is drawn."""
         ...
 
     def thumbnail_jpeg(self, frame_bgr: np.ndarray, max_width: int) -> bytes:

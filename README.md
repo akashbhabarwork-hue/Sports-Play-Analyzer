@@ -10,7 +10,7 @@ heatmaps, possession and an annotated video.
 cp .env.example .env        # fill GOOGLE_CLIENT_ID/SECRET, SESSION_SECRET (see below)
 docker compose up --build   # http://localhost:8000
 ```
-Open **http://localhost:8000** (not `127.0.0.1` — Google matches the redirect URI exactly).
+Open **http://localhost:8000** (not `127.0.0.1`, Google matches the redirect URI exactly).
 Without the three Google settings the app still runs, but "Continue with Google" shows
 "sign-in is not available" (and the server log says which settings are missing).
 
@@ -107,7 +107,7 @@ YouTube blocks Google Cloud's addresses unless the worker sends a signed-in sess
 | `MAX_VIDEO_DURATION_SECONDS` | `60` | Maximum allowed duration for processing |
 | `MAX_UPLOAD_SIZE_BYTES` | `104857600` | Maximum upload size (100 MB); enforced before and while the body is read |
 | `UPLOAD_TMP_DIR` | system temp | Parent dir for per-request upload temp dirs (always removed) |
-| `YTDLP_COOKIES_B64` | `""` | Optional: base64 cookies.txt (throwaway account) if YouTube blocks the server — secret. Production: Secret Manager `ytdlp-cookies-b64`, worker only (D-036) |
+| `YTDLP_COOKIES_B64` | `""` | Optional: base64 cookies.txt (throwaway account) if YouTube blocks the server, secret. Production: Secret Manager `ytdlp-cookies-b64`, worker only (D-036) |
 | `YTDLP_PROXY` | `""` | Optional: proxy for yt-dlp and the media download |
 
 ## API

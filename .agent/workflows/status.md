@@ -1,5 +1,5 @@
 ---
-description: Show a compact project status — current stage, tickets done vs remaining, hours used against the 10-hour cap, risks and the next three tickets.
+description: Show a compact project status, current stage, tickets done vs remaining, hours used against the 10-hour cap, risks and the next three tickets.
 ---
 
 # /status

@@ -11,7 +11,7 @@ describe('formatBytes', () => {
   })
 
   it('shows a dash when the size is unknown', () => {
-    expect(formatBytes(null)).toBe('—')
+    expect(formatBytes(null)).toBe('-')
   })
 })
 
@@ -24,8 +24,8 @@ describe('formatDuration', () => {
   })
 
   it('shows a dash when unknown', () => {
-    expect(formatDuration(null)).toBe('—')
-    expect(formatDuration(Number.NaN)).toBe('—')
+    expect(formatDuration(null)).toBe('-')
+    expect(formatDuration(Number.NaN)).toBe('-')
   })
 })
 

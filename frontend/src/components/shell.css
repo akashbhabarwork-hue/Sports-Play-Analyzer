@@ -1,15 +1,14 @@
 .logo {
   display: inline-flex;
   align-items: center;
-  gap: 0.6rem;
 }
 
-.logo-word {
-  font-weight: 700;
-  font-size: 1rem;
-  color: var(--text);
-  letter-spacing: -0.01em;
+.logo img,
+img.logo {
+  display: block;
+  object-fit: contain;
 }
+
 
 .app {
   min-height: 100vh;
@@ -221,9 +220,6 @@
     display: inline-grid;
   }
 
-  .topbar-logo .logo-word {
-    font-size: 0.95rem;
-  }
 
   .backdrop {
     display: block;
@@ -291,4 +287,9 @@
   gap: 0.75rem;
   align-items: flex-start;
   color: var(--muted);
+}
+
+.logo-mark {
+  flex: none;
+  object-fit: contain;
 }

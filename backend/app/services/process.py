@@ -39,6 +39,7 @@ from ..core.models import (
     TrackerParams,
     TrackerState,
 )
+from ..core.overlay import ball_trail
 from ..core.pipeline import (
     PROGRESS_COMPUTING,
     PROGRESS_FETCHING,
@@ -275,4 +276,5 @@ def _rendered_frames(
         obs = observations[idx] if idx < total else None
         tracks = obs.tracks if obs else ()
         ball = obs.ball if obs else None
-        yield ports.annotator.draw(frame, tracks, ball, idx / p.sample_fps, teams)
+        trail = ball_trail(observations, idx)
+        yield ports.annotator.draw(frame, tracks, ball, idx / p.sample_fps, teams, trail)

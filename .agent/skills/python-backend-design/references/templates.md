@@ -69,7 +69,7 @@ class VectorStore(Protocol):
 ```
 
 ```python
-# core/chunking.py  — pure, no I/O
+# core/chunking.py  - pure, no I/O
 from core.models import Document, Chunk
 from errors import ValidationError
 
@@ -159,7 +159,7 @@ def ingest_documents(
 ```
 The pipeline is explicit, step-by-step code. There is no Pipeline class and no stage registry.
 
-## 5. wiring.py — the composition root
+## 5. wiring.py - the composition root
 ```python
 from dataclasses import dataclass
 from typing import Callable
@@ -190,7 +190,7 @@ def build_container(settings: Settings) -> Container:
     )
 ```
 
-## 6. entrypoints/main.py — pipeline
+## 6. entrypoints/main.py - pipeline
 ```python
 import logging, sys
 from config import load_settings
@@ -216,9 +216,9 @@ if __name__ == "__main__":
     sys.exit(main())
 ```
 
-## 7. entrypoints/api.py — FastAPI
+## 7. entrypoints/api.py - FastAPI
 ```python
-# entrypoints/schemas.py — the ONLY place pydantic is used
+# entrypoints/schemas.py - the ONLY place pydantic is used
 from pydantic import BaseModel
 
 class IngestResponse(BaseModel):

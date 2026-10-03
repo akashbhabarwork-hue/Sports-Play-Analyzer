@@ -1,6 +1,6 @@
 ---
 name: object-detection-onnx
-description: Runs a pretrained COCO object detector (default YOLOX-S ONNX, Apache-2.0; fallback Ultralytics YOLO, AGPL-3.0) with ONNX Runtime on CPU to detect players (person) and the ball (sports ball) — model download with checksum, letterbox preprocessing, output decoding, NMS, thresholds from config and a FakeDetector for tests. Use for the detector adapter and model-choice ADR notes.
+description: Runs a pretrained COCO object detector (default YOLOX-S ONNX, Apache-2.0; fallback Ultralytics YOLO, AGPL-3.0) with ONNX Runtime on CPU to detect players (person) and the ball (sports ball), model download with checksum, letterbox preprocessing, output decoding, NMS, thresholds from config and a FakeDetector for tests. Use for the detector adapter and model-choice ADR notes.
 ---
 
 # Pretrained detection with ONNX Runtime
@@ -17,11 +17,11 @@ the ball is small and fast → recall is low; report ball-visible % honestly.
 
 ## Getting the model
 - Download in the Dockerfile from the official YOLOX GitHub release (verify the exact release URL
-  on the Megvii-BaseDetection/YOLOX releases page — don't trust a remembered URL), check sha256,
+  on the Megvii-BaseDetection/YOLOX releases page, don't trust a remembered URL), check sha256,
   store at `/models/yolox_s.onnx`. Env: `MODEL_PATH`, `MODEL_SHA256`.
 - Don't commit weights to git.
 
-## Preprocess (YOLOX convention — confirm against the repo's ONNXRuntime demo)
+## Preprocess (YOLOX convention - confirm against the repo's ONNXRuntime demo)
 ```python
 def letterbox(img_bgr, size):               # returns padded CHW float32 + ratio
     r = min(size / img_bgr.shape[0], size / img_bgr.shape[1])
@@ -47,7 +47,7 @@ def yolox_decode(out, size, strides=(8, 16, 32)):
 ```
 Then: `boxes_cxcywh = out[0,:,:4]`, `scores = out[0,:,4:5] * out[0,:,5:]`; convert to xyxy,
 divide by ratio `r`; keep classes {person, ball}; per-class NMS (`cv2.dnn.NMSBoxes` or a small
-numpy NMS in core — pure, testable). Thresholds: `DETECT_CONF` for persons, `BALL_CONF` (lower,
+numpy NMS in core, pure, testable). Thresholds: `DETECT_CONF` for persons, `BALL_CONF` (lower,
 e.g. 0.15) for ball, `DETECT_IOU_NMS` (0.45). Keep at most 1 ball (highest score) per frame.
 At startup assert the model output shape matches `(1, N, 85)`; otherwise fail loudly with
 `MODEL_ERROR` (this catches "exported with decode_in_inference" variants).
@@ -62,7 +62,7 @@ process in `build_container`.
 class Detector(Protocol):
     def detect(self, frame_bgr: np.ndarray) -> list[Detection]: ...
 ```
-`FakeDetector(fixtures: dict[int, list[Detection]])` returns fixture detections per frame index —
+`FakeDetector(fixtures: dict[int, list[Detection]])` returns fixture detections per frame index,
 used by unit/integration tests and the CI pipeline test (no model download in CI unit job).
 
 ## Tests

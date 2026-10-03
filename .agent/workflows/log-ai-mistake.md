@@ -1,5 +1,5 @@
 ---
-description: Record a case where the AI was wrong — what it did, how it was caught, the fix and the lesson — in AI_USAGE.md and the devlog.
+description: Record a case where the AI was wrong, what it did, how it was caught, the fix and the lesson, in AI_USAGE.md and the devlog.
 ---
 
 # /log-ai-mistake <short description>

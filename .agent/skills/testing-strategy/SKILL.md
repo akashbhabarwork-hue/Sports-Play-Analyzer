@@ -1,6 +1,6 @@
 ---
 name: testing-strategy
-description: Sets up and writes pytest suites for the analyzer — pure unit tests for tracking/metrics/validation with JSON fixture detections, Postgres integration tests with Alembic-migrated schema and per-test cleanup, FastAPI TestClient with session helpers, the required user-A-vs-user-B authorization test, worker idempotency and SKIP LOCKED concurrency tests. Use when writing or running tests or CI test jobs.
+description: Sets up and writes pytest suites for the analyzer, pure unit tests for tracking/metrics/validation with JSON fixture detections, Postgres integration tests with Alembic-migrated schema and per-test cleanup, FastAPI TestClient with session helpers, the required user-A-vs-user-B authorization test, worker idempotency and SKIP LOCKED concurrency tests. Use when writing or running tests or CI test jobs.
 ---
 
 # Testing strategy

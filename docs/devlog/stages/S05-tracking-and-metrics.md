@@ -1,4 +1,4 @@
-# Stage S05 — Tracking & metrics core (pure, no model)
+# Stage S05 - Tracking & metrics core (pure, no model)
 
 **Dates:** 2026-10-02 → 2026-10-02 · **Tickets:** T-050, T-051, T-052
 
@@ -16,7 +16,7 @@ sequenceDiagram
   participant C as core/teams.py
   participant M as core/metrics.py
   loop every sampled frame
-    P->>T: update(state, detections) — players only, tiny boxes dropped
+    P->>T: update(state, detections), players only, tiny boxes dropped
     T-->>P: confirmed tracks seen this frame (ids 1..N)
     P->>P: pick_ball(detections); append FrameObservation
     P->>C: colour_feature(torso_pixels(frame, box)) for a few frames per track
@@ -47,8 +47,8 @@ python tests/fixtures/make_track_fixtures.py   # regenerates tracks_*.json (no d
 - 23 mutations across the three modules, every one caught (three only after a test was added).
 
 ## AI corrections during this stage
-- The skill's literal jitter rule ("skip steps under JITTER_PX") would give a slow-walking player zero distance — replaced with a dead-band measured from the last counted point.
-- The skill's team feature (hue and saturation only) cannot separate white from black kits, and raw hue splits reds at 359°/1° — switched to the HSV cone with value.
+- The skill's literal jitter rule ("skip steps under JITTER_PX") would give a slow-walking player zero distance, replaced with a dead-band measured from the last counted point.
+- The skill's team feature (hue and saturation only) cannot separate white from black kits, and raw hue splits reds at 359°/1°, switched to the HSV cone with value.
 - Mutation runs exposed three missing tests: low-confidence boxes feeding a tentative track, and median-vs-mean robustness at crop and track level.
 - Two of my own test fixtures had wrong arithmetic (a "bridged" step that didn't move; a torso crop entirely outside the frame) and were fixed so the tests assert the intended behaviour.
 
@@ -57,7 +57,7 @@ python tests/fixtures/make_track_fixtures.py   # regenerates tracks_*.json (no d
 - T-061 must keep player boxes down to `TRACKER_LOW_THRESH` (0.1), not drop them at `CONF_THRESHOLD`, or tracker stage 2 never runs.
 - IoU-only tracking can swap ids when identical kits cross; distances are in pixels, not metres (homography is BONUS); referees and goalkeepers get a team.
 
-## Interview prep — questions you may get about this stage
+## Interview prep - questions you may get about this stage
 1. Q: How does the tracker keep a player's id when they are briefly hidden?
    A: An unmatched confirmed track becomes "lost" instead of being deleted, and its box keeps being predicted forward by its velocity (`predict` in `core/tracking.py`). If a box matches within `TRACKER_MAX_AGE` (10 sampled frames, 2 s), the same id continues; after that the track is dropped and a returning player gets a new id.
 2. Q: What is the "ByteTrack" part?
