@@ -3,10 +3,11 @@ import type { KeyboardEvent } from 'react'
 import { Link, useSearchParams } from 'react-router-dom'
 import { ApiError, api } from '../api'
 import { formatDateTime, formatDuration } from '../logic/format'
+import { aiSteps } from '../logic/aiSummary'
 import { keyMetrics, settingsNote, teamName, teamsPresent } from '../logic/insights'
 import { jobTitle, sportLabel } from '../logic/videos'
 import type { JobDetail, PlayerDetail, Stats } from '../types'
-import { BackIcon, CheckIcon, CopyIcon, DownloadIcon, InfoIcon } from './icons'
+import { BackIcon, CheckIcon, CopyIcon, DownloadIcon, InfoIcon, SparkleIcon } from './icons'
 import { PlayerStatsTable, TeamDot } from './PlayerStatsTable'
 import { SmoothHeatmap } from './SmoothHeatmap'
 import { StatusChip } from './StatusChip'
@@ -81,6 +82,8 @@ export function ResultsView({ job, stats }: { job: JobDetail; stats: Stats }) {
         </div>
       </header>
 
+      <AiSummary stats={stats} />
+
       <div className="tabs" role="tablist" aria-label="Results">
         {TABS.map((t) => (
           <button key={t.id} ref={(el) => (tabRefs.current[t.id] = el)} type="button" role="tab" id={`rt-${t.id}`}
@@ -98,6 +101,32 @@ export function ResultsView({ job, stats }: { job: JobDetail; stats: Stats }) {
         {tab === 'player' && <PlayerHeatmaps job={job} stats={stats} aspect={aspect} selected={Number(params.get('player')) || null}
                                              onSelect={(id) => go('player', id)} />}
       </div>
+    </section>
+  )
+}
+
+/** "AI analysis complete" strip: what the pipeline did, with numbers from this job's stats. */
+function AiSummary({ stats }: { stats: Stats }) {
+  return (
+    <section className="ai-summary" aria-label="How this video was analysed">
+      <div className="ai-summary-head">
+        <span className="ai-orb" aria-hidden="true">
+          <SparkleIcon size={18} />
+        </span>
+        <div>
+          <strong>AI analysis complete</strong>
+          <span className="muted small"> · computer vision on every sampled frame</span>
+        </div>
+      </div>
+      <ol className="ai-steps">
+        {aiSteps(stats).map((s) => (
+          <li key={s.label}>
+            <CheckIcon size={14} />
+            <span className="ai-step-label">{s.label}</span>
+            <span className="muted">{s.detail}</span>
+          </li>
+        ))}
+      </ol>
     </section>
   )
 }

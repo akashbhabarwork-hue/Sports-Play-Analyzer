@@ -145,6 +145,12 @@ export const InfoIcon = (p: IconProps) => (
     <path d="M12 11v5M12 7.5h.01" />
   </Icon>
 )
+export const SparkleIcon = (p: IconProps) => (
+  <Icon {...p}>
+    <path d="M12 3l1.8 5.2L19 10l-5.2 1.8L12 17l-1.8-5.2L5 10l5.2-1.8z" />
+    <path d="M19 15l.8 2.2L22 18l-2.2.8L19 21l-.8-2.2L16 18l2.2-.8z" />
+  </Icon>
+)
 export const GoogleIcon = ({ size = 18 }: { size?: number }) => (
   // Google's "G" mark is required on Google sign-in buttons by their branding guidelines.
   <svg width={size} height={size} viewBox="0 0 48 48" aria-hidden="true">

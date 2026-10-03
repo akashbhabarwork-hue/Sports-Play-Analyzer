@@ -85,7 +85,7 @@ export interface Stats {
   players: PlayerStats[]
   teams: Record<string, { players: number[]; distance_rel_total: number }>
   heatmaps: Record<string, Heatmap>
-  video?: { duration_s: number; width: number; height: number; sample_fps: number }
+  video?: { duration_s: number; width: number; height: number; sample_fps: number; frames_analysed?: number }
   config?: Record<string, unknown> // effective settings the result was produced with (D-026)
 }
 

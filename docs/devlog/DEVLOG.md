@@ -536,3 +536,12 @@ Stage summaries live in `docs/devlog/stages/`.
 **Verification:** cause reproduced from Cloud Run without cookies (bot check), video fetched fine locally (and is 981 s → would be DURATION_EXCEEDED anyway). With cookies, from Cloud Run: metadata OK; full fetch metadata → download → ffprobe OK (mp4, 18.9 s). Cookies file checked by names/counts only, never printed. Pending: owner submits a ≤60 s YouTube clip in the app.
 **AI mistakes caught:** none new (fetch_check emoji crash fixed).
 **Next:** owner test in app; T-102.
+
+---
+
+## 2026-10-03 05:56 IST — T-B07 "AI look" for the annotated video and results UI (agents: cv-pipeline, frontend)
+**What changed:** `adapters/opencv_annotator.py` redesigned (feet spotlights, corner brackets, id badges, ball glow + connected trail, HUD "AI TRACKING · N players · ball · time", watermark on a panel, legend of the clip's teams); `core/overlay.ball_trail` (pure); `FrameAnnotator.draw` takes `ball_trail`; `services/process.py` passes it. Frontend: `logic/aiSummary.ts` (+ test), "AI analysis complete" strip, `VideoPlayer` badge + one-time scan sweep, processing thumbnail scan line (reduced-motion respected), `SparkleIcon`, `frames_analysed` in `Stats`. Tickets: T-B07 done, T-B08 (SAM 2, post-submission) added; D-037.
+**Why:** owner request; SAM 2 deferred (no GPU, required tickets open).
+**Verification:** annotator tests 9 (trail chain, jump break, no dangling trail, legend stability, HUD, spotlight blend); unit 575 passed (+ known Windows-only failure); ruff, format, design ✓; frontend lint/typecheck/75 tests/build ✓. Real pipeline on the owner's football clip (YOLOX, 13 players, 11.4 s) and three rendered frames inspected; fixed from that inspection: ghost watermark shadow, zig-zag/detached trail from false ball detections, per-frame legend flicker, "1 players". **Not checked visually:** the new web UI (browser tool disconnected) — owner to review after deploy.
+**AI mistakes caught:** two test expectations of mine were wrong (sampled row, trail beyond the end); the code was right.
+**Next:** PR → dev → main; then T-102 (publish consent screen) and acceptance; T-B08 after submission.

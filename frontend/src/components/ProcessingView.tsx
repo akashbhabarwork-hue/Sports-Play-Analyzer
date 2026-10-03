@@ -74,13 +74,16 @@ export function ProcessingView({ job }: { job: JobDetail }) {
       <div className="processing-grid">
         <div className="processing-main">
           <div className="card source-card">
-            {job.thumbnail_url ? (
-              <img className="source-thumb" src={job.thumbnail_url} alt="" />
-            ) : (
-              <span className="source-thumb placeholder">
-                <VideoIcon />
-              </span>
-            )}
+            {/* While the job runs, a scan line sweeps the thumbnail: the frames are being analysed. */}
+            <span className={failed ? 'thumb-wrap' : 'thumb-wrap scanning'}>
+              {job.thumbnail_url ? (
+                <img className="source-thumb" src={job.thumbnail_url} alt="" />
+              ) : (
+                <span className="source-thumb placeholder">
+                  <VideoIcon />
+                </span>
+              )}
+            </span>
             <div className="source-info">
               <strong className="ellipsis">{jobTitle(job)}</strong>
               {job.source_url && <span className="muted small ellipsis">{job.source_url}</span>}
