@@ -429,10 +429,12 @@
   display: block;
 }
 
+/* Top centre: the video itself uses top-left (HUD), top-right (legend) and bottom-left. */
 .ai-badge {
   position: absolute;
   top: 0.6rem;
-  right: 0.6rem;
+  left: 50%;
+  transform: translateX(-50%);
   display: inline-flex;
   align-items: center;
   gap: 0.3rem;
