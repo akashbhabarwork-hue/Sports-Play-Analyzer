@@ -292,3 +292,8 @@
   align-items: flex-start;
   color: var(--muted);
 }
+
+.logo-mark {
+  flex: none;
+  object-fit: contain;
+}

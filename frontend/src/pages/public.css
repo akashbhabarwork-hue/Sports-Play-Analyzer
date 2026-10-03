@@ -271,3 +271,94 @@
     display: none;
   }
 }
+
+/* Brand art in feature tiles and steps (owner's asset sheet) */
+.feature-icon {
+  width: 3.25rem;
+  height: 3.25rem;
+}
+
+.feature-icon img,
+.step-art {
+  object-fit: contain;
+  filter: drop-shadow(0 4px 10px rgb(79 70 229 / 25%));
+}
+
+.feature-icon img {
+  width: 2.5rem;
+  height: 2.5rem;
+}
+
+.step-art {
+  width: 3rem;
+  height: 3rem;
+}
+
+/* Hero: pitch drawing + brand silhouettes/balls layered on top */
+.hero-stage {
+  position: relative;
+  width: 100%;
+}
+
+.hero-player,
+.hero-ball {
+  position: absolute;
+  pointer-events: none;
+  filter: drop-shadow(0 10px 22px rgb(0 0 0 / 45%));
+}
+
+.hero-player {
+  width: 34%;
+  height: auto;
+}
+
+.hero-player-a {
+  left: -4%;
+  bottom: -8%;
+}
+
+.hero-player-b {
+  right: -4%;
+  top: -10%;
+}
+
+.hero-ball {
+  width: 11%;
+  height: auto;
+  animation: hero-float 4s ease-in-out infinite;
+}
+
+.hero-ball-a {
+  left: 44%;
+  bottom: -5%;
+}
+
+.hero-ball-b {
+  right: 30%;
+  top: -6%;
+  animation-delay: -2s;
+}
+
+@keyframes hero-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-8px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .hero-ball { animation: none; }
+}
+
+@media (max-width: 640px) {
+  .hero-player { width: 30%; }
+  .hero-ball { width: 9%; }
+}
+
+/* Lift the indigo silhouettes off the navy hero */
+.hero-player {
+  filter: drop-shadow(0 0 14px rgb(165 180 252 / 55%)) drop-shadow(0 10px 22px rgb(0 0 0 / 45%));
+}
+
+/* The silhouettes sit slightly outside the pitch art; never let them cause sideways scrolling */
+.hero {
+  overflow-x: clip;
+}

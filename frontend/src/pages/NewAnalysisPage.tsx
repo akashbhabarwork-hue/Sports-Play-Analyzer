@@ -2,6 +2,7 @@ import { useId, useRef, useState } from 'react'
 import type { DragEvent, FormEvent, KeyboardEvent } from 'react'
 import { useNavigate, useSearchParams } from 'react-router-dom'
 import { ApiError, api } from '../api'
+import { sportArt } from '../assets/brand'
 import { CloseIcon, InfoIcon, LinkIcon, UploadIcon, VideoIcon } from '../components/icons'
 import { formatBytes, formatDuration } from '../logic/format'
 import { checkDuration, checkFile, checkUrl } from '../logic/precheck'
@@ -207,8 +208,12 @@ export function NewAnalysisPage() {
             <div className="sport-options">
               {SPORTS.map(({ id, label }) => (
                 <label key={id} className={sport === id ? 'sport-option active' : 'sport-option'}>
-                  <input type="radio" name="sport" value={id} checked={sport === id} onChange={() => setSport(id)} disabled={busy} />
-                  {label}
+                  <img className="sport-field-art" src={sportArt[id].field} alt="" />
+                  <span className="sport-option-row">
+                    <input type="radio" name="sport" value={id} checked={sport === id} onChange={() => setSport(id)} disabled={busy} />
+                    <img className="sport-ball" src={sportArt[id].ball} alt="" width={22} height={22} />
+                    {label}
+                  </span>
                 </label>
               ))}
             </div>

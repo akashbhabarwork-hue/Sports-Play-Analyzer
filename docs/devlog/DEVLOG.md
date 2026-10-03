@@ -545,3 +545,12 @@ Stage summaries live in `docs/devlog/stages/`.
 **Verification:** annotator tests 9 (trail chain, jump break, no dangling trail, legend stability, HUD, spotlight blend); unit 575 passed (+ known Windows-only failure); ruff, format, design ✓; frontend lint/typecheck/75 tests/build ✓. Real pipeline on the owner's football clip (YOLOX, 13 players, 11.4 s) and three rendered frames inspected; fixed from that inspection: ghost watermark shadow, zig-zag/detached trail from false ball detections, per-frame legend flicker, "1 players". **Not checked visually:** the new web UI (browser tool disconnected) — owner to review after deploy.
 **AI mistakes caught:** two test expectations of mine were wrong (sampled row, trail beyond the end); the code was right.
 **Next:** PR → dev → main; then T-102 (publish consent screen) and acceptance; T-B08 after submission.
+
+---
+
+## 2026-10-03 06:11 IST — T-B09 Brand art in the UI (agent: frontend)
+**What changed:** `frontend/src/assets/brand/` (14 WebP crops + `index.ts` with `sportArt`/`artFor`), `public/favicon-32.png`, `apple-touch-icon.png`; `Logo` (mark image + live text), `HeroArt` (silhouettes + balls over the pitch art), `LandingPage` features/steps, `NewAnalysisPage` sport cards, `MyVideosPage` sport cell + empty art, `ProcessingView` sport figure + error badge, `NotFoundPage`; CSS incl. reduced-motion, hero `overflow-x: clip`, id-chip fix. D-038, T-B09.
+**Why:** owner request with their asset sheet.
+**Verification:** contact sheet of all crops on light + dark (no clipped glow, no neighbour bleed); lint, typecheck, 75 tests, build ✓. Real app over in-memory fakes, headless Chrome: landing, my videos, new analysis, processing, failed, not found (desktop); landing, new analysis, processing at a true 390×844 via DevTools emulation — scrollWidth = 390 on all; dark mode new analysis + videos. Fixed from the screenshots: dim hero silhouettes (glow), id chip stacked vertically (pre-existing).
+**AI mistakes caught:** a shell escaping slip (`\$1`) made all screenshots overwrite one file — caught by the "MISSING" check; the first 390 px shot was misleading (headless Chrome's minimum window width), redone with real device emulation.
+**Next:** owner merges feat/ai-look → dev → main; then T-102.

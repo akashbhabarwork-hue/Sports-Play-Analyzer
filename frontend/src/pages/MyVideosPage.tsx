@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
 import { ApiError, api } from '../api'
+import { artFor, brand } from '../assets/brand'
 import { CopyIcon, PlusIcon, VideoIcon } from '../components/icons'
 import { RowMenu } from '../components/RowMenu'
 import { StatusChip } from '../components/StatusChip'
@@ -13,16 +14,7 @@ import type { JobSummary } from '../types'
 import './videos.css'
 
 function EmptyArt() {
-  return (
-    <svg width="120" height="88" viewBox="0 0 120 88" aria-hidden="true">
-      <rect x="6" y="10" width="108" height="70" rx="10" fill="var(--surface-2)" stroke="var(--border)" strokeWidth="2" />
-      <line x1="60" y1="10" x2="60" y2="80" stroke="var(--border)" strokeWidth="2" />
-      <circle cx="60" cy="45" r="13" fill="none" stroke="var(--border)" strokeWidth="2" />
-      <circle cx="38" cy="36" r="5" fill="var(--team-a)" />
-      <circle cx="84" cy="54" r="5" fill="var(--team-b)" />
-      <path d="M52 40 72 45 52 50Z" fill="var(--primary)" />
-    </svg>
-  )
+  return <img className="empty-art" src={brand.tactics} alt="" width={120} height={120} />
 }
 
 export function MyVideosPage() {
@@ -163,7 +155,12 @@ export function MyVideosPage() {
                         </span>
                       </Link>
                     </td>
-                    <td data-label="Sport">{sportLabel(job.sport)}</td>
+                    <td data-label="Sport">
+                      <span className="sport-cell">
+                        <img src={artFor(job.sport).ball} alt="" width={20} height={20} />
+                        {sportLabel(job.sport)}
+                      </span>
+                    </td>
                     <td data-label="Status">
                       <div className="status-cell">
                         <StatusChip status={job.status} />

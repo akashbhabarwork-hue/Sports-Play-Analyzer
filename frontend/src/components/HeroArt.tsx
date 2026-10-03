@@ -1,6 +1,21 @@
+import { brand } from '../assets/brand'
+
 // Original abstract illustration: a top-down pitch, player dots with motion trails and a soft
-// heat glow. No real teams, crests, players or footage (brief).
+// heat glow, with the brand player silhouettes and balls layered on top. No real teams,
+// crests, players or footage (brief).
 export function HeroArt() {
+  return (
+    <div className="hero-stage">
+      <PitchArt />
+      <img className="hero-player hero-player-a" src={brand.playerFootball} alt="" />
+      <img className="hero-player hero-player-b" src={brand.playerBasketball} alt="" />
+      <img className="hero-ball hero-ball-a" src={brand.ballFootball} alt="" />
+      <img className="hero-ball hero-ball-b" src={brand.ballBasketball} alt="" />
+    </div>
+  )
+}
+
+function PitchArt() {
   const players: [number, number, string][] = [
     [120, 90, 'var(--team-a)'], [190, 150, 'var(--team-a)'], [150, 230, 'var(--team-a)'],
     [330, 110, 'var(--team-b)'], [300, 200, 'var(--team-b)'], [390, 250, 'var(--team-b)'],

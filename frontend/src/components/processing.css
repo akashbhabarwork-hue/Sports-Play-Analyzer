@@ -242,3 +242,38 @@
 @media (prefers-reduced-motion: reduce) {
   .thumb-wrap.scanning::after { animation: none; display: none; }
 }
+
+/* Brand art: the clip's sport as a player silhouette on a soft circle, gently moving */
+.processing-art {
+  display: grid;
+  place-items: center;
+  aspect-ratio: 1;
+  border-radius: 50%;
+  background: radial-gradient(circle, var(--primary-soft) 0 62%, transparent 63%);
+}
+
+.processing-art img {
+  width: 78%;
+  height: auto;
+  filter: drop-shadow(0 12px 20px rgb(79 70 229 / 28%));
+  animation: art-run 2.4s ease-in-out infinite;
+}
+
+@keyframes art-run {
+  0%, 100% { transform: translateX(-4px); }
+  50% { transform: translateX(6px); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .processing-art img { animation: none; }
+}
+
+.error-art {
+  object-fit: contain;
+}
+
+/* `.page-header > div { display: grid }` (shell.css) is more specific than `.id-chip` and stacked
+   the chip vertically; keep it a single-line pill. */
+.page-header > .id-chip {
+  display: inline-flex;
+}
