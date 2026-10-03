@@ -488,6 +488,7 @@ Scope added by the owner after S8: full visual/UX brief. Backend first so the UI
 - [ ] **T-B06** Kalman filter / appearance re-ID to reduce ID switches — cv-pipeline
 - [x] **T-B07** "AI look": broadcast-style video overlay (feet spotlights, corner brackets, id badges, ball glow + trail, HUD, watermark) + results "AI analysis complete" strip, video badge/scan sweep, processing scan line — cv-pipeline + frontend (owner request 2026-10-03, D-037)
 - [x] **T-B09** Brand art from the owner's asset sheet in the UI (logo mark, favicon, hero, features/steps, sport cards, list, processing, error, empty/not-found) — frontend (owner request 2026-10-03, D-038)
+- [x] **T-B10** Owner's logo (light/dark), hero banner, landing "What you get"/"How it works" per mock — frontend (D-039)
 - [ ] **T-B08** SAM 2.1 tiny (CPU only) as a second "refine" pass: early YOLOX results first, segmentation-refined results + mask overlay later — **beyond the submission** (owner request 2026-10-03, D-037)
 
 ## Follow-ups (added by /review or acceptance runs)

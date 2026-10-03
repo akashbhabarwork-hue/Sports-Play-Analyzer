@@ -30,7 +30,7 @@ export function AppShell() {
       <aside id="sidebar" className={drawerOpen ? 'sidebar open' : 'sidebar'} aria-label="Main navigation">
         <div className="sidebar-head">
           <NavLink to="/app" end className="sidebar-logo">
-            <Logo />
+            <Logo height={40} />
           </NavLink>
           <button type="button" className="icon-btn drawer-close" aria-label="Close menu" onClick={() => setDrawerOpen(false)}>
             <CloseIcon />
@@ -62,7 +62,7 @@ export function AppShell() {
             <MenuIcon />
           </button>
           <span className="topbar-logo">
-            <Logo />
+            <Logo height={28} />
           </span>
           <div className="topbar-spacer" />
           <UserMenu />

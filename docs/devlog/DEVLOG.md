@@ -554,3 +554,12 @@ Stage summaries live in `docs/devlog/stages/`.
 **Verification:** contact sheet of all crops on light + dark (no clipped glow, no neighbour bleed); lint, typecheck, 75 tests, build ✓. Real app over in-memory fakes, headless Chrome: landing, my videos, new analysis, processing, failed, not found (desktop); landing, new analysis, processing at a true 390×844 via DevTools emulation — scrollWidth = 390 on all; dark mode new analysis + videos. Fixed from the screenshots: dim hero silhouettes (glow), id chip stacked vertically (pre-existing).
 **AI mistakes caught:** a shell escaping slip (`\$1`) made all screenshots overwrite one file — caught by the "MISSING" check; the first 390 px shot was misleading (headless Chrome's minimum window width), redone with real device emulation.
 **Next:** owner merges feat/ai-look → dev → main; then T-102.
+
+---
+
+## 2026-10-03 06:30 IST — T-B10 New logo, hero banner, landing sections per owner's mock (agent: frontend)
+**What changed:** `assets/brand`: `logo-light/dark/mark.webp`, `hero-banner(-960).webp`, favicons regenerated; removed `HeroArt.tsx` and 5 unused crops. `Logo` (picture with dark source; `onDark`, `height`), `LogoMark`; `LandingPage` (banner hero, accent titles, feature cards with corner glows, step cards with number badges/illustrations/connectors, footer mark + rule); new icons (ScanUsers, VideoPlay, ShieldLock, Runner, ArrowRight/Up); `public.css` rewritten (sign-in styles kept); sidebar/topbar/login logo sizes. D-039, T-B10.
+**Why:** owner request with assets + mock.
+**Verification:** logo versions rendered on white and navy (no fringes); lint, typecheck, 75 tests, build ✓. DevTools-protocol screenshots: landing 1440 light + dark, 1000 (tablet), 390×844 phone (scrollWidth = viewport), app sidebar light/dark (correct logo per theme), sign-in. Fixed from them: small hero logo, cramped step cards, copy over players at tablet width, 3+1 feature orphan → 2×2, dot grid drawn over a card.
+**AI mistakes caught:** none new.
+**Next:** owner merges feat/ai-look → dev → main; T-102.

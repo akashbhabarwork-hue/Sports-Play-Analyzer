@@ -1,34 +1,85 @@
+import type { CSSProperties, ReactNode } from 'react'
 import { Link, Navigate } from 'react-router-dom'
-import { HeroArt } from '../components/HeroArt'
 import { brand } from '../assets/brand'
-import { GoogleIcon, ShieldIcon } from '../components/icons'
-import { Logo } from '../components/Logo'
+import {
+  ArrowRightIcon,
+  ArrowUpIcon,
+  ChartIcon,
+  GoogleIcon,
+  RunnerIcon,
+  ScanUsersIcon,
+  ShieldLockIcon,
+  VideoPlayIcon,
+} from '../components/icons'
+import { Logo, LogoMark } from '../components/Logo'
 import { useAuth } from '../useAuth'
 import './public.css'
 
-// Brand art for the features and steps; `art: null` keeps a line icon where the sheet has no fit.
 const FEATURES = [
-  { art: brand.iconRunner, title: 'Player & ball tracking', text: 'Every player gets a stable ID across the clip; the ball is tracked when visible.' },
-  { art: brand.heatmapPitch, title: 'Position heatmaps', text: 'See where each player and each team spent their time.' },
-  { art: brand.ballFootball, title: 'Possession estimate', text: 'Who was closest to the ball, frame by frame, summed per player and team.' },
-  { art: null, title: 'Private to your account', text: 'Your clips and results are only visible to you.' },
+  { icon: ScanUsersIcon, tint: 'violet', title: 'Player & ball tracking', text: 'Every player gets a stable ID across the clip; the ball is tracked when visible.' },
+  { icon: ChartIcon, tint: 'rose', title: 'Position heatmaps', text: 'See where each player and each team spent their time.' },
+  { icon: VideoPlayIcon, tint: 'sky', title: 'Possession estimate', text: 'Who was closest to the ball, frame by frame, summed per player and team.' },
+  { icon: ShieldLockIcon, tint: 'violet', title: 'Private to your account', text: 'Your clips and results are only visible to you.' },
 ]
 
+/** Small illustrations for the three steps (decorative). */
+function StepArt({ kind }: { kind: 'upload' | 'analyse' | 'results' }) {
+  const art: Record<typeof kind, ReactNode> = {
+    upload: (
+      <>
+        <span className="art-card">
+          <span className="art-play" />
+        </span>
+        <span className="art-badge">
+          <ArrowUpIcon size={16} />
+        </span>
+      </>
+    ),
+    analyse: (
+      <span className="art-scan">
+        <RunnerIcon size={34} />
+      </span>
+    ),
+    results: (
+      <>
+        <span className="art-card">
+          <ChartIcon size={30} />
+        </span>
+        <span className="art-badge">
+          <span className="art-play small" />
+        </span>
+      </>
+    ),
+  }
+  return (
+    <span className={`step-art step-art-${kind}`} aria-hidden="true">
+      {art[kind]}
+    </span>
+  )
+}
+
 const STEPS = [
-  { art: brand.iconUpload, title: 'Upload a clip or paste a link', text: 'Up to 60 seconds of football or basketball footage.' },
-  { art: brand.iconTarget, title: 'We analyse it in the background', text: 'Players are detected, tracked and split into teams by kit colour.' },
-  { art: brand.chart, title: 'Review the results', text: 'An annotated video, key stats and heatmaps for every player.' },
+  { kind: 'upload' as const, title: 'Upload a clip or paste a link', text: 'Up to 60 seconds of football or basketball footage.' },
+  { kind: 'analyse' as const, title: 'We analyse it in the background', text: 'Players are detected, tracked and split into teams by kit colour.' },
+  { kind: 'results' as const, title: 'Review the results', text: 'An annotated video, key stats and heatmaps for every player.' },
 ]
 
 export function LandingPage() {
   const { state } = useAuth()
   if (state.status === 'authenticated') return <Navigate to="/app" replace />
 
+  // The banner is set through CSS variables (CSSOM, allowed by our CSP) so the stylesheet can
+  // pick the small file on phones.
+  const heroStyle = {
+    '--hero-img': `url(${brand.heroBanner})`,
+    '--hero-img-sm': `url(${brand.heroBanner960})`,
+  } as CSSProperties
+
   return (
     <div className="public">
-      <header className="hero">
+      <header className="hero" style={heroStyle}>
         <nav className="hero-nav" aria-label="Site">
-          <Logo />
+          <Logo onDark height={48} />
           <div className="hero-links">
             <a href="#features">Features</a>
             <a href="#how">How it works</a>
@@ -56,18 +107,19 @@ export function LandingPage() {
             </a>
             <p className="hero-note">Free to try · clips up to 60 s · private by default</p>
           </div>
-          <HeroArt />
         </div>
       </header>
 
-      <main>
+      <main className="landing-main">
         <section id="features" className="section">
-          <h2 className="section-title">What you get</h2>
+          <h2 className="section-title">
+            What you <span className="accent">get</span>
+          </h2>
           <ul className="feature-grid">
-            {FEATURES.map(({ art, title, text }) => (
-              <li key={title} className="card feature">
+            {FEATURES.map(({ icon: Icon, tint, title, text }) => (
+              <li key={title} className={`card feature tint-${tint}`}>
                 <span className="feature-icon">
-                  {art ? <img src={art} alt="" width={40} height={40} /> : <ShieldIcon />}
+                  <Icon size={26} />
                 </span>
                 <h3>{title}</h3>
                 <p className="muted">{text}</p>
@@ -77,14 +129,23 @@ export function LandingPage() {
         </section>
 
         <section id="how" className="section">
-          <h2 className="section-title">How it works</h2>
+          <h2 className="section-title">
+            How it <span className="accent">works</span>
+          </h2>
           <ol className="steps">
-            {STEPS.map(({ art, title, text }, i) => (
-              <li key={title} className="card step">
+            {STEPS.map(({ kind, title, text }, i) => (
+              <li key={title} className="step">
                 <span className="step-num">{i + 1}</span>
-                <img className="step-art" src={art} alt="" width={48} height={48} />
-                <h3>{title}</h3>
-                <p className="muted">{text}</p>
+                <StepArt kind={kind} />
+                <div className="step-text">
+                  <h3>{title}</h3>
+                  <p className="muted">{text}</p>
+                </div>
+                {i < STEPS.length - 1 && (
+                  <span className="step-arrow" aria-hidden="true">
+                    <ArrowRightIcon size={18} />
+                  </span>
+                )}
               </li>
             ))}
           </ol>
@@ -92,7 +153,13 @@ export function LandingPage() {
       </main>
 
       <footer className="public-footer muted">
-        <Logo compact /> Sports Play Analyzer — pretrained detection, no training on your videos.
+        <span className="footer-mark">
+          <LogoMark size={26} />
+        </span>
+        <span>
+          <strong className="footer-name">Sports Play Analyzer</strong> — pretrained detection, no training on your videos.
+        </span>
+        <span className="footer-rule" aria-hidden="true" />
       </footer>
     </div>
   )

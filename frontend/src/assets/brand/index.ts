@@ -1,14 +1,14 @@
-// Brand art cropped from the owner's asset sheet (transparent WebP, ≤ 320 px). Decorative:
-// use with alt="" next to real text, never as the only label. Vite fingerprints the files.
+// Brand art (owner-supplied): logo in light/dark versions, the hero banner, and art cropped from
+// the asset sheet. Transparent WebP except the banner. Images next to real text use alt="".
+// Vite fingerprints every file.
 import ballBasketball from './ball-basketball.webp'
 import ballFootball from './ball-football.webp'
-import chart from './chart.webp'
 import courtBasketball from './court-basketball.webp'
-import heatmapPitch from './heatmap-pitch.webp'
+import heroBanner960 from './hero-banner-960.webp'
+import heroBanner from './hero-banner.webp'
 import iconError from './icon-error.webp'
-import iconRunner from './icon-runner.webp'
-import iconTarget from './icon-target.webp'
-import iconUpload from './icon-upload.webp'
+import logoDark from './logo-dark.webp'
+import logoLight from './logo-light.webp'
 import logoMark from './logo-mark.webp'
 import pitchFootball from './pitch-football.webp'
 import playerBasketball from './player-basketball.webp'
@@ -18,13 +18,12 @@ import tactics from './tactics.webp'
 export const brand = {
   ballBasketball,
   ballFootball,
-  chart,
   courtBasketball,
-  heatmapPitch,
+  heroBanner,
+  heroBanner960,
   iconError,
-  iconRunner,
-  iconTarget,
-  iconUpload,
+  logoDark, // wordmark with light text, for dark surfaces
+  logoLight, // wordmark with dark text, for light surfaces
   logoMark,
   pitchFootball,
   playerBasketball,
