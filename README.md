@@ -115,6 +115,57 @@ YouTube blocks Google Cloud's addresses unless the worker sends a signed-in sess
 `POST /api/jobs/upload`, `POST /api/jobs/url`, `GET /api/jobs`, `GET /api/jobs/{id}`,
 `GET /api/jobs/{id}/stats`, `GET /api/jobs/{id}/players/{pid}`, `GET /api/jobs/{id}/video`, `GET /health`
 
+## Future work: SAM 2 segmentation (not deployed)
+A feasibility spike (D-040, D-041) ran Meta's **SAM 2.1 tiny** on top of our pipeline: each player
+box from YOLOX + our tracker is used as a prompt, and SAM 2 returns the player's exact outline.
+The masks are clearly better than boxes, but on our CPU worker SAM 2 is far too slow, so it is
+**not part of the deployed app**. It is planned as an optional second "refine" pass.
+
+[![Current YOLOX boxes vs SAM 2.1 masks](docs/media/sam2-vs-yolox.jpg)](docs/media/sam2-demo.mp4)
+
+Demo: [docs/media/sam2-demo.mp4](docs/media/sam2-demo.mp4) (8 s, 1280×720, 5 fps; the owner's
+test clip with the production overlay plus SAM 2 masks in team colours). Source footage: a free
+Mixkit stock clip ("Goal play in a semi-professional soccer game").
+
+**What it would improve:** team colours sampled from the player's own pixels (not a box that is
+half grass), a more accurate feet point for distance and heatmaps, and a mask outline in the
+annotated video.
+**What it does not fix:** SAM 2 in image mode only outlines players the detector already found;
+following players YOLOX misses needs SAM 2's video mode, which is the slowest.
+
+**Measured on CPU** (owner's 8 s clip, 41 sampled frames, 1280×720; 2 threads ≈ our 2 vCPU worker):
+
+| | Per frame | 60 s clip at 5 fps (300 frames) |
+|---|---|---|
+| Current pipeline (YOLOX + tracker + render) | ~0.3 s | ~1.5 min |
+| SAM 2 image mode, every frame | ~12 s (10.7 s encoder + 1.5 s masks) | ~60 min |
+| SAM 2 image mode, 1 keyframe per second | ~12 s | ~12 min |
+| SAM 2 video mode (tracks through frames) | ~62 s (6 players) | ~5 h |
+
+With 4 threads the encoder takes 6.7 s per frame; the whole 8 s demo took 115 s of SAM 2 time.
+
+### Resources needed to run the SAM 2 version
+| Resource | Requirement |
+|---|---|
+| Model | SAM 2.1 hiera-tiny checkpoint `sam2.1_hiera_tiny.pt`, 156 MB, sha256 `7402e0d864fa82708a20fbd15bc84245c2f26dff0eb43a4b5b93452deb34be69` (Apache-2.0); download in the Docker build and verify like YOLOX |
+| Python packages | `torch` and `torchvision` (CPU builds used: 2.14.1 / 0.29.1 from the PyTorch CPU index), `sam2` pinned to commit `2b90b9f5ceec907a1c18123530e92e794ad901a4` (installed from GitHub; no PyPI release used), Python 3.12 |
+| Image size | PyTorch adds several hundred MB to the image (estimated 700 MB to 1 GB, not measured) + the 156 MB checkpoint. Exporting to ONNX Runtime would avoid PyTorch entirely |
+| Memory | Plan for a 4 GiB worker for SAM 2 (peak not measured; the current worker has 2 GiB) |
+| Compute, CPU only | Minutes per clip at best (keyframes); not viable per frame. Next step: ONNX + int8 export of the encoder/decoder (expected 2 to 4× faster, not measured) or a lighter model such as EdgeTAM / EfficientTAM (speed and licence to check) |
+| Compute, GPU | The normal way to run SAM 2. Cloud Run supports NVIDIA L4 GPUs on worker pools, but GPUs are not available on a Google Cloud free-trial billing account; the account must be upgraded. GPU speed not measured here |
+| CPU patch | SAM 2's video predictor stores its memory in bfloat16, which fails on CPU (`mat1 and mat2 must have the same dtype`); keep it in float32 when running on CPU |
+
+### How it would be built
+1. A **separate worker pool** for SAM 2, so the normal job queue never waits behind it.
+2. Jobs finish as today with the fast YOLOX results, then get a new stage, **"Refining with SAM 2…"**;
+   the results page shows the early results and swaps in the refined video and stats when ready.
+3. A database migration for the second result version and its status (refining / refined / failed),
+   with the early results kept if refinement fails.
+4. Keyframes only (about 1 per second), with masks carried to the frames in between.
+
+The spike scripts, the PyTorch environment and the checkpoint were kept outside the repo; only
+this summary, the demo video and the comparison image are committed.
+
 ## Session log
 | # | Start (IST) | End (IST) | Duration | What I did |
 |---|---|---|---|---|
