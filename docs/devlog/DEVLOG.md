@@ -563,3 +563,21 @@ Stage summaries live in `docs/devlog/stages/`.
 **Verification:** logo versions rendered on white and navy (no fringes); lint, typecheck, 75 tests, build ✓. DevTools-protocol screenshots: landing 1440 light + dark, 1000 (tablet), 390×844 phone (scrollWidth = viewport), app sidebar light/dark (correct logo per theme), sign-in. Fixed from them: small hero logo, cramped step cards, copy over players at tablet width, 3+1 feature orphan → 2×2, dot grid drawn over a card.
 **AI mistakes caught:** none new.
 **Next:** owner merges feat/ai-look → dev → main; T-102.
+
+---
+
+## 2026-10-03 08:27 IST - T-B08 SAM 2 feasibility spike (agent: cv-pipeline)
+**What changed:** docs only (D-040, ADR "With more time", T-B08 note). Spike code, the PyTorch venv, the checkpoint and the comparison video stay in the scratch folder (not committed, by owner request).
+**Why:** owner asked to start SAM 2 integration on CPU only.
+**Verification:** benchmarks on the owner's clip with our own detector + tracker as prompts (numbers in D-040); masks rendered on sample frames and a full 41-frame comparison video viewed in the local preview next to the YOLOX version.
+**AI mistakes caught:** a negative-stride RGB view rejected by PyTorch, fixed with cvtColor; SAM 2's bfloat16 memory store crashed on CPU, patched in the scratch copy only; a docs edit script hit CRLF endings and its shell went on to push only the ticket note (completed in a follow-up commit).
+**Next:** owner picks A (ONNX + int8), B (EdgeTAM) or C (GPU); T-102 still open.
+
+---
+
+## 2026-10-04 14:59 IST - T-B08 SAM 2 demo + README future-work section (agent: docs-scribe)
+**What changed:** `docs/media/sam2-demo.mp4` (SAM 2 comparison video), `docs/media/sam2-vs-yolox.jpg` (side-by-side still at 0.5 s); README "Future work: SAM 2 segmentation" (what it improves and doesn't, measured CPU timings, resources table: checkpoint + sha256, pinned packages and commit, image size, memory, CPU vs GPU, the bfloat16 CPU patch, build plan); D-041.
+**Why:** owner request: keep the SAM 2 result in the repo and document what running it needs.
+**Verification:** README renders the still linked to the video; video plays (h264 1280x720, 8.2 s); no em-dashes added; only these files staged (owner's local ci.yml/.gitignore edits and CLAUDE.md untouched).
+**AI mistakes caught:** none.
+**Next:** owner merges docs/sam2-spike; T-102.
