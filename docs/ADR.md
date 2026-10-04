@@ -68,6 +68,7 @@ Source of truth: `backend/app/adapters/db_tables.py`; revision `0001`. UUID PKs,
 - Over budget, by choice (D-030): after the working S8 UI the owner added a full UI redesign plus the backend data it needs (sport/title, thumbnails, team-coloured two-pass render). That pushed security hardening, deploy and live acceptance later than the ≈10 h plan.
 
 ## 8. With more time
+- SAM 2 segmentation as a refine pass (D-040): masks are excellent, but SAM 2.1 tiny on CPU costs ~12 s per frame (image mode) and ~62 s per frame (video mode) on 2 threads, vs ~0.3 s for the whole current pipeline; it needs a GPU, or an ONNX + int8 / EdgeTAM-class model, before it fits a 60 s clip.
 - Pitch-normalised distance via camera homography calibration (4 clicked pitch keypoints).
 - Server-Sent Events (SSE) stream for live job progress.
 - Multi-camera or multi-clip tactical timeline stitching.
